@@ -1,0 +1,14 @@
+[cluegetter]
+stats-listen-port = 10032
+stats-listen-host = "0.0.0.0"
+
+rdbms-driver           = mysql
+rdbms-user             = root
+rdbms-password         =
+rdbms-protocol         = tcp
+rdbms-address          = localhost:3306
+rdbms-database         = cluegetter
+rdbms-mysql-strictmode = true
+
+[quotas]
+enabled = true
