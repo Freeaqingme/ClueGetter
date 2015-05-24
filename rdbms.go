@@ -19,17 +19,18 @@ import (
 	"log"
 )
 
-var Rdbms = *new(*sql.DB)
+var Rdbms *sql.DB
 
 func rdbmsStart(c chan int) {
 	dsn := rdbmsGetDsn(false)
 	display_dsn := rdbmsGetDsn(true)
 
 	err_msg := "Could not connect to %s. Got error: %s"
-	Rdbms, err := sql.Open(Config.ClueGetter.Rdbms_Driver, dsn)
+	rdbms, err := sql.Open(Config.ClueGetter.Rdbms_Driver, dsn)
 	if err != nil {
 		log.Fatalln(fmt.Sprintf(err_msg, display_dsn, err))
 	}
+	Rdbms = rdbms
 
 	err = Rdbms.Ping()
 	if err != nil {

@@ -33,6 +33,7 @@ func main() {
 
 	httpControl := make(chan int)
 	rdbmsControl := make(chan int)
+	quotasControl := make(chan int)
 	postfixPolicyControl := make(chan int)
 
 	keepRunning := false
@@ -46,6 +47,8 @@ func main() {
 		<-rdbmsControl // Wait until connected with RDBMS
 
 		go http.Start(httpControl)
+		go quotasStart(quotasControl)
+		<-quotasControl
 		go PolicyStart(
 			postfixPolicyControl,
 			Config.ClueGetter.Stats_Listen_Host,
@@ -62,10 +65,12 @@ func main() {
 
 		httpControl <- 1
 		postfixPolicyControl <- 1
+		quotasControl <- 1
 		rdbmsControl <- 1
 
 		<-httpControl
 		<-postfixPolicyControl
+		<-quotasControl
 		<-rdbmsControl
 
 		if !keepRunning {

@@ -12,3 +12,7 @@ rdbms-mysql-strictmode = true
 
 [quotas]
 enabled = true
+account-sender = false
+account-recipient = false
+account-client-address = false
+account-sasl-username = true

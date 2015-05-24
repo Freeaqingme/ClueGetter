@@ -92,6 +92,10 @@ func policyGetResponseForMessage(message string) string {
 
 func policyParseMessage(message string) (map[string]string, error) {
 	policyRequest := make(map[string]string)
+	policyRequest["sender"] = ""
+	policyRequest["recipient"] = ""
+	policyRequest["client_address"] = ""
+	policyRequest["sasl_username"] = ""
 
 	lines := strings.Split(message, "\n")
 	for _, line := range lines {

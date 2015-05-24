@@ -25,7 +25,11 @@ type config struct {
 		Rdbms_Mysql_Strictmode bool
 	}
 	Quotas struct {
-		Enabled bool
+		Enabled                bool
+		Account_Sender         bool
+		Account_Recipient      bool
+		Account_Client_Address bool
+		Account_Sasl_Username  bool
 	}
 }
 
@@ -50,4 +54,8 @@ func DefaultConfig(cfg *config) {
 	cfg.ClueGetter.Rdbms_Mysql_Strictmode = true
 
 	cfg.Quotas.Enabled = false
+	cfg.Quotas.Account_Sender = true
+	cfg.Quotas.Account_Recipient = true
+	cfg.Quotas.Account_Client_Address = true
+	cfg.Quotas.Account_Sasl_Username = true
 }
