@@ -1,8 +1,8 @@
 package main
 
 import (
-	"cluegetter/postfixPolicy"
 	"cluegetter/http"
+	"cluegetter/postfix"
 	"fmt"
 	"log"
 	"os"
@@ -18,11 +18,10 @@ func main() {
 	httpControl := make(chan int)
 	postfixPolicyControl := make(chan int)
 
-
 	keepRunning := false
 	for {
 		go http.Start(httpControl)
-		go postfixPolicy.Start(postfixPolicyControl)
+		go postfix.PolicyStart(postfixPolicyControl)
 
 		s := <-ch
 		if s.String() == "hangup" {
@@ -44,5 +43,6 @@ func main() {
 		}
 	}
 
-	log.Println("Successfully ceased all operations")
+	log.Println("Successfully ceased all operations.")
+	os.Exit(0)
 }
