@@ -1,11 +1,18 @@
+// GlueGetter - Does things with mail
+//
+// Copyright 2015 Dolf Schimmel, Freeaqingme.
+//
+// This Source Code Form is subject to the terms of the two-clause BSD license.
+// For its contents, please refer to the LICENSE file.
+//
+
 /**
 * See also: http://www.postfix.org/SMTPD_POLICY_README.html
 **/
 
-package postfix
+package main
 
 import (
-	"cluegetter/module"
 	"bufio"
 	"errors"
 	"fmt"
@@ -21,15 +28,13 @@ const (
 	CONN_TYPE = "tcp"
 )
 
-func PolicyStart(c chan int) {
-	module.Foo()
-
-	l, err := net.Listen("tcp", CONN_HOST+":"+CONN_PORT)
+func PolicyStart(c chan int, listen_host string, listen_port string) {
+	l, err := net.Listen("tcp", listen_host +":"+listen_port)
 	if nil != err {
 		log.Fatalln(err)
 	}
 
-	log.Println("Now listening on " + CONN_HOST + ":" + CONN_PORT)
+	log.Println("Now listening on " + listen_host + ":" + listen_port)
 	go policyWaitForConnections(l)
 
 	<-c
