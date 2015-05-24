@@ -7,9 +7,11 @@
 //
 package main
 
-import "fmt"
+func moduleGetResponse(policyRequest map[string]string) string {
 
-func Foo() {
+	if Config.Quotas.Enabled {
+		return quotasIsAllowed(policyRequest)
+	}
 
-	fmt.Println("blaat")
+	return "dunno"
 }

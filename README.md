@@ -1,5 +1,5 @@
 # ClueGetter
-Does things with mail.
+*Does things with mail*
 
-Provides Quota and Greylisting support for Postfix
+Provides Quota and Greylisting support for Postfix.
 

@@ -22,14 +22,8 @@ import (
 	"time"
 )
 
-const (
-	CONN_HOST = "localhost"
-	CONN_PORT = "10032"
-	CONN_TYPE = "tcp"
-)
-
 func PolicyStart(c chan int, listen_host string, listen_port string) {
-	l, err := net.Listen("tcp", listen_host +":"+listen_port)
+	l, err := net.Listen("tcp", listen_host+":"+listen_port)
 	if nil != err {
 		log.Fatalln(err)
 	}
@@ -93,8 +87,7 @@ func policyGetResponseForMessage(message string) string {
 		return "dunno"
 	}
 
-	fmt.Println(policyRequest)
-	return ""
+	return moduleGetResponse(policyRequest)
 }
 
 func policyParseMessage(message string) (map[string]string, error) {

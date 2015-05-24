@@ -9,18 +9,21 @@ package main
 
 import (
 	"cluegetter/http"
-//	"cluegetter/postfix"
-	"fmt"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
+	"reflect"
+	"strconv"
 	"syscall"
+	"unsafe"
 )
 
 var Config = *new(config)
 
 func main() {
+	setProcessName("cluegetter")
 
 	configFile := flag.String("config", "", "Path to Config File")
 	flag.Parse()
@@ -29,6 +32,7 @@ func main() {
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 
 	httpControl := make(chan int)
+	rdbmsControl := make(chan int)
 	postfixPolicyControl := make(chan int)
 
 	keepRunning := false
@@ -38,11 +42,14 @@ func main() {
 			LoadConfig(*configFile, &Config)
 		}
 
+		go rdbmsStart(rdbmsControl)
+		<-rdbmsControl // Wait until connected with RDBMS
+
 		go http.Start(httpControl)
 		go PolicyStart(
-				postfixPolicyControl,
-				Config.ClueGetter.Stats_Listen_Host,
-				Config.ClueGetter.Stats_Listen_Port)
+			postfixPolicyControl,
+			Config.ClueGetter.Stats_Listen_Host,
+			Config.ClueGetter.Stats_Listen_Port)
 
 		s := <-ch
 		if s.String() == "hangup" {
@@ -55,9 +62,11 @@ func main() {
 
 		httpControl <- 1
 		postfixPolicyControl <- 1
+		rdbmsControl <- 1
 
 		<-httpControl
 		<-postfixPolicyControl
+		<-rdbmsControl
 
 		if !keepRunning {
 			break
@@ -66,4 +75,21 @@ func main() {
 
 	log.Println("Successfully ceased all operations.")
 	os.Exit(0)
+}
+
+func setProcessName(name string) error {
+	argv0str := (*reflect.StringHeader)(unsafe.Pointer(&os.Args[0]))
+	argv0 := (*[1 << 30]byte)(unsafe.Pointer(argv0str.Data))[:argv0str.Len]
+
+	paddedName := fmt.Sprintf("%-"+strconv.Itoa(len(argv0))+"s", name)
+	if len(paddedName) > len(argv0) {
+		panic("Cannot set proccess name that is longer than original argv[0]")
+	}
+
+	n := copy(argv0, paddedName)
+	if n < len(argv0) {
+		argv0[n] = 0
+	}
+
+	return nil
 }

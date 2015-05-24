@@ -14,8 +14,18 @@ import (
 
 type config struct {
 	ClueGetter struct {
-		Stats_Listen_Port string
-		Stats_Listen_Host string
+		Stats_Listen_Port      string
+		Stats_Listen_Host      string
+		Rdbms_Driver           string
+		Rdbms_User             string
+		Rdbms_Address          string
+		Rdbms_Password         string
+		Rdbms_Protocol         string
+		Rdbms_Database         string
+		Rdbms_Mysql_Strictmode bool
+	}
+	Quotas struct {
+		Enabled bool
 	}
 }
 
@@ -31,4 +41,13 @@ func LoadConfig(cfgFile string, cfg *config) {
 func DefaultConfig(cfg *config) {
 	cfg.ClueGetter.Stats_Listen_Port = "10032"
 	cfg.ClueGetter.Stats_Listen_Host = "0.0.0.0"
+	cfg.ClueGetter.Rdbms_Driver = "mysql"
+	cfg.ClueGetter.Rdbms_User = "root"
+	cfg.ClueGetter.Rdbms_Address = "localhost:3306"
+	cfg.ClueGetter.Rdbms_Password = ""
+	cfg.ClueGetter.Rdbms_Protocol = "tcp"
+	cfg.ClueGetter.Rdbms_Database = "cluegetter"
+	cfg.ClueGetter.Rdbms_Mysql_Strictmode = true
+
+	cfg.Quotas.Enabled = false
 }
