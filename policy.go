@@ -93,6 +93,7 @@ func policyGetResponseForMessage(message string) string {
 func policyParseMessage(message string) (map[string]string, error) {
 	policyRequest := make(map[string]string)
 	policyRequest["sender"] = ""
+	policyRequest["count"] = "1"
 	policyRequest["recipient"] = ""
 	policyRequest["client_address"] = ""
 	policyRequest["sasl_username"] = ""

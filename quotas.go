@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"strconv"
 )
 
 type quotasSelectResultSet struct {
@@ -23,6 +24,7 @@ type quotasSelectResultSet struct {
 }
 
 var QuoatasSelectStmt = *new(*sql.Stmt)
+var QuoataInsertTrackingStmt = *new(*sql.Stmt)
 
 func quotasStart(c chan int) {
 	stmt, err := Rdbms.Prepare(getSelectQuery())
@@ -30,6 +32,12 @@ func quotasStart(c chan int) {
 		log.Fatal(err)
 	}
 	QuoatasSelectStmt = stmt
+
+	stmt, err = Rdbms.Prepare("INSERT INTO quota_tracking (id, date,quota, count) VALUES (null, NOW(), ?, ?)")
+	if err != nil {
+		log.Fatal(err)
+	}
+	QuoataInsertTrackingStmt = stmt
 
 	log.Println(fmt.Sprintf("Quotas module started successfully"))
 	c <- 1 // Let parent know we've connected successfully
@@ -41,11 +49,21 @@ func quotasStart(c chan int) {
 
 func quotasIsAllowed(policyRequest map[string]string) string {
 	counts := quotasGetCounts(policyRequest)
+	quotas := make(map[uint64]struct{})
 
+	policy_count, _ := strconv.ParseUint(policyRequest["count"], 10, 32)
 	for _, row := range counts {
-		if row.curb >= row.count {
-			return fmt.Sprintf("REJECT Policy reject; Reached quota, max of %d messages in last %d seconds for %s",
-				row.count, row.period, row.selector)
+		quotas[row.id] = struct{}{}
+		if (row.count + uint32(policy_count) ) > row.curb {
+			return fmt.Sprintf("REJECT Policy reject; Exceeding quota, max of %d messages in last %d seconds for %s '%s'",
+				row.curb, row.period, row.selector, policyRequest[row.selector])
+		}
+	}
+
+	for quota_id, _ := range quotas {
+		_, err := QuoataInsertTrackingStmt.Exec(quota_id, policy_count)
+		if err != nil {
+			log.Fatal(err) // TODO
 		}
 	}
 
