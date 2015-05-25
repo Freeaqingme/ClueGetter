@@ -34,7 +34,7 @@ CREATE TABLE `quota` (
   KEY `profile` (`profile`),
   KEY `selector_value` (`selector`,`value`),
   CONSTRAINT `quota_ibfk_1` FOREIGN KEY (`profile`) REFERENCES `quota_profile` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=ascii;
+) ENGINE=InnoDB AUTO_INCREMENT=179 DEFAULT CHARSET=ascii;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -84,7 +84,7 @@ CREATE TABLE `quota_tracking` (
   UNIQUE KEY `id` (`id`),
   KEY `quota` (`quota`),
   CONSTRAINT `quota_tracking_ibfk_1` FOREIGN KEY (`quota`) REFERENCES `quota` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=63 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=107 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -96,4 +96,4 @@ CREATE TABLE `quota_tracking` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-05-24 23:59:19
+-- Dump completed on 2015-05-25  2:45:55

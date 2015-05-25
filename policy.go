@@ -52,42 +52,45 @@ func policyWaitForConnections(l net.Listener) {
 		}
 
 		backoffTime = backoffTime / 1.1
-		go policyHandleRequest(conn)
+		go policyHandleConnection(conn)
 	}
 }
 
-func policyHandleRequest(conn net.Conn) {
+func policyHandleConnection(conn net.Conn) {
 	defer conn.Close()
-	message := ""
-
 	scanner := bufio.NewScanner(conn)
-	for scanner.Scan() {
-		s := scanner.Text()
-		if s == "" {
-			break
+	for {
+		message := ""
+		for {
+			if ok := scanner.Scan(); !ok {
+				return; // Connection closed
+			}
+			s := scanner.Text()
+			if s == "" {
+				break
+			}
+			message = message+"\n"+s
 		}
-		message = message + "\n" + s
+
+		if err := scanner.Err(); err != nil {
+			log.Println(err)
+			return
+		}
+
+		response := policyGetResponseForMessage(strings.TrimSpace(message))
+		conn.Write([]byte(response + "\n\n"))
+		fmt.Println(response)
 	}
-
-	if err := scanner.Err(); err != nil {
-		log.Println(err)
-		return
-	}
-
-	response := policyGetResponseForMessage(strings.TrimSpace(message))
-
-	conn.Write([]byte(response + "\n"))
-	fmt.Println(response)
 }
 
 func policyGetResponseForMessage(message string) string {
 	policyRequest, err := policyParseMessage(message)
 	if err != nil {
 		log.Println(err)
-		return "dunno"
+		return "ACTION=defer_if_permit Policy Service is unavailable. Please try again or contact support"
 	}
 
-	return moduleGetResponse(policyRequest)
+	return "ACTION=" + moduleGetResponse(policyRequest)
 }
 
 func policyParseMessage(message string) (map[string]string, error) {

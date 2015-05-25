@@ -83,7 +83,7 @@ func quotasIsAllowed(policyRequest map[string]string) string {
 }
 
 func quotasGetCounts(policyRequest map[string]string) []*quotasSelectResultSet {
-	results := []*quotasSelectResultSet{}
+	factors := quotasGetFactors()
 
 	rows, err := QuoatasSelectStmt.Query(
 		policyRequest["sender"],
@@ -92,12 +92,12 @@ func quotasGetCounts(policyRequest map[string]string) []*quotasSelectResultSet {
 		policyRequest["sasl_username"],
 	)
 
-	factors := quotasGetFactors()
-
 	if err != nil {
 		log.Fatal(err) // TODO
 	}
 	defer rows.Close()
+
+	results := []*quotasSelectResultSet{}
 	for rows.Next() {
 		r := new(quotasSelectResultSet)
 		if err := rows.Scan(&r.id, &r.selector, &r.period, &r.curb, &r.count); err != nil {
