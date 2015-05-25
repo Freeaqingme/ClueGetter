@@ -16,7 +16,6 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
-	"log"
 )
 
 var Rdbms *sql.DB
@@ -28,23 +27,23 @@ func rdbmsStart(c chan int) {
 	err_msg := "Could not connect to %s. Got error: %s"
 	rdbms, err := sql.Open(Config.ClueGetter.Rdbms_Driver, dsn)
 	if err != nil {
-		log.Fatalln(fmt.Sprintf(err_msg, display_dsn, err))
+		Log.Fatal(fmt.Sprintf(err_msg, display_dsn, err))
 	}
 	Rdbms = rdbms
 
 	err = Rdbms.Ping()
 	if err != nil {
-		log.Fatalln(fmt.Sprintf(err_msg, display_dsn, err))
+		Log.Fatal(fmt.Sprintf(err_msg, display_dsn, err))
 	}
 
 	var version string
 	Rdbms.QueryRow("SELECT VERSION()").Scan(&version)
-	log.Println(fmt.Sprintf("Successfully connected to %s: %s", display_dsn, version))
+	Log.Info(fmt.Sprintf("Successfully connected to %s: %s", display_dsn, version))
 
 	c <- 1 // Let parent know we've connected successfully
 	<-c
 	Rdbms.Close()
-	log.Println(fmt.Sprintf("Discconnected from RDBMS %s", display_dsn))
+	Log.Info(fmt.Sprintf("Discconnected from RDBMS %s", display_dsn))
 	c <- 1
 }
 

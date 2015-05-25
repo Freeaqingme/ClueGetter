@@ -11,6 +11,7 @@ import (
 	"cluegetter/cluegetter/http"
 	"flag"
 	"fmt"
+	"github.com/op/go-logging"
 	"log"
 	"os"
 	"os/signal"
@@ -21,12 +22,18 @@ import (
 )
 
 var Config = *new(config)
+var Log = logging.MustGetLogger("cluegetter")
 
 func Main() {
 	setProcessName("cluegetter")
 
 	configFile := flag.String("config", "", "Path to Config File")
+	logLevel := flag.String("loglevel", "NOTICE",
+		"Log Level. One of: CRITICAL, ERROR, WARNING, NOTICE, INFO, DEBUG)")
 	flag.Parse()
+
+	initLogging(*logLevel)
+	Log.Notice("Starting ClueGetter...")
 
 	ch := make(chan os.Signal)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
@@ -59,10 +66,10 @@ func Main() {
 
 		s := <-ch
 		if s.String() == "hangup" {
-			log.Println(fmt.Sprintf("Received '%s', reloading...", s.String()))
+			Log.Notice(fmt.Sprintf("Received '%s', reloading...", s.String()))
 			keepRunning = true
 		} else {
-			log.Println(fmt.Sprintf("Received '%s', exiting...", s.String()))
+			Log.Notice(fmt.Sprintf("Received '%s', exiting...", s.String()))
 			keepRunning = false
 		}
 
@@ -83,8 +90,29 @@ func Main() {
 		}
 	}
 
-	log.Println("Successfully ceased all operations.")
+	Log.Notice("Successfully ceased all operations.")
 	os.Exit(0)
+}
+
+func initLogging(logLevelStr string) {
+	logLevel, err := logging.LogLevel(logLevelStr)
+	if err != nil {
+		log.Fatal("Invalid log level specified")
+	}
+
+	var formatStdout = logging.MustStringFormatter(
+		"%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{id:03x}%{color:reset} %{message}",
+	)
+	stdout := logging.NewLogBackend(os.Stdout, "", 0)
+	formatter := logging.NewBackendFormatter(stdout, formatStdout)
+	stdoutLeveled := logging.AddModuleLevel(formatter)
+	stdoutLeveled.SetLevel(logLevel, "")
+	syslogBackend, err := logging.NewSyslogBackend("")
+	if err != nil {
+		Log.Fatal(err)
+	}
+
+	logging.SetBackend(syslogBackend, stdoutLeveled)
 }
 
 func setProcessName(name string) error {

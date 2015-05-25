@@ -9,7 +9,6 @@ package cluegetter
 
 import (
 	"code.google.com/p/gcfg"
-	"log"
 )
 
 type config struct {
@@ -37,9 +36,8 @@ func LoadConfig(cfgFile string, cfg *config) {
 	err := gcfg.ReadFileInto(cfg, cfgFile)
 
 	if err != nil {
-		log.Fatalln("Couldnt read config file: " + err.Error())
+		Log.Fatal("Couldnt read config file: " + err.Error())
 	}
-
 }
 
 func DefaultConfig(cfg *config) {

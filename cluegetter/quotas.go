@@ -10,7 +10,6 @@ package cluegetter
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 )
@@ -30,14 +29,14 @@ var QuotaInsertDeducedQuotaStmt = *new(*sql.Stmt)
 func quotasStart(c chan int) {
 	stmt, err := Rdbms.Prepare(quotasGetSelectQuery())
 	if err != nil {
-		log.Fatal(err)
+		Log.Fatal(err)
 	}
 	QuotasSelectStmt = stmt
 
 	stmt, err = Rdbms.Prepare(
-	"INSERT INTO quota_message (quota, message) VALUES (?, ?) ON DUPLICATE KEY UPDATE message=message")
+		"INSERT INTO quota_message (quota, message) VALUES (?, ?) ON DUPLICATE KEY UPDATE message=message")
 	if err != nil {
-		log.Fatal(err)
+		Log.Fatal(err)
 	}
 	QuotaInsertQuotaMessageStmt = stmt
 
@@ -46,22 +45,21 @@ func quotasStart(c chan int) {
 								WHERE (q.selector = ? AND q.is_regex = 1 AND ? REGEXP q.value)
 								ORDER by q.id ASC`)
 	if err != nil {
-		log.Fatal(err)
+		Log.Fatal(err)
 	}
 	QuotaInsertDeducedQuotaStmt = stmt
 
-	log.Println(fmt.Sprintf("Quotas module started successfully"))
+	Log.Info("Quotas module started successfully")
 	c <- 1 // Let parent know we've connected successfully
 	<-c
 	QuotasSelectStmt.Close()
 	QuotaInsertQuotaMessageStmt.Close()
 	QuotaInsertDeducedQuotaStmt.Close()
-	log.Println(fmt.Sprintf("Quotas module ended"))
+	Log.Info("Quotas module ended")
 	c <- 1
 }
 
 func quotasIsAllowed(policyRequest map[string]string) string {
-
 
 	counts := quotasGetCounts(policyRequest)
 	quotas := make(map[uint64]struct{})
@@ -78,7 +76,7 @@ func quotasIsAllowed(policyRequest map[string]string) string {
 	for quota_id := range quotas {
 		_, err := QuotaInsertQuotaMessageStmt.Exec(quota_id, policyRequest["instance"])
 		if err != nil {
-			log.Fatal(err) // TODO
+			Log.Fatal(err) // TODO
 		}
 	}
 
@@ -97,7 +95,7 @@ func quotasGetCounts(policyRequest map[string]string) []*quotasSelectResultSet {
 	)
 
 	if err != nil {
-		log.Fatal(err) // TODO
+		Log.Fatal(err) // TODO
 	}
 	defer rows.Close()
 
@@ -105,7 +103,7 @@ func quotasGetCounts(policyRequest map[string]string) []*quotasSelectResultSet {
 	for rows.Next() {
 		r := new(quotasSelectResultSet)
 		if err := rows.Scan(&r.id, &r.selector, &r.period, &r.curb, &r.count); err != nil {
-			log.Fatal(err) // TODO
+			Log.Fatal(err) // TODO
 		}
 		results = append(results, r)
 		if _, ok := factors[r.selector]; ok {
@@ -114,7 +112,7 @@ func quotasGetCounts(policyRequest map[string]string) []*quotasSelectResultSet {
 	}
 
 	if err = rows.Err(); err != nil {
-		log.Fatal(err)
+		Log.Fatal(err)
 	}
 
 	if len(factors) > 0 {
@@ -135,11 +133,11 @@ func quotasGetRegexCounts(policyRequest map[string]string, factors map[string]st
 	for factor := range factors {
 		res, err := QuotaInsertDeducedQuotaStmt.Exec(policyRequest[factor], factor, policyRequest[factor])
 		if err != nil {
-			log.Fatal(err) // TODO
+			Log.Fatal(err) // TODO
 		}
 		rowCnt, err := res.RowsAffected()
 		if err != nil {
-			log.Fatal(err)
+			Log.Fatal(err)
 		}
 		totalRowCount = +rowCnt
 		delete(factors, factor)
@@ -166,7 +164,7 @@ func quotasGetSelectQuery() string {
 	}
 
 	if len(factors) == 0 {
-		log.Fatalln("Quotas: No factors were given to account for.")
+		Log.Fatal("Quotas: No factors were given to account for.")
 	}
 
 	sql := `
