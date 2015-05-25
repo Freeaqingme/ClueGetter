@@ -33,6 +33,7 @@ func Main() {
 
 	httpControl := make(chan int)
 	rdbmsControl := make(chan int)
+	moduleControl := make(chan int)
 	quotasControl := make(chan int)
 	postfixPolicyControl := make(chan int)
 
@@ -48,7 +49,9 @@ func Main() {
 
 		go http.Start(httpControl)
 		go quotasStart(quotasControl)
+		go moduleStart(moduleControl)
 		<-quotasControl
+		<-moduleControl
 		go PolicyStart(
 			postfixPolicyControl,
 			Config.ClueGetter.Stats_Listen_Host,
@@ -66,11 +69,13 @@ func Main() {
 		httpControl <- 1
 		postfixPolicyControl <- 1
 		quotasControl <- 1
+		moduleControl <- 1
 		rdbmsControl <- 1
 
 		<-httpControl
 		<-postfixPolicyControl
 		<-quotasControl
+		<-moduleControl
 		<-rdbmsControl
 
 		if !keepRunning {

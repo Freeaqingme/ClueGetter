@@ -23,31 +23,23 @@ type quotasSelectResultSet struct {
 	count    uint32
 }
 
-var QuoatasSelectStmt = *new(*sql.Stmt)
-var QuoataInsertQuotaMessageStmt = *new(*sql.Stmt)
-var QuoataInsertMessageStmt = *new(*sql.Stmt)
-var QuoataInsertDeducedQuotaStmt = *new(*sql.Stmt)
+var QuotasSelectStmt = *new(*sql.Stmt)
+var QuotaInsertQuotaMessageStmt = *new(*sql.Stmt)
+var QuotaInsertDeducedQuotaStmt = *new(*sql.Stmt)
 
 func quotasStart(c chan int) {
 	stmt, err := Rdbms.Prepare(quotasGetSelectQuery())
 	if err != nil {
 		log.Fatal(err)
 	}
-	QuoatasSelectStmt = stmt
+	QuotasSelectStmt = stmt
 
 	stmt, err = Rdbms.Prepare(
-		"INSERT INTO quota_message (quota, message) VALUES (?, ?) ON DUPLICATE KEY UPDATE message=message")
+	"INSERT INTO quota_message (quota, message) VALUES (?, ?) ON DUPLICATE KEY UPDATE message=message")
 	if err != nil {
 		log.Fatal(err)
 	}
-	QuoataInsertQuotaMessageStmt = stmt
-
-	stmt, err = Rdbms.Prepare(
-		"INSERT INTO message (id, date, count) VALUES (?, now(), ?) ON DUPLICATE KEY UPDATE count=?")
-	if err != nil {
-		log.Fatal(err)
-	}
-	QuoataInsertMessageStmt = stmt
+	QuotaInsertQuotaMessageStmt = stmt
 
 	stmt, err = Rdbms.Prepare(`INSERT INTO quota (selector, value, profile, instigator, date_added)
 								SELECT DISTINCT q.selector, ?, q.profile, q.id, NOW() FROM quota q
@@ -56,28 +48,20 @@ func quotasStart(c chan int) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	QuoataInsertDeducedQuotaStmt = stmt
+	QuotaInsertDeducedQuotaStmt = stmt
 
 	log.Println(fmt.Sprintf("Quotas module started successfully"))
 	c <- 1 // Let parent know we've connected successfully
 	<-c
-	QuoatasSelectStmt.Close()
-	QuoataInsertQuotaMessageStmt.Close()
-	QuoataInsertMessageStmt.Close()
-	QuoataInsertDeducedQuotaStmt.Close()
+	QuotasSelectStmt.Close()
+	QuotaInsertQuotaMessageStmt.Close()
+	QuotaInsertDeducedQuotaStmt.Close()
 	log.Println(fmt.Sprintf("Quotas module ended"))
 	c <- 1
 }
 
 func quotasIsAllowed(policyRequest map[string]string) string {
-	if _, ok := policyRequest["instance"]; !ok {
-		log.Fatal("No instance value specified") // TODO
-	}
 
-	_, err := QuoataInsertMessageStmt.Exec(policyRequest["instance"], policyRequest["count"], policyRequest["count"])
-	if err != nil {
-		log.Fatal(err) // TODO
-	}
 
 	counts := quotasGetCounts(policyRequest)
 	quotas := make(map[uint64]struct{})
@@ -91,9 +75,8 @@ func quotasIsAllowed(policyRequest map[string]string) string {
 		}
 	}
 
-	fmt.Println(quotas)
 	for quota_id := range quotas {
-		_, err := QuoataInsertQuotaMessageStmt.Exec(quota_id, policyRequest["instance"])
+		_, err := QuotaInsertQuotaMessageStmt.Exec(quota_id, policyRequest["instance"])
 		if err != nil {
 			log.Fatal(err) // TODO
 		}
@@ -105,7 +88,7 @@ func quotasIsAllowed(policyRequest map[string]string) string {
 func quotasGetCounts(policyRequest map[string]string) []*quotasSelectResultSet {
 	factors := quotasGetFactors()
 
-	rows, err := QuoatasSelectStmt.Query(
+	rows, err := QuotasSelectStmt.Query(
 		policyRequest["instance"],
 		policyRequest["sender"],
 		policyRequest["recipient"],
@@ -150,7 +133,7 @@ func quotasGetRegexCounts(policyRequest map[string]string, factors map[string]st
 
 	totalRowCount := int64(0)
 	for factor := range factors {
-		res, err := QuoataInsertDeducedQuotaStmt.Exec(policyRequest[factor], factor, policyRequest[factor])
+		res, err := QuotaInsertDeducedQuotaStmt.Exec(policyRequest[factor], factor, policyRequest[factor])
 		if err != nil {
 			log.Fatal(err) // TODO
 		}

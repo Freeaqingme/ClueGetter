@@ -26,6 +26,11 @@ CREATE TABLE `message` (
   `id` varchar(25) CHARACTER SET ascii NOT NULL,
   `date` datetime NOT NULL,
   `count` smallint(5) unsigned NOT NULL,
+  `last_protocol_state` varchar(20) NOT NULL,
+  `sender` varchar(255) NOT NULL DEFAULT '',
+  `recipient` varchar(255) NOT NULL DEFAULT '',
+  `client_address` varchar(45) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
+  `sasl_username` varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -110,4 +115,4 @@ CREATE TABLE `quota_profile_period` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-05-25 19:57:04
+-- Dump completed on 2015-05-25 22:49:47

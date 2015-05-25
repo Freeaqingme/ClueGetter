@@ -7,7 +7,49 @@
 //
 package cluegetter
 
+import (
+	"database/sql"
+	"fmt"
+	"log"
+)
+
+var ModuleInsertMessageStmt = *new(*sql.Stmt)
+
+
+func moduleStart(c chan int) {
+	stmt, err := Rdbms.Prepare(`
+		INSERT INTO message (id, date, count, last_protocol_state, sender, recipient, client_address, sasl_username)
+		VALUES (?, now(), ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY
+		UPDATE count=?, last_protocol_state=?, sender=?, recipient=?, client_address=?, sasl_username=?`)
+	if err != nil {
+		log.Fatal(err)
+	}
+	ModuleInsertMessageStmt = stmt
+
+	log.Println(fmt.Sprintf("Module Manager started successfully"))
+	c <- 1 // Let parent know we've connected successfully
+	<-c
+	ModuleInsertMessageStmt.Close()
+	log.Println(fmt.Sprintf("Module Manager ended"))
+	c <- 1
+}
+
 func moduleGetResponse(policyRequest map[string]string) string {
+	if _, ok := policyRequest["instance"]; !ok {
+		log.Fatal("No instance value specified") // TODO
+	} else if _, ok := policyRequest["protocol_state"]; !ok {
+		log.Fatal("No protocol state value specified") // TODO
+	}
+
+	_, err := ModuleInsertMessageStmt.Exec(
+		policyRequest["instance"], policyRequest["count"], policyRequest["protocol_state"],
+		policyRequest["sender"], policyRequest["recipient"], policyRequest["client_address"],policyRequest["sasl_username"],
+		policyRequest["count"], policyRequest["protocol_state"],
+		policyRequest["sender"],policyRequest["recipient"],policyRequest["clietn_address"],policyRequest["sasl_username"],
+	)
+	if err != nil {
+		log.Fatal(err) // TODO
+	}
 
 	if Config.Quotas.Enabled {
 		return quotasIsAllowed(policyRequest)
@@ -15,3 +57,4 @@ func moduleGetResponse(policyRequest map[string]string) string {
 
 	return "action=dunno"
 }
+
