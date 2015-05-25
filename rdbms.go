@@ -50,9 +50,9 @@ func rdbmsStart(c chan int) {
 
 func rdbmsGetDsn(display bool) string {
 	cfg := Config.ClueGetter
-	dsn_options := ""
+	dsn_options := "sql_notes=false"
 	if cfg.Rdbms_Mysql_Strictmode {
-		dsn_options = "strict=true"
+		dsn_options += "&strict=true"
 	}
 
 	password := cfg.Rdbms_Password

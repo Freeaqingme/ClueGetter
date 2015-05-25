@@ -11,8 +11,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"strings"
 	"strconv"
+	"strings"
 )
 
 type quotasSelectResultSet struct {
@@ -25,9 +25,10 @@ type quotasSelectResultSet struct {
 
 var QuoatasSelectStmt = *new(*sql.Stmt)
 var QuoataInsertTrackingStmt = *new(*sql.Stmt)
+var QuoataInsertDeducedQuotaStmt = *new(*sql.Stmt)
 
 func quotasStart(c chan int) {
-	stmt, err := Rdbms.Prepare(getSelectQuery())
+	stmt, err := Rdbms.Prepare(quotasGetSelectQuery())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -39,10 +40,21 @@ func quotasStart(c chan int) {
 	}
 	QuoataInsertTrackingStmt = stmt
 
+	stmt, err = Rdbms.Prepare(`INSERT INTO quota (selector, value, profile, instigator, date_added)
+								SELECT DISTINCT q.selector, ?, q.profile, q.id, NOW() FROM quota q
+								WHERE (q.selector = ? AND q.is_regex = 1 AND ? REGEXP q.value)
+								ORDER by q.id ASC`)
+	if err != nil {
+		log.Fatal(err)
+	}
+	QuoataInsertDeducedQuotaStmt = stmt
+
 	log.Println(fmt.Sprintf("Quotas module started successfully"))
 	c <- 1 // Let parent know we've connected successfully
 	<-c
-	stmt.Close()
+	QuoatasSelectStmt.Close()
+	QuoataInsertTrackingStmt.Close()
+	QuoataInsertDeducedQuotaStmt.Close()
 	log.Println(fmt.Sprintf("Quotas module ended"))
 	c <- 1
 }
@@ -54,13 +66,13 @@ func quotasIsAllowed(policyRequest map[string]string) string {
 	policy_count, _ := strconv.ParseUint(policyRequest["count"], 10, 32)
 	for _, row := range counts {
 		quotas[row.id] = struct{}{}
-		if (row.count + uint32(policy_count) ) > row.curb {
-			return fmt.Sprintf("REJECT Policy reject; Exceeding quota, max of %d messages in last %d seconds for %s '%s'",
+		if (row.count + uint32(policy_count)) > row.curb {
+			return fmt.Sprintf("REJECT Policy reject; Exceeding quota, max of %d messages per %d seconds for %s '%s'",
 				row.curb, row.period, row.selector, policyRequest[row.selector])
 		}
 	}
 
-	for quota_id, _ := range quotas {
+	for quota_id := range quotas {
 		_, err := QuoataInsertTrackingStmt.Exec(quota_id, policy_count)
 		if err != nil {
 			log.Fatal(err) // TODO
@@ -79,6 +91,9 @@ func quotasGetCounts(policyRequest map[string]string) []*quotasSelectResultSet {
 		policyRequest["client_address"],
 		policyRequest["sasl_username"],
 	)
+
+	factors := quotasGetFactors()
+
 	if err != nil {
 		log.Fatal(err) // TODO
 	}
@@ -88,39 +103,92 @@ func quotasGetCounts(policyRequest map[string]string) []*quotasSelectResultSet {
 		if err := rows.Scan(&r.id, &r.selector, &r.period, &r.curb, &r.count); err != nil {
 			log.Fatal(err) // TODO
 		}
-		fmt.Println(r)
 		results = append(results, r)
+		if _, ok := factors[r.selector]; ok {
+			delete(factors, r.selector)
+		}
 	}
+
 	if err = rows.Err(); err != nil {
 		log.Fatal(err)
+	}
+
+	if len(factors) > 0 {
+		res := quotasGetRegexCounts(policyRequest, factors)
+		if res != nil {
+			results = append(results, res...)
+		}
 	}
 
 	return results
 }
 
-func getSelectQuery() string {
+func quotasGetRegexCounts(policyRequest map[string]string, factors map[string]struct{}) []*quotasSelectResultSet {
+	// TODO?
+	// If there's multiple factors, for which one or more no regex exist, semi-infinite recursion may occur. Yolo
+
+	totalRowCount := int64(0)
+	for factor := range factors {
+		res, err := QuoataInsertDeducedQuotaStmt.Exec(policyRequest[factor], factor, policyRequest[factor])
+		if err != nil {
+			log.Fatal(err) // TODO
+		}
+		rowCnt, err := res.RowsAffected()
+		if err != nil {
+			log.Fatal(err)
+		}
+		totalRowCount = +rowCnt
+		delete(factors, factor)
+	}
+
+	if totalRowCount > 0 {
+		return quotasGetCounts(policyRequest)
+	}
+	return nil
+}
+
+func quotasGetSelectQuery() string {
 	pieces := []string{"(? IS NULL)", "(? IS NULL)", "(? IS NULL)", "(? IS NULL)"}
-	if Config.Quotas.Account_Sender {
-		pieces[0] = "(q.selector = 'sender'  AND q.value = ?)"
-	}
-	if Config.Quotas.Account_Recipient {
-		pieces[1] = "(q.selector = 'recipient' AND q.value = ?)"
-	}
-	if Config.Quotas.Account_Client_Address {
-		pieces[2] = "(q.selector = 'client_address' AND q.value = ?)"
-	}
-	if Config.Quotas.Account_Sasl_Username {
-		pieces[3] = "(q.selector = 'sasl_username' AND q.value = ?)"
+	factors := quotasGetFactors()
+	index := map[string]int{
+		"sender":         0,
+		"recipient":      1,
+		"client_address": 2,
+		"sasl_username":  3,
 	}
 
-	if len(pieces) == 0 {
-		log.Fatalln("Quotas: No variables were given to account for.")
+	for factor := range factors {
+		pieces[index[factor]] = "(q.selector = '" + factor + "'  AND q.value = ?)"
 	}
 
-	return `
+	if len(factors) == 0 {
+		log.Fatalln("Quotas: No factors were given to account for.")
+	}
+
+	sql := `
 		SELECT q.id, q.selector, pp.period, pp.curb, coalesce(sum(t.count), 0) count FROM quota q
 			LEFT JOIN quota_profile p         ON p.id = q.profile
 			LEFT JOIN quota_profile_period pp ON p.id = pp.profile
 			LEFT JOIN quota_tracking t        ON q.id = t.quota AND t.date > FROM_UNIXTIME(UNIX_TIMESTAMP() - pp.period)
 		WHERE (` + strings.Join(pieces, " OR ") + ") AND q.is_regex = 0 GROUP BY pp.id, q.id"
+	return sql
+}
+
+func quotasGetFactors() map[string]struct{} {
+	factors := make(map[string]struct{})
+
+	if Config.Quotas.Account_Sender {
+		factors["sender"] = struct{}{}
+	}
+	if Config.Quotas.Account_Recipient {
+		factors["recipient"] = struct{}{}
+	}
+	if Config.Quotas.Account_Client_Address {
+		factors["client_address"] = struct{}{}
+	}
+	if Config.Quotas.Account_Sasl_Username {
+		factors["sasl_username"] = struct{}{}
+	}
+
+	return factors
 }
