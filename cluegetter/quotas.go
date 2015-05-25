@@ -68,8 +68,13 @@ func quotasIsAllowed(policyRequest map[string]string) string {
 	for _, row := range counts {
 		quotas[row.id] = struct{}{}
 		if (row.count + uint32(policy_count)) > row.curb {
+			Log.Notice("Quota Exceeding, max of %d messages per %d seconds for %s '%s'",
+				row.curb, row.period, row.selector, policyRequest[row.selector])
 			return fmt.Sprintf("REJECT Policy reject; Exceeding quota, max of %d messages per %d seconds for %s '%s'",
 				row.curb, row.period, row.selector, policyRequest[row.selector])
+		} else {
+			Log.Info("Quota Updated, Adding %d messages to total of %d (max %d) for last %d seconds for %s '%s'",
+				policy_count, row.count, row.curb, row.period, row.selector, policyRequest[row.selector])
 		}
 	}
 
