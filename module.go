@@ -13,5 +13,5 @@ func moduleGetResponse(policyRequest map[string]string) string {
 		return quotasIsAllowed(policyRequest)
 	}
 
-	return "ACTION=dunno"
+	return "action=dunno"
 }

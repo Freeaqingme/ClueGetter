@@ -24,7 +24,8 @@ type quotasSelectResultSet struct {
 }
 
 var QuoatasSelectStmt = *new(*sql.Stmt)
-var QuoataInsertTrackingStmt = *new(*sql.Stmt)
+var QuoataInsertQuotaMessageStmt = *new(*sql.Stmt)
+var QuoataInsertMessageStmt = *new(*sql.Stmt)
 var QuoataInsertDeducedQuotaStmt = *new(*sql.Stmt)
 
 func quotasStart(c chan int) {
@@ -34,11 +35,19 @@ func quotasStart(c chan int) {
 	}
 	QuoatasSelectStmt = stmt
 
-	stmt, err = Rdbms.Prepare("INSERT INTO quota_tracking (id, date,quota, count) VALUES (null, NOW(), ?, ?)")
+	stmt, err = Rdbms.Prepare(
+		"INSERT INTO quota_message (quota, message) VALUES (?, ?) ON DUPLICATE KEY UPDATE message=message")
 	if err != nil {
 		log.Fatal(err)
 	}
-	QuoataInsertTrackingStmt = stmt
+	QuoataInsertQuotaMessageStmt = stmt
+
+	stmt, err = Rdbms.Prepare(
+		"INSERT INTO message (id, date, count) VALUES (?, now(), ?) ON DUPLICATE KEY UPDATE count=?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	QuoataInsertMessageStmt = stmt
 
 	stmt, err = Rdbms.Prepare(`INSERT INTO quota (selector, value, profile, instigator, date_added)
 								SELECT DISTINCT q.selector, ?, q.profile, q.id, NOW() FROM quota q
@@ -53,13 +62,23 @@ func quotasStart(c chan int) {
 	c <- 1 // Let parent know we've connected successfully
 	<-c
 	QuoatasSelectStmt.Close()
-	QuoataInsertTrackingStmt.Close()
+	QuoataInsertQuotaMessageStmt.Close()
+	QuoataInsertMessageStmt.Close()
 	QuoataInsertDeducedQuotaStmt.Close()
 	log.Println(fmt.Sprintf("Quotas module ended"))
 	c <- 1
 }
 
 func quotasIsAllowed(policyRequest map[string]string) string {
+	if _, ok := policyRequest["instance"]; !ok {
+		log.Fatal("No instance value specified") // TODO
+	}
+
+	_, err := QuoataInsertMessageStmt.Exec(policyRequest["instance"], policyRequest["count"], policyRequest["count"])
+	if err != nil {
+		log.Fatal(err) // TODO
+	}
+
 	counts := quotasGetCounts(policyRequest)
 	quotas := make(map[uint64]struct{})
 
@@ -72,8 +91,9 @@ func quotasIsAllowed(policyRequest map[string]string) string {
 		}
 	}
 
+	fmt.Println(quotas)
 	for quota_id := range quotas {
-		_, err := QuoataInsertTrackingStmt.Exec(quota_id, policy_count)
+		_, err := QuoataInsertQuotaMessageStmt.Exec(quota_id, policyRequest["instance"])
 		if err != nil {
 			log.Fatal(err) // TODO
 		}
@@ -86,6 +106,7 @@ func quotasGetCounts(policyRequest map[string]string) []*quotasSelectResultSet {
 	factors := quotasGetFactors()
 
 	rows, err := QuoatasSelectStmt.Query(
+		policyRequest["instance"],
 		policyRequest["sender"],
 		policyRequest["recipient"],
 		policyRequest["client_address"],
@@ -166,11 +187,12 @@ func quotasGetSelectQuery() string {
 	}
 
 	sql := `
-		SELECT q.id, q.selector, pp.period, pp.curb, coalesce(sum(t.count), 0) count FROM quota q
+		SELECT q.id, q.selector, pp.period, pp.curb, coalesce(sum(m.count), 0) count FROM quota q
 			LEFT JOIN quota_profile p         ON p.id = q.profile
 			LEFT JOIN quota_profile_period pp ON p.id = pp.profile
-			LEFT JOIN quota_tracking t        ON q.id = t.quota AND t.date > FROM_UNIXTIME(UNIX_TIMESTAMP() - pp.period)
-		WHERE (` + strings.Join(pieces, " OR ") + ") AND q.is_regex = 0 GROUP BY pp.id, q.id"
+			LEFT JOIN quota_message	qm        ON qm.quota = q.id
+			LEFT JOIN message m               ON m.id = qm.message AND m.date > FROM_UNIXTIME(UNIX_TIMESTAMP() - pp.period)
+		WHERE m.id != ? AND (` + strings.Join(pieces, " OR ") + ") AND q.is_regex = 0 GROUP BY pp.id, q.id"
 	return sql
 }
 

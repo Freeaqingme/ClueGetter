@@ -63,13 +63,13 @@ func policyHandleConnection(conn net.Conn) {
 		message := ""
 		for {
 			if ok := scanner.Scan(); !ok {
-				return; // Connection closed
+				return // Connection closed
 			}
 			s := scanner.Text()
 			if s == "" {
 				break
 			}
-			message = message+"\n"+s
+			message = message + "\n" + s
 		}
 
 		if err := scanner.Err(); err != nil {
@@ -87,10 +87,10 @@ func policyGetResponseForMessage(message string) string {
 	policyRequest, err := policyParseMessage(message)
 	if err != nil {
 		log.Println(err)
-		return "ACTION=defer_if_permit Policy Service is unavailable. Please try again or contact support"
+		return "action=defer_if_permit Policy Service is unavailable. Please try again or contact support"
 	}
 
-	return "ACTION=" + moduleGetResponse(policyRequest)
+	return "action=" + moduleGetResponse(policyRequest)
 }
 
 func policyParseMessage(message string) (map[string]string, error) {

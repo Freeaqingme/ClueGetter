@@ -14,5 +14,5 @@ rdbms-mysql-strictmode = true
 enabled = true
 account-sender = false
 account-recipient = false
-account-client-address = false
+account-client-address = true
 account-sasl-username = true

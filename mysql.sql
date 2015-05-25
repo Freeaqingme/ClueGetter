@@ -16,6 +16,21 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
+-- Table structure for table `message`
+--
+
+DROP TABLE IF EXISTS `message`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `message` (
+  `id` varchar(25) CHARACTER SET ascii NOT NULL,
+  `date` datetime NOT NULL,
+  `count` smallint(5) unsigned NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `quota`
 --
 
@@ -35,6 +50,23 @@ CREATE TABLE `quota` (
   KEY `selector_value` (`selector`,`value`),
   CONSTRAINT `quota_ibfk_1` FOREIGN KEY (`profile`) REFERENCES `quota_profile` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=179 DEFAULT CHARSET=ascii;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `quota_message`
+--
+
+DROP TABLE IF EXISTS `quota_message`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `quota_message` (
+  `quota` bigint(20) unsigned NOT NULL,
+  `message` varchar(25) CHARACTER SET ascii NOT NULL,
+  PRIMARY KEY (`quota`,`message`),
+  KEY `message` (`message`),
+  CONSTRAINT `quota_message_ibfk_1` FOREIGN KEY (`quota`) REFERENCES `quota` (`id`),
+  CONSTRAINT `quota_message_ibfk_2` FOREIGN KEY (`message`) REFERENCES `message` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -68,24 +100,6 @@ CREATE TABLE `quota_profile_period` (
   CONSTRAINT `profile_id` FOREIGN KEY (`profile`) REFERENCES `quota_profile` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `quota_tracking`
---
-
-DROP TABLE IF EXISTS `quota_tracking`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `quota_tracking` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `date` datetime NOT NULL,
-  `quota` bigint(20) unsigned NOT NULL,
-  `count` smallint(5) unsigned NOT NULL,
-  UNIQUE KEY `id` (`id`),
-  KEY `quota` (`quota`),
-  CONSTRAINT `quota_tracking_ibfk_1` FOREIGN KEY (`quota`) REFERENCES `quota` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=107 DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -96,4 +110,4 @@ CREATE TABLE `quota_tracking` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-05-25  2:45:55
+-- Dump completed on 2015-05-25 19:57:04
