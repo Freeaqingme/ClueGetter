@@ -44,7 +44,7 @@ func moduleGetResponse(policyRequest map[string]string) string {
 		policyRequest["instance"], policyRequest["count"], policyRequest["protocol_state"],
 		policyRequest["sender"], policyRequest["recipient"], policyRequest["client_address"], policyRequest["sasl_username"],
 		policyRequest["count"], policyRequest["protocol_state"],
-		policyRequest["sender"], policyRequest["recipient"], policyRequest["clietn_address"], policyRequest["sasl_username"],
+		policyRequest["sender"], policyRequest["recipient"], policyRequest["client_address"], policyRequest["sasl_username"],
 	)
 	if err != nil {
 		Log.Fatal(err) // TODO
