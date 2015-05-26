@@ -14,6 +14,7 @@ package cluegetter
 
 import (
 	"bufio"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -57,11 +58,14 @@ func policyWaitForConnections(l net.Listener) {
 
 func policyHandleConnection(conn net.Conn) {
 	defer conn.Close()
+
+	Log.Debug("Received new coonnection from %s to %s", conn.RemoteAddr().String(), conn.LocalAddr().String())
 	scanner := bufio.NewScanner(conn)
 	for {
 		message := ""
 		for {
 			if ok := scanner.Scan(); !ok {
+				Log.Debug("Lost connection from %s to %s", conn.RemoteAddr().String(), conn.LocalAddr().String())
 				return // Connection closed
 			}
 			s := scanner.Text()
@@ -72,18 +76,21 @@ func policyHandleConnection(conn net.Conn) {
 		}
 
 		if err := scanner.Err(); err != nil {
-			Log.Warning(err.Error())
+			Log.Warning("Error with connection from %s to %s: %s",
+				conn.RemoteAddr().String(), conn.LocalAddr().String())
 			return
 		}
 
-		response := policyGetResponseForMessage(strings.TrimSpace(message))
+		response := policyGetResponseForMessage(strings.TrimSpace(message), conn.RemoteAddr().String())
+		Log.Debug("Sent message from %s to %s: %s", conn.LocalAddr().String(), conn.RemoteAddr().String(), response)
 		conn.Write([]byte(response + "\n\n"))
-		fmt.Println(response)
 	}
 }
 
-func policyGetResponseForMessage(message string) string {
+func policyGetResponseForMessage(message string, remoteAddr string) string {
 	policyRequest, err := policyParseMessage(message)
+	json, _ := json.Marshal(policyRequest)
+	Log.Debug("Received new input from %s: %s", remoteAddr, json)
 	if err != nil {
 		Log.Warning(err.Error())
 		return "action=defer_if_permit Policy Service is unavailable. Please try again or contact support"
