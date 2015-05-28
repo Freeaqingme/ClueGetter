@@ -26,7 +26,7 @@ var QuotasSelectStmt = *new(*sql.Stmt)
 var QuotaInsertQuotaMessageStmt = *new(*sql.Stmt)
 var QuotaInsertDeducedQuotaStmt = *new(*sql.Stmt)
 
-func quotasStart(c chan int) {
+func quotasStart() {
 	stmt, err := Rdbms.Prepare(quotasGetSelectQuery())
 	if err != nil {
 		Log.Fatal(err)
@@ -50,13 +50,14 @@ func quotasStart(c chan int) {
 	QuotaInsertDeducedQuotaStmt = stmt
 
 	Log.Info("Quotas module started successfully")
-	c <- 1 // Let parent know we've connected successfully
-	<-c
+}
+
+func quotasStop() {
 	QuotasSelectStmt.Close()
 	QuotaInsertQuotaMessageStmt.Close()
 	QuotaInsertDeducedQuotaStmt.Close()
+
 	Log.Info("Quotas module ended")
-	c <- 1
 }
 
 func quotasIsAllowed(policyRequest map[string]string) string {

@@ -13,7 +13,7 @@ import (
 
 var ModuleInsertMessageStmt = *new(*sql.Stmt)
 
-func moduleStart(c chan int) {
+func moduleMgrStart() {
 	stmt, err := Rdbms.Prepare(`
 		INSERT INTO message (id, date, count, last_protocol_state, sender, recipient, client_address, sasl_username)
 		VALUES (?, now(), ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY
@@ -23,15 +23,19 @@ func moduleStart(c chan int) {
 	}
 	ModuleInsertMessageStmt = stmt
 
+	quotasStart()
+
 	Log.Info("Module Manager started successfully")
-	c <- 1 // Let parent know we've connected successfully
-	<-c
-	ModuleInsertMessageStmt.Close()
-	Log.Info("Module Manager ended")
-	c <- 1
 }
 
-func moduleGetResponse(policyRequest map[string]string) string {
+func moduleMgrStop() {
+	quotasStop()
+
+	ModuleInsertMessageStmt.Close()
+	Log.Info("Module Manager ended")
+}
+
+func moduleMgrGetResponse(policyRequest map[string]string) string {
 	if _, ok := policyRequest["instance"]; !ok {
 		Log.Warning("No instance value specified")
 		return ""

@@ -13,8 +13,10 @@ import (
 
 type config struct {
 	ClueGetter struct {
-		Stats_Listen_Port      string
-		Stats_Listen_Host      string
+		Stats_Http_Listen_Port string
+		Stats_Http_Listen_Host string
+		Policy_Listen_Port     string
+		Policy_Listen_Host     string
 		Rdbms_Driver           string
 		Rdbms_User             string
 		Rdbms_Address          string
@@ -41,8 +43,10 @@ func LoadConfig(cfgFile string, cfg *config) {
 }
 
 func DefaultConfig(cfg *config) {
-	cfg.ClueGetter.Stats_Listen_Port = "10032"
-	cfg.ClueGetter.Stats_Listen_Host = "0.0.0.0"
+	cfg.ClueGetter.Stats_Http_Listen_Port = "1936"
+	cfg.ClueGetter.Stats_Http_Listen_Host = "0.0.0.0"
+	cfg.ClueGetter.Policy_Listen_Port = "10032"
+	cfg.ClueGetter.Policy_Listen_Host = "0.0.0.0"
 	cfg.ClueGetter.Rdbms_Driver = "mysql"
 	cfg.ClueGetter.Rdbms_User = "root"
 	cfg.ClueGetter.Rdbms_Address = "localhost:3306"

@@ -22,7 +22,10 @@ import (
 	"time"
 )
 
-func PolicyStart(c chan int, listen_host string, listen_port string) {
+func PolicyStart(c chan struct{}) {
+	listen_host := Config.ClueGetter.Policy_Listen_Host
+	listen_port := Config.ClueGetter.Policy_Listen_Port
+
 	l, err := net.Listen("tcp", listen_host+":"+listen_port)
 	if nil != err {
 		Log.Fatal(err)
@@ -33,7 +36,7 @@ func PolicyStart(c chan int, listen_host string, listen_port string) {
 
 	<-c
 	l.Close()
-	c <- 1
+	c <- struct{}{}
 }
 
 func policyWaitForConnections(l net.Listener) {
@@ -43,12 +46,12 @@ func policyWaitForConnections(l net.Listener) {
 		conn, err := l.Accept()
 		if err != nil && backoffTime < 8000 {
 			backoffTime = (backoffTime * 1.02) + 250
-			Log.Error("Could not accept connection: %s. Backing off for %d",
-				err, backoffTime)
+			Log.Error("Could not accept connection: %s. Backing off for %d ms",
+				err, int(backoffTime))
 			time.Sleep(time.Duration(backoffTime) * time.Millisecond)
 			break
 		} else if err != nil {
-			Log.Fatal("Could not accept new connection. Backing out: %d", err)
+			Log.Fatal("Could not accept new connection. Backing out: %s", err)
 		}
 
 		backoffTime = backoffTime / 1.1
@@ -96,7 +99,7 @@ func policyGetResponseForMessage(message string, remoteAddr string) string {
 		return "action=defer_if_permit Policy Service is unavailable. Please try again or contact support"
 	}
 
-	response := moduleGetResponse(policyRequest)
+	response := moduleMgrGetResponse(policyRequest)
 	if response == "" {
 		return "action=defer_if_permit Policy Service is unavailable. Please try again or contact support"
 	}

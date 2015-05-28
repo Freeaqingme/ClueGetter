@@ -8,7 +8,7 @@
 package cluegetter
 
 import (
-	"cluegetter/cluegetter/http"
+//	"cluegetter/cluegetter/http"
 	"flag"
 	"fmt"
 	"github.com/op/go-logging"
@@ -38,43 +38,25 @@ func Main() {
 	ch := make(chan os.Signal)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 
+	postfixPolicyControl := make(chan struct{})
 
-	httpControl := make(chan int)
-	moduleControl := make(chan int)
-	quotasControl := make(chan int)
-	postfixPolicyControl := make(chan int)
-
-	defaultConfig(&Config)
+	DefaultConfig(&Config)
 	if *configFile != "" {
 		LoadConfig(*configFile, &Config)
 	}
 
 	rdbmsStart()
+	moduleMgrStart()
 
-	go http.Start(httpControl)
-	go quotasStart(quotasControl)
-	go moduleStart(moduleControl)
-	<-quotasControl
-	<-moduleControl
-	
-	go PolicyStart(
-		postfixPolicyControl,
-		Config.ClueGetter.Stats_Listen_Host,
-		Config.ClueGetter.Stats_Listen_Port)
+	go PolicyStart(postfixPolicyControl)
 
 	s := <-ch
 	Log.Notice(fmt.Sprintf("Received '%s', exiting...", s.String()))
 
-	httpControl <- 1
-	postfixPolicyControl <- 1
-	quotasControl <- 1
-	moduleControl <- 1
-
-	<-httpControl
+	postfixPolicyControl <- struct{}{}
 	<-postfixPolicyControl
-	<-quotasControl
-	<-moduleControl
 
+	moduleMgrStop()
 	rdbmsStop()
 
 	Log.Notice("Successfully ceased all operations.")
