@@ -20,7 +20,7 @@ import (
 
 var Rdbms *sql.DB
 
-func rdbmsStart(c chan int) {
+func rdbmsStart() {
 	dsn := rdbmsGetDsn(false)
 	display_dsn := rdbmsGetDsn(true)
 
@@ -40,11 +40,12 @@ func rdbmsStart(c chan int) {
 	Rdbms.QueryRow("SELECT VERSION()").Scan(&version)
 	Log.Info(fmt.Sprintf("Successfully connected to %s: %s", display_dsn, version))
 
-	c <- 1 // Let parent know we've connected successfully
-	<-c
+
+}
+
+func rdbmsStop() {
 	Rdbms.Close()
-	Log.Info(fmt.Sprintf("Discconnected from RDBMS %s", display_dsn))
-	c <- 1
+	Log.Info("Disconnected from RDBMS %s", rdbmsGetDsn(false))
 }
 
 func rdbmsGetDsn(display bool) string {

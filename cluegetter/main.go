@@ -36,59 +36,46 @@ func Main() {
 	Log.Notice("Starting ClueGetter...")
 
 	ch := make(chan os.Signal)
-	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
+
 
 	httpControl := make(chan int)
-	rdbmsControl := make(chan int)
 	moduleControl := make(chan int)
 	quotasControl := make(chan int)
 	postfixPolicyControl := make(chan int)
 
-	keepRunning := false
-	for {
-		DefaultConfig(&Config)
-		if *configFile != "" {
-			LoadConfig(*configFile, &Config)
-		}
-
-		go rdbmsStart(rdbmsControl)
-		<-rdbmsControl // Wait until connected with RDBMS
-
-		go http.Start(httpControl)
-		go quotasStart(quotasControl)
-		go moduleStart(moduleControl)
-		<-quotasControl
-		<-moduleControl
-		go PolicyStart(
-			postfixPolicyControl,
-			Config.ClueGetter.Stats_Listen_Host,
-			Config.ClueGetter.Stats_Listen_Port)
-
-		s := <-ch
-		if s.String() == "hangup" {
-			Log.Notice(fmt.Sprintf("Received '%s', reloading...", s.String()))
-			keepRunning = true
-		} else {
-			Log.Notice(fmt.Sprintf("Received '%s', exiting...", s.String()))
-			keepRunning = false
-		}
-
-		httpControl <- 1
-		postfixPolicyControl <- 1
-		quotasControl <- 1
-		moduleControl <- 1
-		rdbmsControl <- 1
-
-		<-httpControl
-		<-postfixPolicyControl
-		<-quotasControl
-		<-moduleControl
-		<-rdbmsControl
-
-		if !keepRunning {
-			break
-		}
+	defaultConfig(&Config)
+	if *configFile != "" {
+		LoadConfig(*configFile, &Config)
 	}
+
+	rdbmsStart()
+
+	go http.Start(httpControl)
+	go quotasStart(quotasControl)
+	go moduleStart(moduleControl)
+	<-quotasControl
+	<-moduleControl
+	
+	go PolicyStart(
+		postfixPolicyControl,
+		Config.ClueGetter.Stats_Listen_Host,
+		Config.ClueGetter.Stats_Listen_Port)
+
+	s := <-ch
+	Log.Notice(fmt.Sprintf("Received '%s', exiting...", s.String()))
+
+	httpControl <- 1
+	postfixPolicyControl <- 1
+	quotasControl <- 1
+	moduleControl <- 1
+
+	<-httpControl
+	<-postfixPolicyControl
+	<-quotasControl
+	<-moduleControl
+
+	rdbmsStop()
 
 	Log.Notice("Successfully ceased all operations.")
 	os.Exit(0)
