@@ -62,7 +62,10 @@ func quotasStop() {
 
 func quotasIsAllowed(policyRequest map[string]string) string {
 
-	counts := quotasGetCounts(policyRequest)
+	counts, err := quotasGetCounts(policyRequest)
+	if err != nil {
+		return ""
+	}
 	quotas := make(map[uint64]struct{})
 
 	policy_count, _ := strconv.ParseUint(policyRequest["count"], 10, 32)
@@ -80,6 +83,7 @@ func quotasIsAllowed(policyRequest map[string]string) string {
 	}
 
 	for quota_id := range quotas {
+		StatsCounters["RdbmsQueries"].increase(1)
 		_, err := QuotaInsertQuotaMessageStmt.Exec(quota_id, policyRequest["instance"])
 		if err != nil {
 			Log.Fatal(err) // TODO
@@ -89,9 +93,10 @@ func quotasIsAllowed(policyRequest map[string]string) string {
 	return "DUNNO"
 }
 
-func quotasGetCounts(policyRequest map[string]string) []*quotasSelectResultSet {
+func quotasGetCounts(policyRequest map[string]string) ([]*quotasSelectResultSet, error) {
 	factors := quotasGetFactors()
 
+	StatsCounters["RdbmsQueries"].increase(1)
 	rows, err := QuotasSelectStmt.Query(
 		policyRequest["instance"],
 		policyRequest["sender"],
@@ -100,16 +105,20 @@ func quotasGetCounts(policyRequest map[string]string) []*quotasSelectResultSet {
 		policyRequest["sasl_username"],
 	)
 
+	results := []*quotasSelectResultSet{}
 	if err != nil {
-		Log.Fatal(err) // TODO
+		StatsCounters["RdbmsErrors"].increase(1)
+		Log.Error(err.Error())
+		return results, err
 	}
 	defer rows.Close()
 
-	results := []*quotasSelectResultSet{}
 	for rows.Next() {
 		r := new(quotasSelectResultSet)
 		if err := rows.Scan(&r.id, &r.selector, &r.period, &r.curb, &r.count); err != nil {
-			Log.Fatal(err) // TODO
+			StatsCounters["RdbmsErrors"].increase(1)
+			Log.Error(err.Error())
+			return results, err
 		}
 		results = append(results, r)
 		if _, ok := factors[r.selector]; ok {
@@ -118,7 +127,9 @@ func quotasGetCounts(policyRequest map[string]string) []*quotasSelectResultSet {
 	}
 
 	if err = rows.Err(); err != nil {
-		Log.Fatal(err)
+		StatsCounters["RdbmsErrors"].increase(1)
+		Log.Error(err.Error())
+		return results, err
 	}
 
 	if len(factors) > 0 {
@@ -128,7 +139,7 @@ func quotasGetCounts(policyRequest map[string]string) []*quotasSelectResultSet {
 		}
 	}
 
-	return results
+	return results, nil
 }
 
 func quotasGetRegexCounts(policyRequest map[string]string, factors map[string]struct{}) []*quotasSelectResultSet {
@@ -137,6 +148,7 @@ func quotasGetRegexCounts(policyRequest map[string]string, factors map[string]st
 
 	totalRowCount := int64(0)
 	for factor := range factors {
+		StatsCounters["RdbmsQueries"].increase(1)
 		res, err := QuotaInsertDeducedQuotaStmt.Exec(policyRequest[factor], factor, policyRequest[factor])
 		if err != nil {
 			Log.Fatal(err) // TODO
@@ -150,7 +162,11 @@ func quotasGetRegexCounts(policyRequest map[string]string, factors map[string]st
 	}
 
 	if totalRowCount > 0 {
-		return quotasGetCounts(policyRequest)
+		counts, err := quotasGetCounts(policyRequest)
+		if err != nil {
+			return nil
+		}
+		return counts
 	}
 	return nil
 }

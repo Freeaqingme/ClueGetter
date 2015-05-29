@@ -36,11 +36,12 @@ func rdbmsStart() {
 		Log.Fatal(fmt.Sprintf(err_msg, display_dsn, err))
 	}
 
+	StatsCounters["RdbmsQueries"] = &StatsCounter{}
+	StatsCounters["RdbmsErrors"] = &StatsCounter{}
+
 	var version string
 	Rdbms.QueryRow("SELECT VERSION()").Scan(&version)
 	Log.Info(fmt.Sprintf("Successfully connected to %s: %s", display_dsn, version))
-
-
 }
 
 func rdbmsStop() {

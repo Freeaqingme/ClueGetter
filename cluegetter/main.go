@@ -8,7 +8,6 @@
 package cluegetter
 
 import (
-//	"cluegetter/cluegetter/http"
 	"flag"
 	"fmt"
 	"github.com/op/go-logging"
@@ -38,24 +37,21 @@ func Main() {
 	ch := make(chan os.Signal)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 
-	postfixPolicyControl := make(chan struct{})
-
 	DefaultConfig(&Config)
 	if *configFile != "" {
 		LoadConfig(*configFile, &Config)
 	}
 
+	statsStart()
 	rdbmsStart()
 	moduleMgrStart()
 
-	go PolicyStart(postfixPolicyControl)
+	PolicyStart()
 
 	s := <-ch
 	Log.Notice(fmt.Sprintf("Received '%s', exiting...", s.String()))
 
-	postfixPolicyControl <- struct{}{}
-	<-postfixPolicyControl
-
+	PolicyStop()
 	moduleMgrStop()
 	rdbmsStop()
 

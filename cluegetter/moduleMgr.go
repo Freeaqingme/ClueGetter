@@ -44,6 +44,7 @@ func moduleMgrGetResponse(policyRequest map[string]string) string {
 		return ""
 	}
 
+	StatsCounters["RdbmsQueries"].increase(1)
 	_, err := ModuleInsertMessageStmt.Exec(
 		policyRequest["instance"], policyRequest["count"], policyRequest["protocol_state"],
 		policyRequest["sender"], policyRequest["recipient"], policyRequest["client_address"], policyRequest["sasl_username"],
@@ -51,7 +52,8 @@ func moduleMgrGetResponse(policyRequest map[string]string) string {
 		policyRequest["sender"], policyRequest["recipient"], policyRequest["client_address"], policyRequest["sasl_username"],
 	)
 	if err != nil {
-		Log.Fatal(err) // TODO
+		StatsCounters["RdbmsErrors"].increase(1)
+		Log.Error(err.Error())
 	}
 
 	if Config.Quotas.Enabled {

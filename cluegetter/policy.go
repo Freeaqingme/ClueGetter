@@ -22,21 +22,33 @@ import (
 	"time"
 )
 
-func PolicyStart(c chan struct{}) {
+var PolicyListener net.Listener
+
+func PolicyStart() {
 	listen_host := Config.ClueGetter.Policy_Listen_Host
 	listen_port := Config.ClueGetter.Policy_Listen_Port
+
+	StatsCounters["PolicyConnections"] = &StatsCounter{ignore_prune: true}
+	StatsCounters["PolicyProtocolErrors"] = &StatsCounter{}
+	StatsCounters["PolicySocketErrors"] = &StatsCounter{}
 
 	l, err := net.Listen("tcp", listen_host+":"+listen_port)
 	if nil != err {
 		Log.Fatal(err)
 	}
 
-	Log.Notice("Now listening on " + listen_host + ":" + listen_port)
 	go policyWaitForConnections(l)
+	PolicyListener = l
+	Log.Notice("Now listening on " + listen_host + ":" + listen_port)
+}
 
-	<-c
-	l.Close()
-	c <- struct{}{}
+func PolicyStop() {
+	// These values could perhaps also be retrieved from the listener?
+	listen_host := Config.ClueGetter.Policy_Listen_Host
+	listen_port := Config.ClueGetter.Policy_Listen_Port
+
+	PolicyListener.Close()
+	Log.Notice("Policy module stopped listening on " + listen_host + ":" + listen_port)
 }
 
 func policyWaitForConnections(l net.Listener) {
@@ -45,12 +57,14 @@ func policyWaitForConnections(l net.Listener) {
 	for {
 		conn, err := l.Accept()
 		if err != nil && backoffTime < 8000 {
+			StatsCounters["PolicySocketErrors"].increase(1)
 			backoffTime = (backoffTime * 1.02) + 250
 			Log.Error("Could not accept connection: %s. Backing off for %d ms",
 				err, int(backoffTime))
 			time.Sleep(time.Duration(backoffTime) * time.Millisecond)
 			break
 		} else if err != nil {
+			StatsCounters["PolicySocketErrors"].increase(1)
 			Log.Fatal("Could not accept new connection. Backing out: %s", err)
 		}
 
@@ -61,6 +75,8 @@ func policyWaitForConnections(l net.Listener) {
 
 func policyHandleConnection(conn net.Conn) {
 	defer conn.Close()
+	StatsCounters["PolicyConnections"].increase(1)
+	defer StatsCounters["PolicyConnections"].decrease(1)
 
 	Log.Debug("Received new coonnection from %s to %s", conn.RemoteAddr().String(), conn.LocalAddr().String())
 	scanner := bufio.NewScanner(conn)
@@ -79,6 +95,7 @@ func policyHandleConnection(conn net.Conn) {
 		}
 
 		if err := scanner.Err(); err != nil {
+			StatsCounters["PolicyProtocolErrors"].increase(1)
 			Log.Warning("Error with connection from %s to %s: %s",
 				conn.RemoteAddr().String(), conn.LocalAddr().String())
 			return
@@ -95,12 +112,14 @@ func policyGetResponseForMessage(message string, remoteAddr string) string {
 	json, _ := json.Marshal(policyRequest)
 	Log.Debug("Received new input from %s: %s", remoteAddr, json)
 	if err != nil {
+		StatsCounters["PolicyProtocolErrors"].increase(1)
 		Log.Warning(err.Error())
 		return "action=defer_if_permit Policy Service is unavailable. Please try again or contact support"
 	}
 
 	response := moduleMgrGetResponse(policyRequest)
 	if response == "" {
+		StatsCounters["PolicyProtocolErrors"].increase(1)
 		return "action=defer_if_permit Policy Service is unavailable. Please try again or contact support"
 	}
 	return "action=" + response
