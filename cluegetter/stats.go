@@ -13,7 +13,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -31,7 +30,6 @@ type StatsCounter struct {
 	mu           sync.Mutex
 	dataPoints   []*statsDatapoint
 	total        int32
-	total_str    string
 	ignore_prune bool
 }
 
@@ -42,7 +40,6 @@ func (s *StatsCounter) increase(value int32) {
 	dataPoint := &statsDatapoint{time.Now().UnixNano(), value}
 	s.dataPoints = append(s.dataPoints, dataPoint)
 	s.total += value
-	s.total_str = strconv.Itoa(int(s.total))
 }
 
 func (s *StatsCounter) decrease(value int32) {
@@ -52,7 +49,6 @@ func (s *StatsCounter) decrease(value int32) {
 	dataPoint := &statsDatapoint{time.Now().UnixNano(), value}
 	s.dataPoints = append(s.dataPoints, dataPoint)
 	s.total -= value
-	s.total_str = strconv.Itoa(int(s.total))
 }
 
 func (s *StatsCounter) getTotalCounter( /* period */) int32 { //Todo: Require argument period
@@ -86,8 +82,17 @@ func (s *StatsCounter) prune(name string) {
 
 	Log.Debug("Pruned %d data points from %s, kept %d data points", pruneCount, name, keepCount)
 
-	s.total_str = strconv.Itoa(int(s.total))
 	s.dataPoints = prunedDataPoints
+}
+
+
+func statsStart() {
+
+	statsHttpStart()
+	go statsLog()
+	go statsPrune()
+
+	expvar.Publish("statscounters", expvar.Func(statsPublish))
 }
 
 func statsPublish() interface{} {
@@ -98,15 +103,6 @@ func statsPublish() interface{} {
 	}
 
 	return out
-}
-
-func statsStart() {
-
-	statsHttpStart()
-	go statsLog()
-	go statsPrune()
-
-	expvar.Publish("statscounters", expvar.Func(statsPublish))
 }
 
 func statsLog() {
