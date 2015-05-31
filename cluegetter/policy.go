@@ -117,7 +117,8 @@ func policyGetResponseForMessage(message string, remoteAddr string) string {
 		return "action=defer_if_permit Policy Service is unavailable. Please try again or contact support"
 	}
 
-	response := moduleMgrGetResponse(policyRequest)
+	response := ""
+	//	response := moduleMgrGetResponse(policyRequest) // TODO
 	if response == "" {
 		StatsCounters["PolicyProtocolErrors"].increase(1)
 		return "action=defer_if_permit Policy Service is unavailable. Please try again or contact support"

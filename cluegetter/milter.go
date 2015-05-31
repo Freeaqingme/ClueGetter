@@ -7,17 +7,12 @@
 //
 package cluegetter
 
-// Todo: What if multiple messages are sent over single connection?
-// Todo: Clean up sessions
-
 import (
-	"encoding/json"
 	"fmt"
 	m "github.com/Freeaqingme/gomilter"
 	"github.com/nu7hatch/gouuid"
 	"sync"
 	"time"
-	"strings"
 )
 
 type milter struct {
@@ -60,7 +55,7 @@ func milterStart() {
 
 	milter := new(milter)
 	milter.FilterName = "GlueGetter"
-	milter.Debug = true
+	milter.Debug = false
 	milter.Flags = m.ADDHDRS | m.ADDRCPT | m.CHGFROM | m.CHGBODY
 	milter.Socket = "inet:10033@127.0.0.1" // Todo: Should be configurable
 
@@ -126,9 +121,12 @@ func (milter *milter) EnvRcpt(ctx uintptr, rcpt []string) (sfsistat int8) {
 }
 
 func (milter *milter) Header(ctx uintptr, headerf, headerv string) (sfsistat int8) {
+	var header MessageHeader
+	header = &milterMessageHeader{headerf, headerv}
+
 	d := milterGetSession(ctx, true)
 	msg := d.getLastMessage()
-	msg.Header = append(msg.Header, &milterMessageHeader{headerf, headerv})
+	msg.Headers = append(msg.Headers, &header)
 
 	StatsCounters["MilterCallbackHeader"].increase(1)
 	Log.Debug("%s Milter.Header called: header %s = %s", d.getId(), headerf, headerv)
@@ -162,13 +160,9 @@ func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
 	d := milterGetSession(ctx, true)
 	Log.Debug("%s milter.Eom was called", d.getId())
 
+	messageGetVerdict(d.getLastMessage())
 	//	fmt.Println(m.SetReply(ctx, "521", "5.7.1", "we dont like you"))
 	//	return m.Reject
-//	jsonStr, _ := json.Marshal(d)
-//	fmt.Println(string(jsonStr))
-//	jsonStr, _ = json.Marshal(d.getLastMessage())
-//	fmt.Println(string(jsonStr))
-//	fmt.Println(strings.Join(d.getLastMessage().Body, ""))
 	return
 }
 

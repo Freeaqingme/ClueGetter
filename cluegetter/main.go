@@ -40,7 +40,8 @@ func Main() {
 
 	statsStart()
 	rdbmsStart()
-	moduleMgrStart()
+	messageStart()
+	quotasStart()
 
 	milterStart()
 	PolicyStart()
@@ -49,7 +50,7 @@ func Main() {
 	Log.Notice(fmt.Sprintf("Received '%s', exiting...", s.String()))
 
 	PolicyStop()
-	moduleMgrStop()
+	quotasStop()
 	rdbmsStop()
 
 	Log.Notice("Successfully ceased all operations.")

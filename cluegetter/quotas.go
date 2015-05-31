@@ -10,7 +10,6 @@ package cluegetter
 import (
 	"database/sql"
 	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -60,31 +59,32 @@ func quotasStop() {
 	Log.Info("Quotas module ended")
 }
 
-func quotasIsAllowed(policyRequest map[string]string) string {
+func quotasIsAllowed(msg Message) string {
 
-	counts, err := quotasGetCounts(policyRequest)
+	counts, err := quotasGetCounts(msg)
 	if err != nil {
 		return ""
 	}
 	quotas := make(map[uint64]struct{})
 
-	policy_count, _ := strconv.ParseUint(policyRequest["count"], 10, 32)
+	policy_count := msg.getRcptCount()
 	for _, row := range counts {
+		factorValue := quotasGetFactorValue(msg, row.selector)
 		quotas[row.id] = struct{}{}
 		if (row.count + uint32(policy_count)) > row.curb {
 			Log.Notice("Quota Exceeding, max of %d messages per %d seconds for %s '%s'",
-				row.curb, row.period, row.selector, policyRequest[row.selector])
+				row.curb, row.period, row.selector, factorValue)
 			return fmt.Sprintf("REJECT Policy reject; Exceeding quota, max of %d messages per %d seconds for %s '%s'",
-				row.curb, row.period, row.selector, policyRequest[row.selector])
+				row.curb, row.period, row.selector, factorValue)
 		} else {
 			Log.Info("Quota Updated, Adding %d messages to total of %d (max %d) for last %d seconds for %s '%s'",
-				policy_count, row.count, row.curb, row.period, row.selector, policyRequest[row.selector])
+				policy_count, row.count, row.curb, row.period, row.selector, factorValue)
 		}
 	}
 
 	for quota_id := range quotas {
 		StatsCounters["RdbmsQueries"].increase(1)
-		_, err := QuotaInsertQuotaMessageStmt.Exec(quota_id, policyRequest["instance"])
+		_, err := QuotaInsertQuotaMessageStmt.Exec(quota_id, msg.getQueueId())
 		if err != nil {
 			Log.Fatal(err) // TODO
 		}
@@ -93,16 +93,17 @@ func quotasIsAllowed(policyRequest map[string]string) string {
 	return "DUNNO"
 }
 
-func quotasGetCounts(policyRequest map[string]string) ([]*quotasSelectResultSet, error) {
+func quotasGetCounts(msg Message) ([]*quotasSelectResultSet, error) {
+	sess := *msg.getSession()
 	factors := quotasGetFactors()
 
 	StatsCounters["RdbmsQueries"].increase(1)
 	rows, err := QuotasSelectStmt.Query(
-		policyRequest["instance"],
-		policyRequest["sender"],
-		policyRequest["recipient"],
-		policyRequest["client_address"],
-		policyRequest["sasl_username"],
+		msg.getQueueId(),
+		msg.getFrom(),
+		"", // TODO: What to do with recipient
+		sess.getIp(),
+		sess.getSaslUsername(),
 	)
 
 	results := []*quotasSelectResultSet{}
@@ -133,7 +134,7 @@ func quotasGetCounts(policyRequest map[string]string) ([]*quotasSelectResultSet,
 	}
 
 	if len(factors) > 0 {
-		res := quotasGetRegexCounts(policyRequest, factors)
+		res := quotasGetRegexCounts(msg, factors)
 		if res != nil {
 			results = append(results, res...)
 		}
@@ -142,14 +143,16 @@ func quotasGetCounts(policyRequest map[string]string) ([]*quotasSelectResultSet,
 	return results, nil
 }
 
-func quotasGetRegexCounts(policyRequest map[string]string, factors map[string]struct{}) []*quotasSelectResultSet {
+func quotasGetRegexCounts(msg Message, factors map[string]struct{}) []*quotasSelectResultSet {
 	// TODO?
 	// If there's multiple factors, for which one or more no regex exist, semi-infinite recursion may occur. Yolo
 
 	totalRowCount := int64(0)
 	for factor := range factors {
+		factorValue := quotasGetFactorValue(msg, factor)
+
 		StatsCounters["RdbmsQueries"].increase(1)
-		res, err := QuotaInsertDeducedQuotaStmt.Exec(policyRequest[factor], factor, policyRequest[factor])
+		res, err := QuotaInsertDeducedQuotaStmt.Exec(factorValue, factor, factorValue)
 		if err != nil {
 			Log.Fatal(err) // TODO
 		}
@@ -162,7 +165,7 @@ func quotasGetRegexCounts(policyRequest map[string]string, factors map[string]st
 	}
 
 	if totalRowCount > 0 {
-		counts, err := quotasGetCounts(policyRequest)
+		counts, err := quotasGetCounts(msg)
 		if err != nil {
 			return nil
 		}
@@ -217,4 +220,23 @@ func quotasGetFactors() map[string]struct{} {
 	}
 
 	return factors
+}
+
+func quotasGetFactorValue(msg Message, factor string) string {
+	sess := *msg.getSession()
+
+	if factor == "sender" {
+		return msg.getFrom()
+	}
+	if factor == "recipient" {
+		return "" // TODO rcpt
+	}
+	if factor == "client_address" {
+		return sess.getIp()
+	}
+	if factor == "sasl_username" {
+		return sess.getSaslUsername()
+	}
+
+	panic("Do not know what to do with " + factor)
 }
