@@ -50,7 +50,9 @@ func Main() {
 	Log.Notice(fmt.Sprintf("Received '%s', exiting...", s.String()))
 
 	PolicyStop()
+	milterStop()
 	quotasStop()
+	messageStop()
 	rdbmsStop()
 
 	Log.Notice("Successfully ceased all operations.")

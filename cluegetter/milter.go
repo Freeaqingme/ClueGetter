@@ -60,12 +60,17 @@ func milterStart() {
 	milter.Socket = "inet:10033@127.0.0.1" // Todo: Should be configurable
 
 	go func() {
-		if m.Run(milter) == -1 {
+		out := m.Run(milter)
+		Log.Notice(fmt.Sprintf("Milter stopped. Exit code: %d", out))
+		if out == -1 {
 			// Todo: May just want to retry?
 			Log.Fatal("libmilter returned an error.")
 		}
 	}()
+}
 
+func milterStop() {
+	m.Stop()
 }
 
 func (milter *milter) Connect(ctx uintptr, hostname, ip string) (sfsistat int8) {

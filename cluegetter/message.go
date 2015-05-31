@@ -56,6 +56,12 @@ func messageStart() {
 	Log.Info("Message handler started successfully")
 }
 
+func messageStop() {
+	MessageInsertMsgStmt.Close()
+	Log.Info("Message handler stopped successfully")
+
+}
+
 func messageGetVerdict(msg Message) {
 	messageSave(msg)
 
