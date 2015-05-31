@@ -46,6 +46,7 @@ func Main() {
 	rdbmsStart()
 	moduleMgrStart()
 
+	milterStart()
 	PolicyStart()
 
 	s := <-ch

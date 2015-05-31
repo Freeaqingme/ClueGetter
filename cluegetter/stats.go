@@ -51,7 +51,7 @@ func (s *StatsCounter) decrease(value int32) {
 	s.total -= value
 }
 
-func (s *StatsCounter) getTotalCounter( /* period */) int32 { //Todo: Require argument period
+func (s *StatsCounter) getTotalCounter( /* period */ ) int32 { //Todo: Require argument period
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -84,7 +84,6 @@ func (s *StatsCounter) prune(name string) {
 
 	s.dataPoints = prunedDataPoints
 }
-
 
 func statsStart() {
 
