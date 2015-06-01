@@ -106,46 +106,16 @@ func quotasIsAllowed(msg Message) string {
 }
 
 func quotasGetCounts(msg Message) ([]*quotasSelectResultSet, error) {
-	sess := *msg.getSession()
-	factors := quotasGetFactors()
-	var rows *sql.Rows
-	var err error
-
-	StatsCounters["RdbmsQueries"].increase(1)
-	_, hasFactorRecipient := factors["recipient"]
-	if msg.getRcptCount() == 1 || !hasFactorRecipient {
-		rows, err = QuotasSelectStmt.Query(
-			msg.getQueueId(),
-			msg.getFrom(),
-			msg.getRecipients()[0],
-			sess.getIp(),
-			sess.getSaslUsername(),
-		)
-	} else {
-		factorValueCounts := map[string]int{
-			"recipient": msg.getRcptCount(),
-		}
-
-		query := quotasGetSelectQuery(factorValueCounts)
-		queryArgs := make([]interface{}, 4+msg.getRcptCount())
-		queryArgs[0] = interface{}(msg.getQueueId())
-		queryArgs[1] = interface{}(msg.getFrom())
-		i := 2
-		for i = i; i < msg.getRcptCount()+2; i++ {
-			queryArgs[i] = interface{}(msg.getRecipients()[i-2])
-		}
-		queryArgs[i] = interface{}(sess.getIp())
-		queryArgs[i+1] = interface{}(sess.getSaslUsername())
-
-		rows, err = Rdbms.Query(query, queryArgs...)
-	}
-
+	rows, err := quotasGetCountsRaw(msg)
 	results := []*quotasSelectResultSet{}
+	factors := quotasGetFactors()
+
 	if err != nil {
 		StatsCounters["RdbmsErrors"].increase(1)
 		Log.Error(err.Error())
 		return results, err
 	}
+
 	defer rows.Close()
 
 	for rows.Next() {
@@ -176,6 +146,40 @@ func quotasGetCounts(msg Message) ([]*quotasSelectResultSet, error) {
 	}
 
 	return results, nil
+}
+
+func quotasGetCountsRaw(msg Message) (*sql.Rows, error) {
+	sess := *msg.getSession()
+	factors := quotasGetFactors()
+
+	StatsCounters["RdbmsQueries"].increase(1)
+	_, hasFactorRecipient := factors["recipient"]
+	if msg.getRcptCount() == 1 || !hasFactorRecipient {
+		return QuotasSelectStmt.Query(
+			msg.getQueueId(),
+			msg.getFrom(),
+			msg.getRecipients()[0],
+			sess.getIp(),
+			sess.getSaslUsername(),
+		)
+	}
+
+	factorValueCounts := map[string]int{
+		"recipient": msg.getRcptCount(),
+	}
+
+	query := quotasGetSelectQuery(factorValueCounts)
+	queryArgs := make([]interface{}, 4+msg.getRcptCount())
+	queryArgs[0] = interface{}(msg.getQueueId())
+	queryArgs[1] = interface{}(msg.getFrom())
+	i := 2
+	for i = i; i < msg.getRcptCount()+2; i++ {
+		queryArgs[i] = interface{}(msg.getRecipients()[i-2])
+	}
+	queryArgs[i] = interface{}(sess.getIp())
+	queryArgs[i+1] = interface{}(sess.getSaslUsername())
+
+	return Rdbms.Query(query, queryArgs...)
 }
 
 func quotasGetRegexCounts(msg Message, factors map[string]struct{}) []*quotasSelectResultSet {
