@@ -123,6 +123,10 @@ func (m *milterMessage) getRcptCount() int {
 	return len(m.Rcpt)
 }
 
+func (m *milterMessage) getRecipients() []string {
+	return m.Rcpt
+}
+
 func (m *milterMessage) getBody() string {
 	return strings.Join(m.Body, "")
 }

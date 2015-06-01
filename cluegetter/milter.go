@@ -11,6 +11,7 @@ import (
 	"fmt"
 	m "github.com/Freeaqingme/gomilter"
 	"github.com/nu7hatch/gouuid"
+	"net"
 	"sync"
 	"time"
 )
@@ -61,22 +62,24 @@ func milterStart() {
 
 	go func() {
 		out := m.Run(milter)
-		Log.Notice(fmt.Sprintf("Milter stopped. Exit code: %d", out))
+		Log.Info(fmt.Sprintf("Milter stopped. Exit code: %d", out))
 		if out == -1 {
 			// Todo: May just want to retry?
 			Log.Fatal("libmilter returned an error.")
 		}
 	}()
+
+	Log.Info("Milter module started")
 }
 
 func milterStop() {
 	m.Stop()
 }
 
-func (milter *milter) Connect(ctx uintptr, hostname, ip string) (sfsistat int8) {
+func (milter *milter) Connect(ctx uintptr, hostname string, ip net.IP) (sfsistat int8) {
 	d := MilterDataIndex.getNewSession()
 	d.Hostname = hostname
-	d.Ip = ip
+	d.Ip = ip.String()
 	m.SetPriv(ctx, d.getId())
 
 	StatsCounters["MilterCallbackConnect"].increase(1)

@@ -14,11 +14,13 @@ import (
 )
 
 type quotasSelectResultSet struct {
-	id       uint64
-	selector string
-	period   uint32
-	curb     uint32
-	count    uint32
+	id          uint64
+	selector    string
+	factorValue string
+	period      uint32
+	curb        uint32
+	count       uint32
+	msg_count   uint32
 }
 
 var QuotasSelectStmt = *new(*sql.Stmt)
@@ -26,7 +28,7 @@ var QuotaInsertQuotaMessageStmt = *new(*sql.Stmt)
 var QuotaInsertDeducedQuotaStmt = *new(*sql.Stmt)
 
 func quotasStart() {
-	stmt, err := Rdbms.Prepare(quotasGetSelectQuery())
+	stmt, err := Rdbms.Prepare(quotasGetSelectQuery(nil))
 	if err != nil {
 		Log.Fatal(err)
 	}
@@ -60,7 +62,6 @@ func quotasStop() {
 }
 
 func quotasIsAllowed(msg Message) string {
-
 	counts, err := quotasGetCounts(msg)
 	if err != nil {
 		return ""
@@ -69,16 +70,27 @@ func quotasIsAllowed(msg Message) string {
 
 	policy_count := msg.getRcptCount()
 	for _, row := range counts {
-		factorValue := quotasGetFactorValue(msg, row.selector)
+		factorValue := row.factorValue
 		quotas[row.id] = struct{}{}
-		if (row.count + uint32(policy_count)) > row.curb {
+
+		var future_total_count uint32
+		var extra_count uint32
+		if row.selector != "recipient" {
+			future_total_count = row.count + uint32(policy_count)
+			extra_count = uint32(policy_count)
+		} else {
+			future_total_count = row.msg_count + uint32(1)
+			extra_count = uint32(1)
+		}
+
+		if future_total_count > row.curb {
 			Log.Notice("Quota Exceeding, max of %d messages per %d seconds for %s '%s'",
 				row.curb, row.period, row.selector, factorValue)
 			return fmt.Sprintf("REJECT Policy reject; Exceeding quota, max of %d messages per %d seconds for %s '%s'",
 				row.curb, row.period, row.selector, factorValue)
 		} else {
-			Log.Info("Quota Updated, Adding %d messages to total of %d (max %d) for last %d seconds for %s '%s'",
-				policy_count, row.count, row.curb, row.period, row.selector, factorValue)
+			Log.Info("Quota Updated, Adding %d message(s) to total of %d (max %d) for last %d seconds for %s '%s'",
+				extra_count, row.count, row.curb, row.period, row.selector, factorValue)
 		}
 	}
 
@@ -96,15 +108,37 @@ func quotasIsAllowed(msg Message) string {
 func quotasGetCounts(msg Message) ([]*quotasSelectResultSet, error) {
 	sess := *msg.getSession()
 	factors := quotasGetFactors()
+	var rows *sql.Rows
+	var err error
 
 	StatsCounters["RdbmsQueries"].increase(1)
-	rows, err := QuotasSelectStmt.Query(
-		msg.getQueueId(),
-		msg.getFrom(),
-		"", // TODO: What to do with recipient
-		sess.getIp(),
-		sess.getSaslUsername(),
-	)
+	_, hasFactorRecipient := factors["recipient"]
+	if msg.getRcptCount() == 1 || !hasFactorRecipient {
+		rows, err = QuotasSelectStmt.Query(
+			msg.getQueueId(),
+			msg.getFrom(),
+			msg.getRecipients()[0],
+			sess.getIp(),
+			sess.getSaslUsername(),
+		)
+	} else {
+		factorValueCounts := map[string]int{
+			"recipient": msg.getRcptCount(),
+		}
+
+		query := quotasGetSelectQuery(factorValueCounts)
+		queryArgs := make([]interface{}, 4+msg.getRcptCount())
+		queryArgs[0] = interface{}(msg.getQueueId())
+		queryArgs[1] = interface{}(msg.getFrom())
+		i := 2
+		for i = i; i < msg.getRcptCount()+2; i++ {
+			queryArgs[i] = interface{}(msg.getRecipients()[i-2])
+		}
+		queryArgs[i] = interface{}(sess.getIp())
+		queryArgs[i+1] = interface{}(sess.getSaslUsername())
+
+		rows, err = Rdbms.Query(query, queryArgs...)
+	}
 
 	results := []*quotasSelectResultSet{}
 	if err != nil {
@@ -116,7 +150,8 @@ func quotasGetCounts(msg Message) ([]*quotasSelectResultSet, error) {
 
 	for rows.Next() {
 		r := new(quotasSelectResultSet)
-		if err := rows.Scan(&r.id, &r.selector, &r.period, &r.curb, &r.count); err != nil {
+		if err := rows.Scan(&r.id, &r.selector, &r.factorValue, &r.period,
+			&r.curb, &r.count, &r.msg_count); err != nil {
 			StatsCounters["RdbmsErrors"].increase(1)
 			Log.Error(err.Error())
 			return results, err
@@ -147,6 +182,7 @@ func quotasGetRegexCounts(msg Message, factors map[string]struct{}) []*quotasSel
 	// TODO?
 	// If there's multiple factors, for which one or more no regex exist, semi-infinite recursion may occur. Yolo
 
+	// Todo: Test this, especially in relation to (multiple) recipients
 	totalRowCount := int64(0)
 	for factor := range factors {
 		factorValue := quotasGetFactorValue(msg, factor)
@@ -174,7 +210,7 @@ func quotasGetRegexCounts(msg Message, factors map[string]struct{}) []*quotasSel
 	return nil
 }
 
-func quotasGetSelectQuery() string {
+func quotasGetSelectQuery(factorValueCount map[string]int) string {
 	pieces := []string{"(? IS NULL)", "(? IS NULL)", "(? IS NULL)", "(? IS NULL)"}
 	factors := quotasGetFactors()
 	index := map[string]int{
@@ -185,7 +221,12 @@ func quotasGetSelectQuery() string {
 	}
 
 	for factor := range factors {
-		pieces[index[factor]] = "(q.selector = '" + factor + "'  AND q.value = ?)"
+		if factorValueCount != nil && factorValueCount[factor] > 1 {
+			pieces[index[factor]] = `(q.selector = '` + factor + `'  AND q.value IN
+				(?` + strings.Repeat(",?", factorValueCount[factor]-1) + `))`
+		} else {
+			pieces[index[factor]] = "(q.selector = '" + factor + "'  AND q.value = ?)"
+		}
 	}
 
 	if len(factors) == 0 {
@@ -193,7 +234,8 @@ func quotasGetSelectQuery() string {
 	}
 
 	sql := `
-		SELECT q.id, q.selector, pp.period, pp.curb, coalesce(sum(m.count), 0) count
+		SELECT q.id, q.selector, q.value factorValue, pp.period, pp.curb,
+			coalesce(sum(m.count), 0) count, coalesce(count(m.count), 0) msg_count
 		FROM quota q
 			LEFT JOIN quota_profile p         ON p.id = q.profile
 			LEFT JOIN quota_profile_period pp ON p.id = pp.profile

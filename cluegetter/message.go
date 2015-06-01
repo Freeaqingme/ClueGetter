@@ -33,6 +33,7 @@ type Message interface {
 	getQueueId() string
 	getFrom() string
 	getRcptCount() int
+	getRecipients() []string
 	getBody() string
 }
 
@@ -59,7 +60,6 @@ func messageStart() {
 func messageStop() {
 	MessageInsertMsgStmt.Close()
 	Log.Info("Message handler stopped successfully")
-
 }
 
 func messageGetVerdict(msg Message) {
