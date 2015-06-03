@@ -62,13 +62,13 @@ func quotasStop() {
 }
 
 func quotasIsAllowed(msg Message) string {
-	counts, err := quotasGetCounts(msg)
+	counts, err := quotasGetCounts(msg, true)
 	if err != nil {
 		return ""
 	}
 	quotas := make(map[uint64]struct{})
 
-	policy_count := msg.getRcptCount()
+	rcpt_count := msg.getRcptCount()
 	for _, row := range counts {
 		factorValue := row.factorValue
 		quotas[row.id] = struct{}{}
@@ -76,8 +76,8 @@ func quotasIsAllowed(msg Message) string {
 		var future_total_count uint32
 		var extra_count uint32
 		if row.selector != "recipient" {
-			future_total_count = row.count + uint32(policy_count)
-			extra_count = uint32(policy_count)
+			future_total_count = row.count + uint32(rcpt_count)
+			extra_count = uint32(rcpt_count)
 		} else {
 			future_total_count = row.msg_count + uint32(1)
 			extra_count = uint32(1)
@@ -105,18 +105,18 @@ func quotasIsAllowed(msg Message) string {
 	return "DUNNO"
 }
 
-func quotasGetCounts(msg Message) ([]*quotasSelectResultSet, error) {
+func quotasGetCounts(msg Message, applyRegexes bool) ([]*quotasSelectResultSet, error) {
 	rows, err := quotasGetCountsRaw(msg)
-	results := []*quotasSelectResultSet{}
-	factors := quotasGetFactors()
+	defer rows.Close()
 
+	results := []*quotasSelectResultSet{}
 	if err != nil {
 		StatsCounters["RdbmsErrors"].increase(1)
 		Log.Error(err.Error())
 		return results, err
 	}
 
-	defer rows.Close()
+	factors := quotasGetMsgFactors(msg)
 
 	for rows.Next() {
 		r := new(quotasSelectResultSet)
@@ -126,10 +126,13 @@ func quotasGetCounts(msg Message) ([]*quotasSelectResultSet, error) {
 			Log.Error(err.Error())
 			return results, err
 		}
-		results = append(results, r)
-		if _, ok := factors[r.selector]; ok {
-			delete(factors, r.selector)
+
+		for factorValueKey, factorValue := range factors[r.selector] {
+			if factorValue == r.factorValue {
+				factors[r.selector][factorValueKey] = ""
+			}
 		}
+		results = append(results, r)
 	}
 
 	if err = rows.Err(); err != nil {
@@ -138,8 +141,12 @@ func quotasGetCounts(msg Message) ([]*quotasSelectResultSet, error) {
 		return results, err
 	}
 
-	if len(factors) > 0 {
-		res := quotasGetRegexCounts(msg, factors)
+	if !applyRegexes {
+		return results, nil
+	}
+
+	for factorKey, factorValues := range factors {
+		res := quotasGetRegexCounts(msg, factorKey, factorValues)
 		if res != nil {
 			results = append(results, res...)
 		}
@@ -150,7 +157,7 @@ func quotasGetCounts(msg Message) ([]*quotasSelectResultSet, error) {
 
 func quotasGetCountsRaw(msg Message) (*sql.Rows, error) {
 	sess := *msg.getSession()
-	factors := quotasGetFactors()
+	factors := quotasGetMsgFactors(msg)
 
 	StatsCounters["RdbmsQueries"].increase(1)
 	_, hasFactorRecipient := factors["recipient"]
@@ -182,14 +189,13 @@ func quotasGetCountsRaw(msg Message) (*sql.Rows, error) {
 	return Rdbms.Query(query, queryArgs...)
 }
 
-func quotasGetRegexCounts(msg Message, factors map[string]struct{}) []*quotasSelectResultSet {
-	// TODO?
-	// If there's multiple factors, for which one or more no regex exist, semi-infinite recursion may occur. Yolo
+func quotasGetRegexCounts(msg Message, factor string, factorValues []string) []*quotasSelectResultSet {
 
-	// Todo: Test this, especially in relation to (multiple) recipients
 	totalRowCount := int64(0)
-	for factor := range factors {
-		factorValue := quotasGetFactorValue(msg, factor)
+	for _, factorValue := range factorValues {
+		if factorValue == "" {
+			continue
+		}
 
 		StatsCounters["RdbmsQueries"].increase(1)
 		res, err := QuotaInsertDeducedQuotaStmt.Exec(factorValue, factor, factorValue)
@@ -201,11 +207,10 @@ func quotasGetRegexCounts(msg Message, factors map[string]struct{}) []*quotasSel
 			Log.Fatal(err)
 		}
 		totalRowCount = +rowCnt
-		delete(factors, factor)
 	}
 
 	if totalRowCount > 0 {
-		counts, err := quotasGetCounts(msg)
+		counts, err := quotasGetCounts(msg, false)
 		if err != nil {
 			return nil
 		}
@@ -268,21 +273,22 @@ func quotasGetFactors() map[string]struct{} {
 	return factors
 }
 
-func quotasGetFactorValue(msg Message, factor string) string {
+func quotasGetMsgFactors(msg Message) map[string][]string {
 	sess := *msg.getSession()
+	factors := make(map[string][]string)
 
-	if factor == "sender" {
-		return msg.getFrom()
+	if Config.Quotas.Account_Sender {
+		factors["sender"] = []string{msg.getFrom()}
 	}
-	if factor == "recipient" {
-		return "" // TODO rcpt
+	if Config.Quotas.Account_Recipient {
+		factors["recipient"] = msg.getRecipients()
 	}
-	if factor == "client_address" {
-		return sess.getIp()
+	if Config.Quotas.Account_Client_Address {
+		factors["client_address"] = []string{sess.getIp()}
 	}
-	if factor == "sasl_username" {
-		return sess.getSaslUsername()
+	if Config.Quotas.Account_Sasl_Username {
+		factors["sasl_username"] = []string{sess.getSaslUsername()}
 	}
 
-	panic("Do not know what to do with " + factor)
+	return factors
 }
