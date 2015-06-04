@@ -52,7 +52,7 @@ func milterStart() {
 	StatsCounters["MilterCallbackEnvFrom"] = &StatsCounter{}
 	StatsCounters["MilterCallbackEnvRcpt"] = &StatsCounter{}
 	StatsCounters["MilterCallbackHeader"] = &StatsCounter{}
-	StatsCounters["MilterCallbackEnvFromErrors"] = &StatsCounter{}
+	StatsCounters["MilterProtocolErrors"] = &StatsCounter{}
 
 	milter := new(milter)
 	milter.FilterName = "GlueGetter"
@@ -90,15 +90,23 @@ func (milter *milter) Connect(ctx uintptr, hostname string, ip net.IP) (sfsistat
 
 func (milter *milter) Helo(ctx uintptr, helo string) (sfsistat int8) {
 	d := milterGetSession(ctx, true)
+	if d == nil { // This just doesn't seem to be supported by libmilter :(
+		StatsCounters["MilterProtocolErrors"].increase(1)
+		m.SetReply(ctx, "421", "4.7.0", "HELO/EHLO can only be specified at start of session")
+		Log.Info("Received HELO/EHLO midway conversation. status=Tempfail rcode=421 xcode=4.7.0 ip=%s",
+			m.GetSymVal(ctx, "{client_addr}"))
+		return m.Tempfail
+	}
+
+	StatsCounters["MilterCallbackHelo"].increase(1)
+	Log.Debug("%s Milter.Helo called: helo = %s", d.getId(), helo)
+
 	d.Helo = helo
 	d.CertIssuer = m.GetSymVal(ctx, "{cert_issuer}")
 	d.CertSubject = m.GetSymVal(ctx, "{cert_subject}")
 	d.CipherBits = m.GetSymVal(ctx, "{cipher_bits}")
 	d.Cipher = m.GetSymVal(ctx, "{cipher}")
 	d.TlsVersion = m.GetSymVal(ctx, "{tls_version}")
-
-	StatsCounters["MilterCallbackHelo"].increase(1)
-	Log.Debug("%s Milter.Helo called: helo = %s", d.getId(), helo)
 
 	return
 }
@@ -111,7 +119,7 @@ func (milter *milter) EnvFrom(ctx uintptr, from []string) (sfsistat int8) {
 	Log.Debug("%s Milter.EnvFrom called: from = %s", d.getId(), from[0])
 
 	if len(from) != 1 {
-		StatsCounters["MilterCallbackEnvFromErrors"].increase(1)
+		StatsCounters["MilterProtocolErrors"].increase(1)
 		Log.Critical("%s Milter.EnvFrom callback received %d elements: %s", d.getId(), len(from), fmt.Sprint(from))
 	}
 	msg.From = from[0]
