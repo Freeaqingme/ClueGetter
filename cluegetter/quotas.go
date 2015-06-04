@@ -242,7 +242,7 @@ func quotasGetSelectQuery(factorValueCount map[string]int) string {
 		Log.Fatal("Quotas: No factors were given to account for.")
 	}
 
-	sql := `
+	sql := fmt.Sprintf(`
 		SELECT q.id, q.selector, q.value factorValue, pp.period, pp.curb,
 			coalesce(sum(m.count), 0) count, coalesce(count(m.count), 0) msg_count
 		FROM quota q
@@ -250,7 +250,8 @@ func quotasGetSelectQuery(factorValueCount map[string]int) string {
 			LEFT JOIN quota_profile_period pp ON p.id = pp.profile
 			LEFT JOIN quota_message	qm        ON qm.quota = q.id AND qm.message != ?
 			LEFT JOIN message m               ON m.id = qm.message AND m.date > FROM_UNIXTIME(UNIX_TIMESTAMP() - pp.period)
-		WHERE (` + strings.Join(pieces, " OR ") + ") AND q.is_regex = 0 GROUP BY pp.id, q.id"
+		WHERE (`+strings.Join(pieces, " OR ")+`) AND q.is_regex = 0 AND p.cluegetter_instance = %d
+			GROUP BY pp.id, q.id`, instance)
 	return sql
 }
 

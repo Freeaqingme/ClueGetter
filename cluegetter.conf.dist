@@ -10,9 +10,11 @@ rdbms-address          = localhost:3306
 rdbms-database         = cluegetter
 rdbms-mysql-strictmode = true
 
+instance               = default
+
 [quotas]
 enabled = true
 account-sender = false
-account-recipient = false
+account-recipient = true
 account-client-address = true
 account-sasl-username = true

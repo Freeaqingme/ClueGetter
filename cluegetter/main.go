@@ -19,6 +19,7 @@ import (
 
 var Config = *new(config)
 var Log = logging.MustGetLogger("cluegetter")
+var instance uint
 
 func Main() {
 
@@ -40,16 +41,15 @@ func Main() {
 
 	statsStart()
 	rdbmsStart()
+	setInstance()
+
 	messageStart()
 	quotasStart()
-
 	milterStart()
-	PolicyStart()
 
 	s := <-ch
 	Log.Notice(fmt.Sprintf("Received '%s', exiting...", s.String()))
 
-	PolicyStop()
 	milterStop()
 	quotasStop()
 	messageStop()
@@ -78,4 +78,18 @@ func initLogging(logLevelStr string) {
 	}
 
 	logging.SetBackend(syslogBackend, stdoutLeveled)
+}
+
+func setInstance() {
+	if Config.ClueGetter.Instance == "" {
+		Log.Fatal("No instance was set")
+	}
+
+	err := Rdbms.QueryRow("SELECT id from instance WHERE name = ?", Config.ClueGetter.Instance).Scan(&instance)
+	if err != nil {
+		Log.Fatal(fmt.Sprintf("Could not retrieve instance '%s' from database: %s",
+			Config.ClueGetter.Instance, err))
+	}
+
+	Log.Notice("Instance name: %s. Id: %d", Config.ClueGetter.Instance, instance)
 }

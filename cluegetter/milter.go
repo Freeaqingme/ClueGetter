@@ -44,9 +44,6 @@ var MilterDataIndex milterDataIndex
 func milterStart() {
 	MilterDataIndex = milterDataIndex{sessions: make(map[string]*milterSession)}
 
-	//	m.LoggerPrintln = milterLog
-	//	m.LoggerPrintf = Log.Debug
-
 	StatsCounters["MilterCallbackConnect"] = &StatsCounter{}
 	StatsCounters["MilterCallbackHelo"] = &StatsCounter{}
 	StatsCounters["MilterCallbackEnvFrom"] = &StatsCounter{}

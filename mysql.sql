@@ -16,6 +16,21 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
+-- Table structure for table `instance`
+--
+
+DROP TABLE IF EXISTS `instance`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `instance` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(20) DEFAULT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  UNIQUE KEY `id` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `message`
 --
 
@@ -24,6 +39,7 @@ DROP TABLE IF EXISTS `message`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `message` (
   `id` varchar(25) CHARACTER SET ascii NOT NULL,
+  `cluegetter_instance` bigint(20) unsigned NOT NULL,
   `date` datetime NOT NULL,
   `count` smallint(5) unsigned NOT NULL,
   `last_protocol_state` varchar(20) NOT NULL,
@@ -31,7 +47,9 @@ CREATE TABLE `message` (
   `recipient` varchar(255) NOT NULL DEFAULT '',
   `client_address` varchar(45) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
   `sasl_username` varchar(255) NOT NULL DEFAULT '',
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `cluegetter_instance` (`cluegetter_instance`),
+  CONSTRAINT `message_ibfk_1` FOREIGN KEY (`cluegetter_instance`) REFERENCES `instance` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -54,7 +72,7 @@ CREATE TABLE `quota` (
   KEY `profile` (`profile`),
   KEY `selector_value` (`selector`,`value`),
   CONSTRAINT `quota_ibfk_1` FOREIGN KEY (`profile`) REFERENCES `quota_profile` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=179 DEFAULT CHARSET=ascii;
+) ENGINE=InnoDB AUTO_INCREMENT=189 DEFAULT CHARSET=ascii;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -83,8 +101,11 @@ DROP TABLE IF EXISTS `quota_profile`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `quota_profile` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `cluegetter_instance` bigint(20) unsigned NOT NULL,
   `name` varchar(32) NOT NULL,
-  UNIQUE KEY `id` (`id`)
+  UNIQUE KEY `id` (`id`),
+  KEY `cluegetter_instance` (`cluegetter_instance`),
+  CONSTRAINT `quota_profile_ibfk_1` FOREIGN KEY (`cluegetter_instance`) REFERENCES `instance` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -115,4 +136,4 @@ CREATE TABLE `quota_profile_period` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-05-25 22:49:47
+-- Dump completed on 2015-06-04 23:43:19

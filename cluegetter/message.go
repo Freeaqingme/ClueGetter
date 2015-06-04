@@ -46,8 +46,9 @@ var MessageInsertMsgStmt = *new(*sql.Stmt)
 
 func messageStart() {
 	stmt, err := Rdbms.Prepare(`
-		INSERT INTO message (id, date, count, last_protocol_state, sender, recipient, client_address, sasl_username)
-		VALUES (?, now(), ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY
+		INSERT INTO message (id, cluegetter_instance, date, count, last_protocol_state,
+							sender, recipient, client_address, sasl_username)
+		VALUES (?, ?, now(), ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY
 		UPDATE count=?, last_protocol_state=?, sender=?, recipient=?, client_address=?, sasl_username=?`)
 	if err != nil {
 		Log.Fatal(err)
@@ -76,7 +77,8 @@ func messageSave(msg Message) {
 
 	StatsCounters["RdbmsQueries"].increase(1)
 	_, err := MessageInsertMsgStmt.Exec(
-		msg.getQueueId(), // Can a message never have NOQUEUE?!
+		msg.getQueueId(), //TODO: Can a message never have NOQUEUE?!
+		instance,
 		msg.getRcptCount(),
 		"REMOVEME", // PROTOCOL STATE
 		msg.getFrom(),

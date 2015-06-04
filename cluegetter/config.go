@@ -13,6 +13,7 @@ import (
 
 type config struct {
 	ClueGetter struct {
+		Instance               string
 		Stats_Http_Listen_Port string
 		Stats_Http_Listen_Host string
 		Policy_Listen_Port     string
@@ -43,6 +44,7 @@ func LoadConfig(cfgFile string, cfg *config) {
 }
 
 func DefaultConfig(cfg *config) {
+	cfg.ClueGetter.Instance = "default"
 	cfg.ClueGetter.Stats_Http_Listen_Port = "1936"
 	cfg.ClueGetter.Stats_Http_Listen_Host = "0.0.0.0"
 	cfg.ClueGetter.Policy_Listen_Port = "10032"
