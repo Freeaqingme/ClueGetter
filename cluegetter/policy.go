@@ -25,6 +25,13 @@ import (
 var PolicyListener net.Listener
 
 func PolicyStart() {
+	// ClueGetter initially started off as a policy daemon. However, shortly
+	// after it was decided to change it into a milter daemon instead. As such
+	// this code is currenlty not used.
+	// It is left in place though because in the future, we may provide both
+	// milter and policy support (where either one can be used).
+	return
+
 	listen_host := Config.ClueGetter.Policy_Listen_Host
 	listen_port := Config.ClueGetter.Policy_Listen_Port
 
@@ -43,6 +50,8 @@ func PolicyStart() {
 }
 
 func PolicyStop() {
+	return
+
 	// These values could perhaps also be retrieved from the listener?
 	listen_host := Config.ClueGetter.Policy_Listen_Host
 	listen_port := Config.ClueGetter.Policy_Listen_Port
