@@ -24,7 +24,7 @@ DROP TABLE IF EXISTS `instance`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `instance` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(20) DEFAULT NULL,
+  `name` varchar(20) CHARACTER SET ascii NOT NULL,
   `description` varchar(255) DEFAULT NULL,
   UNIQUE KEY `id` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
@@ -39,17 +39,14 @@ DROP TABLE IF EXISTS `message`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `message` (
   `id` varchar(25) CHARACTER SET ascii NOT NULL,
-  `cluegetter_instance` bigint(20) unsigned NOT NULL,
+  `session` bigint(20) unsigned NOT NULL,
   `date` datetime NOT NULL,
-  `count` smallint(5) unsigned NOT NULL,
-  `last_protocol_state` varchar(20) NOT NULL,
   `sender` varchar(255) NOT NULL DEFAULT '',
   `recipient` varchar(255) NOT NULL DEFAULT '',
-  `client_address` varchar(45) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
-  `sasl_username` varchar(255) NOT NULL DEFAULT '',
+  `rcpt_count` int(10) unsigned NOT NULL DEFAULT '1',
   PRIMARY KEY (`id`),
-  KEY `cluegetter_instance` (`cluegetter_instance`),
-  CONSTRAINT `message_ibfk_1` FOREIGN KEY (`cluegetter_instance`) REFERENCES `instance` (`id`)
+  KEY `session` (`session`),
+  CONSTRAINT `message_ibfk_1` FOREIGN KEY (`session`) REFERENCES `session` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -126,6 +123,26 @@ CREATE TABLE `quota_profile_period` (
   CONSTRAINT `profile_id` FOREIGN KEY (`profile`) REFERENCES `quota_profile` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `session`
+--
+
+DROP TABLE IF EXISTS `session`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `session` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `cluegetter_instance` bigint(20) unsigned NOT NULL,
+  `date_connect` datetime NOT NULL,
+  `date_disconnect` datetime DEFAULT NULL,
+  `ip` varchar(45) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
+  `sasl_username` varchar(255) NOT NULL DEFAULT '',
+  UNIQUE KEY `id` (`id`),
+  KEY `cluegetter_instance` (`cluegetter_instance`),
+  CONSTRAINT `session_ibfk_1` FOREIGN KEY (`cluegetter_instance`) REFERENCES `instance` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -136,4 +153,4 @@ CREATE TABLE `quota_profile_period` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-06-04 23:43:19
+-- Dump completed on 2015-06-05  2:46:41

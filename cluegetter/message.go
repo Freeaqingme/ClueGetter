@@ -10,9 +10,11 @@ package cluegetter
 import (
 	"database/sql"
 	"fmt"
+	"time"
 )
 
 type Session interface {
+	getId() uint64
 	getSaslUsername() string
 	getSaslSender() string
 	getSaslMethod() string
@@ -46,10 +48,9 @@ var MessageInsertMsgStmt = *new(*sql.Stmt)
 
 func messageStart() {
 	stmt, err := Rdbms.Prepare(`
-		INSERT INTO message (id, cluegetter_instance, date, count, last_protocol_state,
-							sender, recipient, client_address, sasl_username)
-		VALUES (?, ?, now(), ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY
-		UPDATE count=?, last_protocol_state=?, sender=?, recipient=?, client_address=?, sasl_username=?`)
+		INSERT INTO message (id, session, date, sender, recipient)
+		VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY
+		UPDATE sender=?, recipient=?`)
 	if err != nil {
 		Log.Fatal(err)
 	}
@@ -77,20 +78,13 @@ func messageSave(msg Message) {
 
 	StatsCounters["RdbmsQueries"].increase(1)
 	_, err := MessageInsertMsgStmt.Exec(
-		msg.getQueueId(), //TODO: Can a message never have NOQUEUE?!
-		instance,
-		msg.getRcptCount(),
-		"REMOVEME", // PROTOCOL STATE
+		msg.getQueueId(),
+		sess.getId(),
+		time.Now(),
 		msg.getFrom(),
-		"", // Recipient
-		sess.getIp(),
-		sess.getSaslUsername(),
-		msg.getRcptCount(),
-		"", // PROTOCOL STATE
+		"recipient", // TODO
 		msg.getFrom(),
-		"", // Rcpt
-		sess.getIp(),
-		sess.getSaslUsername(),
+		"recipient", // TODO
 	)
 
 	if err != nil {

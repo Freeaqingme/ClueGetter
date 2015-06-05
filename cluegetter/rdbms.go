@@ -15,7 +15,7 @@ package cluegetter
 import (
 	"database/sql"
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/Freeaqingme/golang-sql-driver-mysql"
 )
 
 var Rdbms *sql.DB

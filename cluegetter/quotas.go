@@ -244,7 +244,7 @@ func quotasGetSelectQuery(factorValueCount map[string]int) string {
 
 	sql := fmt.Sprintf(`
 		SELECT q.id, q.selector, q.value factorValue, pp.period, pp.curb,
-			coalesce(sum(m.count), 0) count, coalesce(count(m.count), 0) msg_count
+			coalesce(sum(m.rcpt_count), 0) count, coalesce(count(m.rcpt_count), 0) msg_count
 		FROM quota q
 			LEFT JOIN quota_profile p         ON p.id = q.profile
 			LEFT JOIN quota_profile_period pp ON p.id = pp.profile

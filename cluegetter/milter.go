@@ -10,7 +10,6 @@ package cluegetter
 import (
 	"fmt"
 	m "github.com/Freeaqingme/gomilter"
-	"github.com/nu7hatch/gouuid"
 	"net"
 	"sync"
 	"time"
@@ -21,28 +20,24 @@ type milter struct {
 }
 
 type milterDataIndex struct {
-	sessions map[string]*milterSession
+	sessions map[uint64]*milterSession
 	mu       sync.RWMutex
 }
 
 func (di *milterDataIndex) getNewSession() *milterSession {
-	u, err := uuid.NewV4()
-	if err != nil {
-		panic(fmt.Sprintf("Could not generate UUID. Lack of entropy? Error: %s"))
-	}
-
 	di.mu.Lock()
 	defer di.mu.Unlock()
 
-	data := &milterSession{id: u.String(), timeStart: time.Now()}
-	di.sessions[u.String()] = data
-	return data
+	sess := &milterSession{timeStart: time.Now()}
+	sess.persist()
+	di.sessions[sess.getId()] = sess
+	return sess
 }
 
 var MilterDataIndex milterDataIndex
 
 func milterStart() {
-	MilterDataIndex = milterDataIndex{sessions: make(map[string]*milterSession)}
+	MilterDataIndex = milterDataIndex{sessions: make(map[uint64]*milterSession)}
 
 	StatsCounters["MilterCallbackConnect"] = &StatsCounter{}
 	StatsCounters["MilterCallbackHelo"] = &StatsCounter{}
@@ -74,20 +69,21 @@ func milterStop() {
 }
 
 func (milter *milter) Connect(ctx uintptr, hostname string, ip net.IP) (sfsistat int8) {
-	d := MilterDataIndex.getNewSession()
-	d.Hostname = hostname
-	d.Ip = ip.String()
-	m.SetPriv(ctx, d.getId())
+	sess := MilterDataIndex.getNewSession()
+	sess.Hostname = hostname
+	sess.Ip = ip.String()
+	sess.persist()
+	m.SetPriv(ctx, sess.getId())
 
 	StatsCounters["MilterCallbackConnect"].increase(1)
-	Log.Debug("%s Milter.Connect called: ip = %s, hostname = %s", d.getId(), ip, hostname)
+	Log.Debug("%d Milter.Connect() called: ip = %s, hostname = %s", sess.getId(), ip, hostname)
 
 	return m.Continue
 }
 
 func (milter *milter) Helo(ctx uintptr, helo string) (sfsistat int8) {
-	d := milterGetSession(ctx, true)
-	if d == nil { // This just doesn't seem to be supported by libmilter :(
+	sess := milterGetSession(ctx, true)
+	if sess == nil { // This just doesn't seem to be supported by libmilter :(
 		StatsCounters["MilterProtocolErrors"].increase(1)
 		m.SetReply(ctx, "421", "4.7.0", "HELO/EHLO can only be specified at start of session")
 		Log.Info("Received HELO/EHLO midway conversation. status=Tempfail rcode=421 xcode=4.7.0 ip=%s",
@@ -96,14 +92,15 @@ func (milter *milter) Helo(ctx uintptr, helo string) (sfsistat int8) {
 	}
 
 	StatsCounters["MilterCallbackHelo"].increase(1)
-	Log.Debug("%s Milter.Helo called: helo = %s", d.getId(), helo)
+	Log.Debug("%d Milter.Helo() called: helo = %s", sess.getId(), helo)
 
-	d.Helo = helo
-	d.CertIssuer = m.GetSymVal(ctx, "{cert_issuer}")
-	d.CertSubject = m.GetSymVal(ctx, "{cert_subject}")
-	d.CipherBits = m.GetSymVal(ctx, "{cipher_bits}")
-	d.Cipher = m.GetSymVal(ctx, "{cipher}")
-	d.TlsVersion = m.GetSymVal(ctx, "{tls_version}")
+	sess.Helo = helo
+	sess.CertIssuer = m.GetSymVal(ctx, "{cert_issuer}")
+	sess.CertSubject = m.GetSymVal(ctx, "{cert_subject}")
+	sess.CipherBits = m.GetSymVal(ctx, "{cipher_bits}")
+	sess.Cipher = m.GetSymVal(ctx, "{cipher}")
+	sess.TlsVersion = m.GetSymVal(ctx, "{tls_version}")
+	sess.persist()
 
 	return
 }
@@ -113,11 +110,11 @@ func (milter *milter) EnvFrom(ctx uintptr, from []string) (sfsistat int8) {
 	msg := d.getNewMessage()
 
 	StatsCounters["MilterCallbackEnvFrom"].increase(1)
-	Log.Debug("%s Milter.EnvFrom called: from = %s", d.getId(), from[0])
+	Log.Debug("%d Milter.EnvFrom() called: from = %s", d.getId(), from[0])
 
 	if len(from) != 1 {
 		StatsCounters["MilterProtocolErrors"].increase(1)
-		Log.Critical("%s Milter.EnvFrom callback received %d elements: %s", d.getId(), len(from), fmt.Sprint(from))
+		Log.Critical("%d Milter.EnvFrom() callback received %d elements: %s", d.getId(), len(from), fmt.Sprint(from))
 	}
 	msg.From = from[0]
 	return
@@ -129,7 +126,7 @@ func (milter *milter) EnvRcpt(ctx uintptr, rcpt []string) (sfsistat int8) {
 	msg.Rcpt = append(msg.Rcpt, rcpt[0])
 
 	StatsCounters["MilterCallbackEnvRcpt"].increase(1)
-	Log.Debug("%s Milter.EnvRcpt called: rcpt = %s", d.getId(), fmt.Sprint(rcpt))
+	Log.Debug("%d Milter.EnvRcpt() called: rcpt = %s", d.getId(), fmt.Sprint(rcpt))
 	return
 }
 
@@ -142,7 +139,7 @@ func (milter *milter) Header(ctx uintptr, headerf, headerv string) (sfsistat int
 	msg.Headers = append(msg.Headers, &header)
 
 	StatsCounters["MilterCallbackHeader"].increase(1)
-	Log.Debug("%s Milter.Header called: header %s = %s", d.getId(), headerf, headerv)
+	Log.Debug("%d Milter.Header() called: header %s = %s", d.getId(), headerf, headerv)
 	return
 }
 
@@ -154,40 +151,43 @@ func (milter *milter) Eoh(ctx uintptr) (sfsistat int8) {
 	msg := d.getLastMessage()
 	msg.QueueId = m.GetSymVal(ctx, "i")
 
-	Log.Debug("%s milter.Eoh was called", d.getId())
+	Log.Debug("%d milter.Eoh() was called", d.getId())
 	return
 }
 
 func (milter *milter) Body(ctx uintptr, body []byte) (sfsistat int8) {
 	bodyStr := string(body)
 
-	d := milterGetSession(ctx, true)
-	msg := d.getLastMessage()
+	s := milterGetSession(ctx, true)
+	msg := s.getLastMessage()
 	msg.Body = append(msg.Body, bodyStr)
 
-	Log.Debug("%s milter.Body was called. Length of body: %d", d.getId(), len(bodyStr))
+	Log.Debug("%d milter.Body() was called. Length of body: %d", s.getId(), len(bodyStr))
 	return
 }
 
 func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
-	d := milterGetSession(ctx, true)
-	Log.Debug("%s milter.Eom was called", d.getId())
+	s := milterGetSession(ctx, true)
+	Log.Debug("%d milter.Eom() was called", s.getId())
 
-	messageGetVerdict(d.getLastMessage())
-	//	fmt.Println(m.SetReply(ctx, "521", "5.7.1", "we dont like you"))
-	//	return m.Reject
+	messageGetVerdict(s.getLastMessage())
 	return
 }
 
 func (milter *milter) Abort(ctx uintptr) (sfsistat int8) {
-	_ = milterGetSession(ctx, false)
-	Log.Debug("milter.Abort was called")
+	Log.Debug("milter.Abort() was called")
+	milterGetSession(ctx, false)
+
 	return
 }
 
 func (milter *milter) Close(ctx uintptr) (sfsistat int8) {
-	_ = milterGetSession(ctx, false)
-	Log.Debug("milter.Close was called")
+	s := milterGetSession(ctx, false)
+	Log.Debug("%d milter.Close() was called", s.getId())
+
+	s.timeEnd = time.Now()
+	s.persist()
+
 	return
 }
 
@@ -196,7 +196,7 @@ func milterLog(i ...interface{}) {
 }
 
 func milterGetSession(ctx uintptr, keep bool) *milterSession {
-	var u string
+	var u uint64
 	m.GetPriv(ctx, &u)
 	if keep {
 		m.SetPriv(ctx, u)

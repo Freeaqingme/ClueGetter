@@ -8,13 +8,16 @@
 package cluegetter
 
 import (
+	"database/sql"
 	"strings"
+	"sync"
 	"time"
 )
 
 type milterSession struct {
-	id        string
+	id        uint64
 	timeStart time.Time
+	timeEnd   time.Time
 	messages  []*milterMessage
 
 	SaslUsername string
@@ -30,6 +33,29 @@ type milterSession struct {
 	Helo         string
 }
 
+var milterSessionInsertStmt = *new(*sql.Stmt)
+var milterSessionUpdateStmt = *new(*sql.Stmt)
+
+func milterSessionPrepStmt() {
+	stmt, err := Rdbms.Prepare(`
+		INSERT INTO session(cluegetter_instance, date_connect, date_disconnect, ip, sasl_username)
+			VALUES(?, ?, NULL, ?, ?)
+	`)
+	if err != nil {
+		Log.Fatal(err)
+	}
+
+	milterSessionInsertStmt = stmt
+
+	stmt, err = Rdbms.Prepare(`
+		UPDATE session SET ip=?, sasl_username=?, date_disconnect=? WHERE id=?`)
+	if err != nil {
+		Log.Fatal(err)
+	}
+
+	milterSessionUpdateStmt = stmt
+}
+
 func (s *milterSession) getNewMessage() *milterMessage {
 	msg := &milterMessage{}
 	msg.session = s
@@ -42,7 +68,7 @@ func (s *milterSession) getLastMessage() *milterMessage {
 	return s.messages[len(s.messages)-1]
 }
 
-func (s *milterSession) getId() string {
+func (s *milterSession) getId() uint64 {
 	return s.id
 }
 
@@ -69,6 +95,7 @@ func (s *milterSession) getCertSubject() string {
 func (s *milterSession) getCipherBits() string {
 	return s.CipherBits
 }
+
 func (s *milterSession) getCipher() string {
 	return s.Cipher
 }
@@ -87,6 +114,31 @@ func (s *milterSession) getHostname() string {
 
 func (s *milterSession) getHelo() string {
 	return s.Helo
+}
+
+func (s *milterSession) persist() {
+	var once sync.Once
+	once.Do(milterSessionPrepStmt)
+
+	StatsCounters["RdbmsQueries"].increase(1)
+	if s.id == 0 {
+		res, err := milterSessionInsertStmt.Exec(instance, time.Now(), s.getIp(), s.getSaslUsername())
+		if err != nil {
+			Log.Fatal(err) // TODO
+		}
+
+		id, err := res.LastInsertId()
+		if err != nil {
+			Log.Fatal(err) // TODO
+		}
+
+		s.id = uint64(id)
+	}
+
+	_, err := milterSessionUpdateStmt.Exec(s.getIp(), s.getSaslUsername(), s.timeEnd, s.getId())
+	if err != nil {
+		Log.Fatal(err) // TODO
+	}
 }
 
 /******** milterMessage **********/
