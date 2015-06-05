@@ -10,6 +10,7 @@ package cluegetter
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -45,16 +46,29 @@ type MessageHeader interface {
 }
 
 var MessageInsertMsgStmt = *new(*sql.Stmt)
+var MessageInsertRcptStmt = *new(*sql.Stmt)
+var MessageInsertMsgRcptStmt = *new(*sql.Stmt)
 
 func messageStart() {
-	stmt, err := Rdbms.Prepare(`
-		INSERT INTO message (id, session, date, sender, recipient)
-		VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY
-		UPDATE sender=?, recipient=?`)
+	stmt, err := Rdbms.Prepare(`INSERT INTO message (id, session, date, sender, rcpt_count)
+								VALUES (?, ?, ?, ?, ?)`)
 	if err != nil {
 		Log.Fatal(err)
 	}
 	MessageInsertMsgStmt = stmt
+
+	stmt, err = Rdbms.Prepare(`INSERT INTO recipient(local, domain) VALUES(?, ?)
+								ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)`)
+	if err != nil {
+		Log.Fatal(err)
+	}
+	MessageInsertRcptStmt = stmt
+
+	stmt, err = Rdbms.Prepare(`INSERT INTO message_recipient(message, recipient) VALUES(?, ?)`)
+	if err != nil {
+		Log.Fatal(err)
+	}
+	MessageInsertMsgRcptStmt = stmt
 
 	Log.Info("Message handler started successfully")
 }
@@ -82,13 +96,47 @@ func messageSave(msg Message) {
 		sess.getId(),
 		time.Now(),
 		msg.getFrom(),
-		"recipient", // TODO
-		msg.getFrom(),
-		"recipient", // TODO
+		msg.getRcptCount(),
 	)
 
 	if err != nil {
 		StatsCounters["RdbmsErrors"].increase(1)
 		Log.Error(err.Error())
+	}
+
+	messageSaveRecipients(msg.getRecipients(), msg.getQueueId())
+}
+
+func messageSaveRecipients(recipients []string, msgId string) {
+	for _, rcpt := range recipients {
+		var local string
+		var domain string
+
+		if strings.Index(rcpt, "@") != -1 {
+			local = strings.SplitN(rcpt, "@", 2)[0]
+			domain = strings.SplitN(rcpt, "@", 2)[1]
+		} else {
+			local = rcpt
+			domain = ""
+		}
+
+		StatsCounters["RdbmsQueries"].increase(1)
+		res, err := MessageInsertRcptStmt.Exec(local, domain)
+		if err != nil {
+			StatsCounters["RdbmsErrors"].increase(1)
+			Log.Error(err.Error())
+		}
+
+		rcptId, err := res.LastInsertId()
+		if err != nil {
+			Log.Fatal(err)
+		}
+
+		StatsCounters["RdbmsQueries"].increase(1)
+		_, err = MessageInsertMsgRcptStmt.Exec(msgId, rcptId)
+		if err != nil {
+			StatsCounters["RdbmsErrors"].increase(1)
+			Log.Error(err.Error())
+		}
 	}
 }

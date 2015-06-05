@@ -125,6 +125,8 @@ func (milter *milter) EnvRcpt(ctx uintptr, rcpt []string) (sfsistat int8) {
 	msg := d.getLastMessage()
 	msg.Rcpt = append(msg.Rcpt, rcpt[0])
 
+	fmt.Println(rcpt)
+
 	StatsCounters["MilterCallbackEnvRcpt"].increase(1)
 	Log.Debug("%d Milter.EnvRcpt() called: rcpt = %s", d.getId(), fmt.Sprint(rcpt))
 	return
@@ -183,10 +185,14 @@ func (milter *milter) Abort(ctx uintptr) (sfsistat int8) {
 
 func (milter *milter) Close(ctx uintptr) (sfsistat int8) {
 	s := milterGetSession(ctx, false)
-	Log.Debug("%d milter.Close() was called", s.getId())
+	if s == nil {
+		Log.Debug("%d milter.Close() was called. No context supplied")
+	} else {
+		Log.Debug("%d milter.Close() was called", s.getId())
 
-	s.timeEnd = time.Now()
-	s.persist()
+		s.timeEnd = time.Now()
+		s.persist()
+	}
 
 	return
 }
