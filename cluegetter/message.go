@@ -48,6 +48,7 @@ type MessageHeader interface {
 var MessageInsertMsgStmt = *new(*sql.Stmt)
 var MessageInsertRcptStmt = *new(*sql.Stmt)
 var MessageInsertMsgRcptStmt = *new(*sql.Stmt)
+var MessageInsertMsgHdrStmt = *new(*sql.Stmt)
 
 func messageStart() {
 	stmt, err := Rdbms.Prepare(`INSERT INTO message (id, session, date, sender, rcpt_count)
@@ -69,6 +70,12 @@ func messageStart() {
 		Log.Fatal(err)
 	}
 	MessageInsertMsgRcptStmt = stmt
+
+	stmt, err = Rdbms.Prepare(`INSERT INTO message_header(message, name, body) VALUES(?, ?, ?)`)
+	if err != nil {
+		Log.Fatal(err)
+	}
+	MessageInsertMsgHdrStmt = stmt
 
 	Log.Info("Message handler started successfully")
 }
@@ -105,6 +112,7 @@ func messageSave(msg Message) {
 	}
 
 	messageSaveRecipients(msg.getRecipients(), msg.getQueueId())
+	messageSaveHeaders(msg)
 }
 
 func messageSaveRecipients(recipients []string, msgId string) {
@@ -134,6 +142,19 @@ func messageSaveRecipients(recipients []string, msgId string) {
 
 		StatsCounters["RdbmsQueries"].increase(1)
 		_, err = MessageInsertMsgRcptStmt.Exec(msgId, rcptId)
+		if err != nil {
+			StatsCounters["RdbmsErrors"].increase(1)
+			Log.Error(err.Error())
+		}
+	}
+}
+
+func messageSaveHeaders(msg Message) {
+	for _, headerPair := range msg.getHeaders() {
+		StatsCounters["RdbmsQueries"].increase(1)
+		_, err := MessageInsertMsgHdrStmt.Exec(
+			msg.getQueueId(), (*headerPair).getKey(), (*headerPair).getValue())
+
 		if err != nil {
 			StatsCounters["RdbmsErrors"].increase(1)
 			Log.Error(err.Error())
