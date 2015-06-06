@@ -66,8 +66,8 @@ var MessageSetVerdictStmt = *new(*sql.Stmt)
 var MessageInsertModuleResultStmt = *new(*sql.Stmt)
 
 func messageStart() {
-	stmt, err := Rdbms.Prepare(`INSERT INTO message (id, session, date, sender, rcpt_count)
-								VALUES (?, ?, ?, ?, ?)`)
+	stmt, err := Rdbms.Prepare(`INSERT INTO message (id, session, date, sender, body, rcpt_count)
+								VALUES (?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		Log.Fatal(err)
 	}
@@ -210,6 +210,7 @@ func messageSave(msg Message) {
 		sess.getId(),
 		time.Now(),
 		msg.getFrom(),
+		msg.getBody(),
 		msg.getRcptCount(),
 	)
 
