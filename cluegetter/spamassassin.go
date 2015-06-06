@@ -20,9 +20,9 @@ type saReport struct {
 }
 
 type saReportFact struct {
-	score       float64
-	symbol      string
-	description string
+	Score       float64
+	Symbol      string
+	Description string
 }
 
 func saGetResult(msg Message) *MessageCheckResult {
@@ -39,21 +39,22 @@ func saGetResult(msg Message) *MessageCheckResult {
 
 	Log.Debug("Getting SA report for %s", msg.getQueueId())
 	report := saParseReply(rawReply)
-	factors := func() []string {
+	factsStr := func() []string {
 		out := make([]string, 0)
 		for _, fact := range report.facts {
-			out = append(out, fmt.Sprintf("%s=%f", fact.symbol, fact.score))
+			out = append(out, fmt.Sprintf("%s=%f", fact.Symbol, fact.Score))
 		}
 		return out
 	}()
-	Log.Debug("Got SA score of %f for %s. Tests: [%s]", report.score, msg.getQueueId(), strings.Join(factors, ","))
+
+	Log.Debug("Got SA score of %f for %s. Tests: [%s]", report.score, msg.getQueueId(), strings.Join(factsStr, ","))
 	return &MessageCheckResult{
 		module:          "spamassassin",
 		suggestedAction: messageReject,
 		message: "Our system has detected that this message is likely unsolicited mail (SPAM). " +
 			"To reduce the amount of spam, this message has been blocked.",
 		score: report.score,
-		//todo: determinant
+		determinants: map[string]interface{}{ "report": report.facts },
 	}
 }
 
@@ -61,7 +62,7 @@ func saGetRawReply(msg Message) (*spamc.SpamDOut, error) {
 	body := make([]string, 0)
 
 	for _, header := range msg.getHeaders() {
-		body = append(body, (*header).getKey()+":"+(*header).getValue())
+		body = append(body, (*header).getKey()+": "+(*header).getValue())
 	}
 
 	body = append(body, "")
@@ -72,6 +73,11 @@ func saGetRawReply(msg Message) (*spamc.SpamDOut, error) {
 	return client.Report(strings.Join(body, "\r\n"), msg.getRecipients()[0])
 }
 
+/*
+ The spamc client library returns a pretty shitty
+ format, So we try to make the best of it and
+ parse it into some nice structs.
+ */
 func saParseReply(reply *spamc.SpamDOut) *saReport {
 	report := &saReport{facts: make([]*saReportFact, 0)}
 
@@ -79,10 +85,10 @@ func saParseReply(reply *spamc.SpamDOut) *saReport {
 		if key == "spamScore" {
 			report.score = value.(float64)
 		} else if key == "report" {
-			var foo []map[string]interface{}
-			foo = value.([]map[string]interface{})
-			for _, value2 := range foo {
-				report.facts = append(report.facts, saParseReplyReportVar(value2))
+			var reportFacts []map[string]interface{}
+			reportFacts = value.([]map[string]interface{})
+			for _, reportFact := range reportFacts {
+				report.facts = append(report.facts, saParseReplyReportVar(reportFact))
 			}
 		}
 	}
@@ -90,16 +96,16 @@ func saParseReply(reply *spamc.SpamDOut) *saReport {
 	return report
 }
 
-func saParseReplyReportVar(value2 map[string]interface{}) *saReportFact {
+func saParseReplyReportVar(reportFactRaw map[string]interface{}) *saReportFact {
 	reportFact := &saReportFact{}
-	for key3, value3 := range value2 {
+	for key, value := range reportFactRaw {
 		switch {
-		case key3 == "score":
-			reportFact.score = value3.(float64)
-		case key3 == "symbol":
-			reportFact.symbol = value3.(string)
-		case key3 == "message":
-			reportFact.description = value3.(string)
+		case key == "score":
+			reportFact.Score = value.(float64)
+		case key == "symbol":
+			reportFact.Symbol = value.(string)
+		case key == "message":
+			reportFact.Description = value.(string)
 		}
 	}
 

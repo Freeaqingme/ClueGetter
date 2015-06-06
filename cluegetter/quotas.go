@@ -76,6 +76,9 @@ func quotasIsAllowed(msg Message) *MessageCheckResult {
 	quotas := make(map[uint64]struct{})
 
 	rcpt_count := msg.getRcptCount()
+	rejectMsg := ""
+	determinants := make(map[string]interface{})
+	determinants["quotas"] = make([]interface{}, 0)
 	for _, row := range counts {
 		factorValue := row.factorValue
 		quotas[row.id] = struct{}{}
@@ -90,20 +93,33 @@ func quotasIsAllowed(msg Message) *MessageCheckResult {
 			extra_count = uint32(1)
 		}
 
+		determinant := make(map[string]interface{})
+		determinant["curb"] = row.curb
+		determinant["period"] = row.period
+		determinant["selector"] = row.selector
+		determinant["factorValue"] = row.factorValue
+		determinant["extraCount"] = extra_count
+		determinant["futureTotalCount"] = future_total_count
+		determinants["quotas"] = append(determinants["quotas"].([]interface{}), determinant)
+
 		if future_total_count > row.curb {
 			Log.Notice("Quota Exceeding, max of %d messages per %d seconds for %s '%s'",
 				row.curb, row.period, row.selector, factorValue)
-			msg := fmt.Sprintf("REJECT Policy reject; Exceeding quota, max of %d messages per %d seconds for %s '%s'",
+			rejectMsg = fmt.Sprintf("REJECT Policy reject; Exceeding quota, max of %d messages per %d seconds for %s '%s'",
 				row.curb, row.period, row.selector, factorValue)
-			return &MessageCheckResult{
-				module:          "quotas",
-				suggestedAction: messageTempFail,
-				message:         msg,
-				score:           100,
-			}
 		} else {
 			Log.Info("Quota Updated, Adding %d message(s) to total of %d (max %d) for last %d seconds for %s '%s'",
 				extra_count, row.count, row.curb, row.period, row.selector, factorValue)
+		}
+	}
+
+	if rejectMsg != "" {
+		return &MessageCheckResult{
+			module:          "quotas",
+			suggestedAction: messageTempFail,
+			message:         rejectMsg,
+			score:           100,
+			determinants:    determinants,
 		}
 	}
 

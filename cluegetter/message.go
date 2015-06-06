@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"encoding/json"
 )
 
 const (
@@ -56,6 +57,7 @@ type MessageCheckResult struct {
 	suggestedAction int
 	message         string
 	score           float64
+	determinants    map[string]interface{}
 }
 
 var MessageInsertMsgStmt = *new(*sql.Stmt)
@@ -98,7 +100,8 @@ func messageStart() {
 	}
 	MessageSetVerdictStmt = stmt
 
-	stmt, err = Rdbms.Prepare(`INSERT INTO message_result (message, module, verdict, score) VALUES(?, ?, ?, ?)`)
+	stmt, err = Rdbms.Prepare(`INSERT INTO message_result (message, module, verdict,
+								score, determinants) VALUES(?, ?, ?, ?, ?)`)
 	if err != nil {
 		Log.Fatal(err)
 	}
@@ -127,8 +130,9 @@ func messageGetVerdict(msg Message) (int, string) {
 		results[result.suggestedAction] = append(results[result.suggestedAction], result)
 		totalScores[result.suggestedAction] += result.score
 
+		determinants, _ := json.Marshal(result.determinants)
 		_, err := MessageInsertModuleResultStmt.Exec(
-			msg.getQueueId(), result.module, verdictValue[result.suggestedAction], result.score)
+			msg.getQueueId(), result.module, verdictValue[result.suggestedAction], result.score, determinants)
 		if err != nil {
 			StatsCounters["RdbmsErrors"].increase(1)
 			Log.Error(err.Error())

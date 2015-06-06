@@ -94,6 +94,7 @@ func (milter *milter) Helo(ctx uintptr, helo string) (sfsistat int8) {
 	StatsCounters["MilterCallbackHelo"].increase(1)
 	Log.Debug("%d Milter.Helo() called: helo = %s", sess.getId(), helo)
 
+	// Todo: What if no EHLO/HELO is given at all?
 	sess.Helo = helo
 	sess.CertIssuer = m.GetSymVal(ctx, "{cert_issuer}")
 	sess.CertSubject = m.GetSymVal(ctx, "{cert_subject}")
