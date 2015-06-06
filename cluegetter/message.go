@@ -54,7 +54,7 @@ type MessageHeader interface {
 type MessageCheckResult struct {
 	suggestedAction int
 	message         string
-	score           uint /** 100 = unwanted. 0 = OK **/
+	score           int /** 100 = unwanted. 0 = OK **/
 }
 
 var MessageInsertMsgStmt = *new(*sql.Stmt)
@@ -105,7 +105,7 @@ func messageGetVerdict(msg Message) (int, string) {
 	results[messageTempFail] = make([]*MessageCheckResult, 0)
 	results[messageReject] = make([]*MessageCheckResult, 0)
 
-	var totalScores [3]uint
+	var totalScores [3]int
 
 	for result := range messageGetResults(msg) {
 		results[result.suggestedAction] = append(results[result.suggestedAction], result)
@@ -114,7 +114,7 @@ func messageGetVerdict(msg Message) (int, string) {
 
 	getMessage := func(results []*MessageCheckResult) string {
 		out := results[0].message
-		maxScore := uint(0)
+		maxScore := 0
 		for _, result := range results {
 			if result.score > maxScore && result.message != "" {
 				out = result.message
