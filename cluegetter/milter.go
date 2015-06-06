@@ -125,8 +125,6 @@ func (milter *milter) EnvRcpt(ctx uintptr, rcpt []string) (sfsistat int8) {
 	msg := d.getLastMessage()
 	msg.Rcpt = append(msg.Rcpt, rcpt[0])
 
-	fmt.Println(rcpt)
-
 	StatsCounters["MilterCallbackEnvRcpt"].increase(1)
 	Log.Debug("%d Milter.EnvRcpt() called: rcpt = %s", d.getId(), fmt.Sprint(rcpt))
 	return

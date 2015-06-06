@@ -43,6 +43,10 @@ CREATE TABLE `message` (
   `date` datetime NOT NULL,
   `sender` varchar(255) NOT NULL DEFAULT '',
   `rcpt_count` int(10) unsigned NOT NULL DEFAULT '1',
+  `verdict` enum('permit','tempfail','reject') DEFAULT NULL,
+  `verdict_msg` text,
+  `rejectScore` tinyint(1) DEFAULT NULL,
+  `tempfailScore` tinyint(1) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `session` (`session`),
   CONSTRAINT `message_ibfk_1` FOREIGN KEY (`session`) REFERENCES `session` (`id`)
@@ -64,7 +68,7 @@ CREATE TABLE `message_header` (
   UNIQUE KEY `id` (`id`),
   KEY `message` (`message`),
   CONSTRAINT `message_header_ibfk_1` FOREIGN KEY (`message`) REFERENCES `message` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=111 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=129 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -97,6 +101,7 @@ CREATE TABLE `quota` (
   `instigator` bigint(20) unsigned DEFAULT NULL,
   `date_added` datetime DEFAULT NULL,
   UNIQUE KEY `id` (`id`),
+--  UNIQUE KEY `selector` (`selector`,`value`,`profile`),
   KEY `profile` (`profile`),
   KEY `selector_value` (`selector`,`value`),
   CONSTRAINT `quota_ibfk_1` FOREIGN KEY (`profile`) REFERENCES `quota_profile` (`id`)
@@ -168,7 +173,7 @@ CREATE TABLE `recipient` (
   `domain` varchar(253) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `local` (`local`,`domain`)
-) ENGINE=InnoDB AUTO_INCREMENT=55 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=61 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -188,7 +193,7 @@ CREATE TABLE `session` (
   UNIQUE KEY `id` (`id`),
   KEY `cluegetter_instance` (`cluegetter_instance`),
   CONSTRAINT `session_ibfk_1` FOREIGN KEY (`cluegetter_instance`) REFERENCES `instance` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=44 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=48 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -200,4 +205,4 @@ CREATE TABLE `session` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-06-06 12:34:11
+-- Dump completed on 2015-06-06 13:52:32

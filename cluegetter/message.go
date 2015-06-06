@@ -61,6 +61,7 @@ var MessageInsertMsgStmt = *new(*sql.Stmt)
 var MessageInsertRcptStmt = *new(*sql.Stmt)
 var MessageInsertMsgRcptStmt = *new(*sql.Stmt)
 var MessageInsertMsgHdrStmt = *new(*sql.Stmt)
+var MessageSetVerdictStmt = *new(*sql.Stmt)
 
 func messageStart() {
 	stmt, err := Rdbms.Prepare(`INSERT INTO message (id, session, date, sender, rcpt_count)
@@ -88,6 +89,12 @@ func messageStart() {
 		Log.Fatal(err)
 	}
 	MessageInsertMsgHdrStmt = stmt
+
+	stmt, err = Rdbms.Prepare(`UPDATE message SET verdict=?, verdict_msg=?, rejectScore=?, tempfailScore=? WHERE id=?`)
+	if err != nil {
+		Log.Fatal(err)
+	}
+	MessageSetVerdictStmt = stmt
 
 	Log.Info("Message handler started successfully")
 }
@@ -126,13 +133,36 @@ func messageGetVerdict(msg Message) (int, string) {
 	}
 
 	if totalScores[messageReject] > 5 { // TODO: Make threshold configurable
-		return messageReject, getMessage(results[messageReject])
+		verdictMsg := getMessage(results[messageReject])
+		messageSaveVerdict(msg, messageReject, verdictMsg, totalScores[messageReject], totalScores[messageTempFail])
+		return messageReject, verdictMsg
 	}
 	if (totalScores[messageTempFail] + totalScores[messageReject]) > 8 {
-		return messageTempFail, getMessage(results[messageTempFail])
+		verdictMsg := getMessage(results[messageTempFail])
+		messageSaveVerdict(msg, messageTempFail, verdictMsg, totalScores[messageReject], totalScores[messageTempFail])
+		return messageTempFail, verdictMsg
 	}
 
+	messageSaveVerdict(msg, messagePermit, "", totalScores[messageReject], totalScores[messageTempFail])
 	return messagePermit, ""
+}
+
+func messageSaveVerdict(msg Message, verdict int, verdictMsg string, rejectScore int, tempfailScore int) {
+	verdictValue := [3]string{"permit", "tempfail", "reject"}
+
+	StatsCounters["RdbmsQueries"].increase(1)
+	_, err := MessageSetVerdictStmt.Exec(
+		verdictValue[verdict],
+		verdictMsg,
+		rejectScore,
+		tempfailScore,
+		msg.getQueueId(),
+	)
+
+	if err != nil {
+		StatsCounters["RdbmsErrors"].increase(1)
+		Log.Error(err.Error())
+	}
 }
 
 func messageGetResults(msg Message) chan *MessageCheckResult {
