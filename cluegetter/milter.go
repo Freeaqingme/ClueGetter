@@ -172,7 +172,21 @@ func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
 	s := milterGetSession(ctx, true)
 	Log.Debug("%d milter.Eom() was called", s.getId())
 
-	messageGetVerdict(s.getLastMessage())
+	verdict, msg := messageGetVerdict(s.getLastMessage())
+
+	switch {
+	case verdict == messagePermit:
+		return
+	case verdict == messageTempFail:
+		m.SetReply(ctx, "421", "4.7.0", msg)
+		Log.Info("Todo") //TODO
+		return m.Tempfail
+	case verdict == messageReject:
+		m.SetReply(ctx, "550", "5.7.1", msg)
+		Log.Info("Todo") //TODO
+		return m.Reject
+	}
+
 	return
 }
 

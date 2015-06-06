@@ -11,6 +11,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 )
 
 type quotasSelectResultSet struct {
@@ -61,10 +62,15 @@ func quotasStop() {
 	Log.Info("Quotas module ended")
 }
 
-func quotasIsAllowed(msg Message) string {
+func quotasIsAllowed(msg Message) *MessageCheckResult {
 	counts, err := quotasGetCounts(msg, true)
 	if err != nil {
-		return ""
+		Log.Error("Error in quotas module: %s", err)
+		return &MessageCheckResult{
+			suggestedAction: messageTempFail,
+			message:         "An internal error occurred",
+			score:           10,
+		}
 	}
 	quotas := make(map[uint64]struct{})
 
@@ -86,8 +92,13 @@ func quotasIsAllowed(msg Message) string {
 		if future_total_count > row.curb {
 			Log.Notice("Quota Exceeding, max of %d messages per %d seconds for %s '%s'",
 				row.curb, row.period, row.selector, factorValue)
-			return fmt.Sprintf("REJECT Policy reject; Exceeding quota, max of %d messages per %d seconds for %s '%s'",
+			msg := fmt.Sprintf("REJECT Policy reject; Exceeding quota, max of %d messages per %d seconds for %s '%s'",
 				row.curb, row.period, row.selector, factorValue)
+			return &MessageCheckResult{
+				suggestedAction: messageTempFail,
+				message:         msg,
+				score:           100,
+			}
 		} else {
 			Log.Info("Quota Updated, Adding %d message(s) to total of %d (max %d) for last %d seconds for %s '%s'",
 				extra_count, row.count, row.curb, row.period, row.selector, factorValue)
@@ -102,7 +113,11 @@ func quotasIsAllowed(msg Message) string {
 		}
 	}
 
-	return "DUNNO"
+	return &MessageCheckResult{
+		suggestedAction: messagePermit,
+		message:         "",
+		score:           1, // TODO: Does it make sense, having a score with messagePermit?
+	}
 }
 
 func quotasGetCounts(msg Message, applyRegexes bool) ([]*quotasSelectResultSet, error) {
@@ -242,6 +257,7 @@ func quotasGetSelectQuery(factorValueCount map[string]int) string {
 		Log.Fatal("Quotas: No factors were given to account for.")
 	}
 
+	_, tzOffset := time.Now().Local().Zone()
 	sql := fmt.Sprintf(`
 		SELECT q.id, q.selector, q.value factorValue, pp.period, pp.curb,
 			coalesce(sum(m.rcpt_count), 0) count, coalesce(count(m.rcpt_count), 0) msg_count
@@ -249,9 +265,10 @@ func quotasGetSelectQuery(factorValueCount map[string]int) string {
 			LEFT JOIN quota_profile p         ON p.id = q.profile
 			LEFT JOIN quota_profile_period pp ON p.id = pp.profile
 			LEFT JOIN quota_message	qm        ON qm.quota = q.id AND qm.message != ?
-			LEFT JOIN message m               ON m.id = qm.message AND m.date > FROM_UNIXTIME(UNIX_TIMESTAMP() - pp.period)
+			LEFT JOIN message m               ON m.id = qm.message
+				AND m.date > FROM_UNIXTIME(UNIX_TIMESTAMP() - %d - pp.period)
 		WHERE (`+strings.Join(pieces, " OR ")+`) AND q.is_regex = 0 AND p.cluegetter_instance = %d
-			GROUP BY pp.id, q.id`, instance)
+			GROUP BY pp.id, q.id`, tzOffset, instance)
 	return sql
 }
 

@@ -11,7 +11,14 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
+)
+
+const (
+	messagePermit = iota
+	messageTempFail
+	messageReject
 )
 
 type Session interface {
@@ -43,6 +50,12 @@ type Message interface {
 type MessageHeader interface {
 	getKey() string
 	getValue() string
+}
+
+type MessageCheckResult struct {
+	suggestedAction int
+	message         string
+	score           int /** 100 = unwanted. 0 = OK **/
 }
 
 var MessageInsertMsgStmt = *new(*sql.Stmt)
@@ -85,13 +98,62 @@ func messageStop() {
 	Log.Info("Message handler stopped successfully")
 }
 
-func messageGetVerdict(msg Message) {
+func messageGetVerdict(msg Message) (int, string) {
 	messageSave(msg)
 
-	if Config.Quotas.Enabled {
-		fmt.Println(quotasIsAllowed(msg))
+	var results [3][]*MessageCheckResult
+	results[messagePermit] = make([]*MessageCheckResult, 0)
+	results[messageTempFail] = make([]*MessageCheckResult, 0)
+	results[messageReject] = make([]*MessageCheckResult, 0)
+
+	var totalScores [3]int
+
+	for result := range messageGetResults(msg) {
+		results[result.suggestedAction] = append(results[result.suggestedAction], result)
+		totalScores[result.suggestedAction] += result.score
 	}
 
+	getMessage := func(results []*MessageCheckResult) string {
+		out := results[0].message
+		maxScore := 0
+		for _, result := range results {
+			if result.score > maxScore && result.message != "" {
+				out = result.message
+				maxScore = result.score
+			}
+		}
+
+		return out
+	}
+
+	if totalScores[messageReject] > 5 { // TODO: Make threshold configurable
+		return messageReject, getMessage(results[messageReject])
+	}
+	if (totalScores[messageTempFail] + totalScores[messageReject]) > 8 {
+		return messageTempFail, getMessage(results[messageTempFail])
+	}
+
+	return messagePermit, ""
+}
+
+func messageGetResults(msg Message) chan *MessageCheckResult {
+	var wg sync.WaitGroup
+	out := make(chan *MessageCheckResult)
+
+	if Config.Quotas.Enabled {
+		wg.Add(1)
+		go func() {
+			out <- quotasIsAllowed(msg)
+			wg.Done()
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
+
+	return out
 }
 
 func messageSave(msg Message) {
