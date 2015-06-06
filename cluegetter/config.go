@@ -25,8 +25,8 @@ type config struct {
 		Rdbms_Protocol         string
 		Rdbms_Database         string
 		Rdbms_Mysql_Strictmode bool
-		Message_Reject_Score   int
-		Message_Tempfail_Score int
+		Message_Reject_Score   float64
+		Message_Tempfail_Score float64
 	}
 	Quotas struct {
 		Enabled                bool
@@ -34,6 +34,11 @@ type config struct {
 		Account_Recipient      bool
 		Account_Client_Address bool
 		Account_Sasl_Username  bool
+	}
+	SpamAssassin struct {
+		Enabled bool
+		Host    string
+		Port    int
 	}
 }
 
@@ -66,4 +71,8 @@ func DefaultConfig(cfg *config) {
 	cfg.Quotas.Account_Recipient = true
 	cfg.Quotas.Account_Client_Address = true
 	cfg.Quotas.Account_Sasl_Username = true
+
+	cfg.SpamAssassin.Enabled = true
+	cfg.SpamAssassin.Host = "127.0.0.1"
+	cfg.SpamAssassin.Port = 783
 }

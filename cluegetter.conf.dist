@@ -24,3 +24,8 @@ account-sender = false
 account-recipient = true
 account-client-address = true
 account-sasl-username = true
+
+[spamassassin]
+enabled = true
+host    = 127.0.0.1
+port    = 783

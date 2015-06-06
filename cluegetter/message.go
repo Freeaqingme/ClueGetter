@@ -55,7 +55,7 @@ type MessageCheckResult struct {
 	module          string
 	suggestedAction int
 	message         string
-	score           int /** 100 = unwanted. 0 = OK **/
+	score           float64
 }
 
 var MessageInsertMsgStmt = *new(*sql.Stmt)
@@ -120,7 +120,7 @@ func messageGetVerdict(msg Message) (int, string) {
 	results[messageTempFail] = make([]*MessageCheckResult, 0)
 	results[messageReject] = make([]*MessageCheckResult, 0)
 
-	var totalScores [3]int
+	var totalScores [3]float64
 
 	verdictValue := [3]string{"permit", "tempfail", "reject"}
 	for result := range messageGetResults(msg) {
@@ -128,7 +128,7 @@ func messageGetVerdict(msg Message) (int, string) {
 		totalScores[result.suggestedAction] += result.score
 
 		_, err := MessageInsertModuleResultStmt.Exec(
-					msg.getQueueId(), result.module, verdictValue[result.suggestedAction], result.score)
+			msg.getQueueId(), result.module, verdictValue[result.suggestedAction], result.score)
 		if err != nil {
 			StatsCounters["RdbmsErrors"].increase(1)
 			Log.Error(err.Error())
@@ -137,7 +137,7 @@ func messageGetVerdict(msg Message) (int, string) {
 
 	getMessage := func(results []*MessageCheckResult) string {
 		out := results[0].message
-		maxScore := 0
+		maxScore := float64(0)
 		for _, result := range results {
 			if result.score > maxScore && result.message != "" {
 				out = result.message
@@ -163,7 +163,7 @@ func messageGetVerdict(msg Message) (int, string) {
 	return messagePermit, ""
 }
 
-func messageSaveVerdict(msg Message, verdict int, verdictMsg string, rejectScore int, tempfailScore int) {
+func messageSaveVerdict(msg Message, verdict int, verdictMsg string, rejectScore float64, tempfailScore float64) {
 	verdictValue := [3]string{"permit", "tempfail", "reject"}
 
 	StatsCounters["RdbmsQueries"].increase(1)
@@ -189,6 +189,13 @@ func messageGetResults(msg Message) chan *MessageCheckResult {
 		wg.Add(1)
 		go func() {
 			out <- quotasIsAllowed(msg)
+			wg.Done()
+		}()
+	}
+	if Config.SpamAssassin.Enabled {
+		wg.Add(1)
+		go func() {
+			out <- saGetResult(msg)
 			wg.Done()
 		}()
 	}

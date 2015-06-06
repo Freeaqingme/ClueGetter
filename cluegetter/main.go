@@ -23,7 +23,6 @@ var Log = logging.MustGetLogger("cluegetter")
 var instance uint
 
 func Main() {
-
 	configFile := flag.String("config", "", "Path to Config File")
 	logLevel := flag.String("loglevel", "NOTICE",
 		"Log Level. One of: CRITICAL, ERROR, WARNING, NOTICE, INFO, DEBUG)")
