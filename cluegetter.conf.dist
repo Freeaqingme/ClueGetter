@@ -12,6 +12,12 @@ rdbms-mysql-strictmode = true
 
 instance               = default
 
+message-reject-score   = 5
+
+# The tempfail score includes that of the reject score,
+# so should always be higher than the reject score.
+message-tempfail-score = 8
+
 [quotas]
 enabled = true
 account-sender = false

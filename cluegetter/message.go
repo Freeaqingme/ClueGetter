@@ -148,12 +148,12 @@ func messageGetVerdict(msg Message) (int, string) {
 		return out
 	}
 
-	if totalScores[messageReject] > 5 { // TODO: Make threshold configurable
+	if totalScores[messageReject] > Config.ClueGetter.Message_Reject_Score {
 		verdictMsg := getMessage(results[messageReject])
 		messageSaveVerdict(msg, messageReject, verdictMsg, totalScores[messageReject], totalScores[messageTempFail])
 		return messageReject, verdictMsg
 	}
-	if (totalScores[messageTempFail] + totalScores[messageReject]) > 8 {
+	if (totalScores[messageTempFail] + totalScores[messageReject]) > Config.ClueGetter.Message_Tempfail_Score {
 		verdictMsg := getMessage(results[messageTempFail])
 		messageSaveVerdict(msg, messageTempFail, verdictMsg, totalScores[messageReject], totalScores[messageTempFail])
 		return messageTempFail, verdictMsg

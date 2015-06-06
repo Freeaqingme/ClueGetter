@@ -174,18 +174,19 @@ func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
 
 	switch {
 	case verdict == messagePermit:
+		Log.Info("Message Permit: sess=%d message=%s", s.getId(), s.getLastMessage().getQueueId())
 		return
 	case verdict == messageTempFail:
 		m.SetReply(ctx, "421", "4.7.0", msg)
-		Log.Info("Todo") //TODO
+		Log.Info("Message TempFail: sess=%d message=%s msg: %s", s.getId(), s.getLastMessage().getQueueId(), msg)
 		return m.Tempfail
 	case verdict == messageReject:
 		m.SetReply(ctx, "550", "5.7.1", msg)
-		Log.Info("Todo") //TODO
+		Log.Info("Message Reject: sess=%d message=%s msg: %s", s.getId(), s.getLastMessage().getQueueId(), msg)
 		return m.Reject
 	}
 
-	return
+	panic("verdict was not recognized")
 }
 
 func (milter *milter) Abort(ctx uintptr) (sfsistat int8) {

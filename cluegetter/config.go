@@ -25,6 +25,8 @@ type config struct {
 		Rdbms_Protocol         string
 		Rdbms_Database         string
 		Rdbms_Mysql_Strictmode bool
+		Message_Reject_Score   int
+		Message_Tempfail_Score int
 	}
 	Quotas struct {
 		Enabled                bool
@@ -56,6 +58,8 @@ func DefaultConfig(cfg *config) {
 	cfg.ClueGetter.Rdbms_Protocol = "tcp"
 	cfg.ClueGetter.Rdbms_Database = "cluegetter"
 	cfg.ClueGetter.Rdbms_Mysql_Strictmode = true
+	cfg.ClueGetter.Message_Reject_Score = 5
+	cfg.ClueGetter.Message_Tempfail_Score = 8
 
 	cfg.Quotas.Enabled = false
 	cfg.Quotas.Account_Sender = true
