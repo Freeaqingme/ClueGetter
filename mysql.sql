@@ -68,7 +68,7 @@ CREATE TABLE `message_header` (
   UNIQUE KEY `id` (`id`),
   KEY `message` (`message`),
   CONSTRAINT `message_header_ibfk_1` FOREIGN KEY (`message`) REFERENCES `message` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=129 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=138 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -83,6 +83,25 @@ CREATE TABLE `message_recipient` (
   `recipient` bigint(20) unsigned NOT NULL,
   PRIMARY KEY (`message`,`recipient`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `message_result`
+--
+
+DROP TABLE IF EXISTS `message_result`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `message_result` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `message` varchar(25) CHARACTER SET ascii NOT NULL,
+  `module` enum('quotas','spamassassin','greylist','clamav') NOT NULL,
+  `verdict` enum('permit','tempfail','reject') NOT NULL,
+  `score` smallint(6) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `message` (`message`,`module`),
+  CONSTRAINT `message_result_ibfk_1` FOREIGN KEY (`message`) REFERENCES `message` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -173,7 +192,7 @@ CREATE TABLE `recipient` (
   `domain` varchar(253) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `local` (`local`,`domain`)
-) ENGINE=InnoDB AUTO_INCREMENT=61 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=64 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -193,7 +212,7 @@ CREATE TABLE `session` (
   UNIQUE KEY `id` (`id`),
   KEY `cluegetter_instance` (`cluegetter_instance`),
   CONSTRAINT `session_ibfk_1` FOREIGN KEY (`cluegetter_instance`) REFERENCES `instance` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=48 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=50 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -205,4 +224,4 @@ CREATE TABLE `session` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-06-06 13:58:33
+-- Dump completed on 2015-06-06 17:02:41

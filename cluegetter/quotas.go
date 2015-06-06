@@ -67,6 +67,7 @@ func quotasIsAllowed(msg Message) *MessageCheckResult {
 	if err != nil {
 		Log.Error("Error in quotas module: %s", err)
 		return &MessageCheckResult{
+			module:          "quotas",
 			suggestedAction: messageTempFail,
 			message:         "An internal error occurred",
 			score:           10,
@@ -95,6 +96,7 @@ func quotasIsAllowed(msg Message) *MessageCheckResult {
 			msg := fmt.Sprintf("REJECT Policy reject; Exceeding quota, max of %d messages per %d seconds for %s '%s'",
 				row.curb, row.period, row.selector, factorValue)
 			return &MessageCheckResult{
+				module:          "quotas",
 				suggestedAction: messageTempFail,
 				message:         msg,
 				score:           100,
@@ -114,6 +116,7 @@ func quotasIsAllowed(msg Message) *MessageCheckResult {
 	}
 
 	return &MessageCheckResult{
+		module:          "quotas",
 		suggestedAction: messagePermit,
 		message:         "",
 		score:           1, // TODO: Does it make sense, having a score with messagePermit?

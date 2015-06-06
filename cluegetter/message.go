@@ -52,6 +52,7 @@ type MessageHeader interface {
 }
 
 type MessageCheckResult struct {
+	module          string
 	suggestedAction int
 	message         string
 	score           int /** 100 = unwanted. 0 = OK **/
@@ -62,6 +63,7 @@ var MessageInsertRcptStmt = *new(*sql.Stmt)
 var MessageInsertMsgRcptStmt = *new(*sql.Stmt)
 var MessageInsertMsgHdrStmt = *new(*sql.Stmt)
 var MessageSetVerdictStmt = *new(*sql.Stmt)
+var MessageInsertModuleResultStmt = *new(*sql.Stmt)
 
 func messageStart() {
 	stmt, err := Rdbms.Prepare(`INSERT INTO message (id, session, date, sender, rcpt_count)
@@ -96,6 +98,12 @@ func messageStart() {
 	}
 	MessageSetVerdictStmt = stmt
 
+	stmt, err = Rdbms.Prepare(`INSERT INTO message_result (message, module, verdict, score) VALUES(?, ?, ?, ?)`)
+	if err != nil {
+		Log.Fatal(err)
+	}
+	MessageInsertModuleResultStmt = stmt
+
 	Log.Info("Message handler started successfully")
 }
 
@@ -114,9 +122,17 @@ func messageGetVerdict(msg Message) (int, string) {
 
 	var totalScores [3]int
 
+	verdictValue := [3]string{"permit", "tempfail", "reject"}
 	for result := range messageGetResults(msg) {
 		results[result.suggestedAction] = append(results[result.suggestedAction], result)
 		totalScores[result.suggestedAction] += result.score
+
+		_, err := MessageInsertModuleResultStmt.Exec(
+					msg.getQueueId(), result.module, verdictValue[result.suggestedAction], result.score)
+		if err != nil {
+			StatsCounters["RdbmsErrors"].increase(1)
+			Log.Error(err.Error())
+		}
 	}
 
 	getMessage := func(results []*MessageCheckResult) string {
