@@ -8,7 +8,7 @@
 package cluegetter
 
 import (
-	"code.google.com/p/gcfg"
+	"github.com/scalingdata/gcfg"
 )
 
 type config struct {
