@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"github.com/op/go-logging"
 	"log"
+	"log/syslog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -72,7 +73,7 @@ func initLogging(logLevelStr string) {
 	formatter := logging.NewBackendFormatter(stdout, formatStdout)
 	stdoutLeveled := logging.AddModuleLevel(formatter)
 	stdoutLeveled.SetLevel(logLevel, "")
-	syslogBackend, err := logging.NewSyslogBackend("")
+	syslogBackend, err := logging.NewSyslogBackendPriority("cluegetter", syslog.LOG_MAIL)
 	if err != nil {
 		Log.Fatal(err)
 	}
