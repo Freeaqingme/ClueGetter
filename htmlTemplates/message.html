@@ -1,0 +1,63 @@
+{{ define "title" }}Message{{ end }}
+{{ define "body" }}
+
+<dl class="dl-horizontal">
+    <dt>Date</dt>
+    <dd>{{printf "%s" .Date}}</dd>
+    <dt>IP</dt>
+    <dd>{{printf "%s" .Ip}}</dd>
+    <dt>Sasl Username</dt>
+    <dd>{{printf "%s" .SaslUsername}}</dd>
+    <dt>Sender</dt>
+    <dd>{{printf "%s" .Sender}}</dd>
+    <dt>Recipient Count</dt>
+    <dd>{{printf "%d" .RcptCount}}</dd>
+    <dt>Recipients</dt>
+    {{ range $key, $value := .Recipients }}
+        <dd>{{ $value.Email }}</dd>
+    {{ end }}
+    <dt>Verdict</dt>
+    <dd>{{printf "%s" .Verdict}}</dd>
+    <dt>Verdict Message</dt>
+    <dd>{{printf "%s" .VerdictMsg}}</dd>
+    <dt>Reject Score</dt>
+    <dd>{{printf "%f" .RejectScore}}</dd>
+    <dt>Tempfail Score</dt>
+    <dd>{{printf "%f" .TempfailScore}}</dd>
+    <dt>Headers</dt>
+    <dd>
+        <dl class="dl-horizontal">
+            <dt></dt><dd></dd> <!-- Circumvent CSS bug -->
+            {{ range $key, $value := .Headers }}
+                <dt>{{ $value.Name }}</dt>
+                <dd>{{ $value.Body }}</dd>
+            {{ end }}
+        </dl>
+    </dd>
+</dl>
+
+<h2>Check Results</h2>
+<table class="table">
+    <tr>
+    <th>Module</th><th>Verdict</th><th>Score</th><th>Determinants</th>
+    </tr>
+    {{ range $key, $value := .CheckResults }}
+        <tr>
+            <td>{{ $value.Module }}</td>
+            <td>{{ $value.Verdict }}</td>
+            <td>{{ $value.Score }}</td>
+            <td class="determinant">{{ $value.Determinants }}</td>
+        </tr>
+    {{ end }}
+</table>
+
+{{ end }}
+{{ define "script_footer" }}
+<script>
+    $(".determinant").each(function() {
+        var jsonStr = $(this).text();
+        var jsonObj = JSON.parse(jsonStr);
+        $(this).html("<pre>"  + JSON.stringify(jsonObj, null, '\t') + "</pre>");
+    })
+</script>
+{{ end }}

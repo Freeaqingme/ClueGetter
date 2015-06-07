@@ -51,7 +51,7 @@ func rdbmsStop() {
 
 func rdbmsGetDsn(display bool) string {
 	cfg := Config.ClueGetter
-	dsn_options := "sql_notes=false"
+	dsn_options := "sql_notes=false&parseTime=true"
 	if cfg.Rdbms_Mysql_Strictmode {
 		dsn_options += "&strict=true"
 	}
