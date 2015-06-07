@@ -8,10 +8,13 @@
 package cluegetter
 
 import (
+	"encoding/json"
+	"fmt"
 	"html/template"
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -31,6 +34,7 @@ func httpStart(done <-chan struct{}) {
 
 	http.HandleFunc("/stats/", httpStatsHandler)
 	http.HandleFunc("/message/", httpHandlerMessage)
+	http.HandleFunc("/message/searchEmail/", httpHandlerMessageSearchEmail)
 	http.HandleFunc("/", httpIndexHandler)
 
 	go http.Serve(listener, nil)
@@ -54,6 +58,7 @@ type httpMessage struct {
 	Ip           string
 	SaslUsername string
 
+	Id            string
 	SessionId     int
 	Date          *time.Time
 	Sender        string
@@ -81,6 +86,59 @@ type httpMessageCheckResult struct {
 	Verdict      string
 	Score        float64
 	Determinants string
+}
+
+func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
+	address := r.URL.Path[len("/message/searchEmail/"):]
+	var local, domain string
+	if strings.Index(address, "@") != -1 {
+		local = strings.Split(address, "@")[0]
+		domain = strings.Split(address, "@")[1]
+	} else {
+		domain = address
+	}
+
+	messages := make([]*httpMessage, 0)
+	rows, _ := Rdbms.Query(`
+		select m.id, m.date, m.sender, m.rcpt_count, m.verdict,
+			GROUP_CONCAT(distinct IF(r.domain = '', r.local, (r.local || '@' || r.domain))) recipients
+			FROM message m
+				LEFT JOIN message_recipient mr on mr.message = m.id
+				LEFT JOIN recipient r ON r.id = mr.recipient
+			WHERE m.sender = ?
+				OR (r.local = ? AND r.domain = ?)
+			GROUP BY m.id ORDER BY date DESC LIMIT 0,250
+	`, address, local, domain)
+	defer rows.Close()
+	for rows.Next() {
+		message := &httpMessage{Recipients: make([]*httpMessageRecipient, 0)}
+		var rcptsStr string
+		rows.Scan(&message.Id, &message.Date, &message.Sender, &message.RcptCount,
+			&message.Verdict, &rcptsStr)
+		for _, rcpt := range strings.Split(rcptsStr, ",") {
+			message.Recipients = append(message.Recipients, &httpMessageRecipient{Email: rcpt})
+		}
+		messages = append(messages, message)
+	}
+
+	if r.FormValue("json") == "1" {
+		httpReturnJson(w, messages)
+		return
+	}
+
+	cwd, _ := os.Getwd()
+	tpl := template.Must(template.ParseFiles(
+		cwd+"/htmlTemplates/messageSearchEmail.html", cwd+"/htmlTemplates/skeleton.html"))
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := tpl.ExecuteTemplate(w, "skeleton.html", messages); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func httpReturnJson(w http.ResponseWriter, obj interface{}) {
+	jsonStr, _ := json.Marshal(obj)
+	fmt.Fprintf(w, string(jsonStr))
 }
 
 func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
@@ -128,6 +186,11 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 		msg.CheckResults = append(msg.CheckResults, checkResult)
 	}
 
+	if r.FormValue("json") == "1" {
+		httpReturnJson(w, msg)
+		return
+	}
+
 	cwd, _ := os.Getwd()
 	tpl := template.Must(template.ParseFiles(cwd+"/htmlTemplates/message.html", cwd+"/htmlTemplates/skeleton.html"))
 
@@ -142,6 +205,11 @@ func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.FormValue("queueId") != "" {
 		http.Redirect(w, r, "/message/"+r.FormValue("queueId"), http.StatusFound)
+		return
+	}
+
+	if r.FormValue("mailAddress") != "" {
+		http.Redirect(w, r, "/message/searchEmail/"+r.FormValue("mailAddress"), http.StatusFound)
 		return
 	}
 

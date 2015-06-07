@@ -1,0 +1,29 @@
+{{ define "title" }}Search Results{{ end }}
+{{ define "body" }}
+
+<table class="table table-striped">
+    <tr>
+        <th>Id</th><th>Date</th><th>Verdict</th><th>Sender</th><th>Rcpt Count</th><th>Recipients</th>
+    </tr>
+{{ range $key, $msg := . }}
+    <tr>
+        <td><a href="/message/{{ $msg.Id }}">{{ $msg.Id }}</a></td>
+        <td>{{ $msg.Date }}</td>
+        <td>{{ $msg.Verdict }}</td>
+        <td>{{ $msg.Sender }}</td>
+        <td>{{ $msg.RcptCount }}</td>
+        <td>
+            {{ range $key2, $recipient := .Recipients }}
+                {{ $recipient.Email }}
+            {{ end }}
+        </td>
+    </tr>
+
+
+
+{{ end }}
+
+{{ end }}
+{{ define "script_footer" }}
+
+{{ end }}
