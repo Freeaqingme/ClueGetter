@@ -118,7 +118,6 @@ func statsStop() {
 	Log.Info("Stats module stopped")
 }
 
-
 func statsPrune() {
 	ticker := time.NewTicker(900 * time.Second)
 

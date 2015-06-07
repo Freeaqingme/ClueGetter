@@ -53,8 +53,8 @@ func saGetResult(msg Message) *MessageCheckResult {
 		suggestedAction: messageReject,
 		message: "Our system has detected that this message is likely unsolicited mail (SPAM). " +
 			"To reduce the amount of spam, this message has been blocked.",
-		score: report.score,
-		determinants: map[string]interface{}{ "report": report.facts },
+		score:        report.score,
+		determinants: map[string]interface{}{"report": report.facts},
 	}
 }
 
@@ -77,7 +77,7 @@ func saGetRawReply(msg Message) (*spamc.SpamDOut, error) {
  The spamc client library returns a pretty shitty
  format, So we try to make the best of it and
  parse it into some nice structs.
- */
+*/
 func saParseReply(reply *spamc.SpamDOut) *saReport {
 	report := &saReport{facts: make([]*saReportFact, 0)}
 

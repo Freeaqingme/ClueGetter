@@ -9,10 +9,10 @@ package cluegetter
 
 import (
 	"database/sql"
+	"encoding/json"
 	"strings"
 	"sync"
 	"time"
-	"encoding/json"
 )
 
 const (
@@ -68,6 +68,14 @@ var MessageSetVerdictStmt = *new(*sql.Stmt)
 var MessageInsertModuleResultStmt = *new(*sql.Stmt)
 
 func messageStart() {
+	StatsCounters["MessageVerdictPermit"] = &StatsCounter{}
+	StatsCounters["MessageVerdictTempfail"] = &StatsCounter{}
+	StatsCounters["MessageVerdictReject"] = &StatsCounter{}
+	StatsCounters["MessageVerdictRejectQuotas"] = &StatsCounter{}
+	StatsCounters["MessageVerdictRejectSpamassassin"] = &StatsCounter{}
+	StatsCounters["MessageVerdictTempfailQuotas"] = &StatsCounter{}
+	StatsCounters["MessageVerdictTempfailSpamassassin"] = &StatsCounter{}
+
 	stmt, err := Rdbms.Prepare(`INSERT INTO message (id, session, date, sender, body, rcpt_count)
 								VALUES (?, ?, ?, ?, ?, ?)`)
 	if err != nil {
@@ -139,30 +147,34 @@ func messageGetVerdict(msg Message) (int, string) {
 		}
 	}
 
-	getMessage := func(results []*MessageCheckResult) string {
-		out := results[0].message
+	getDecidingResultWithMessage := func(results []*MessageCheckResult) *MessageCheckResult {
+		out := results[0]
 		maxScore := float64(0)
 		for _, result := range results {
 			if result.score > maxScore && result.message != "" {
-				out = result.message
+				out = result
 				maxScore = result.score
 			}
 		}
-
 		return out
 	}
 
 	if totalScores[messageReject] > Config.ClueGetter.Message_Reject_Score {
-		verdictMsg := getMessage(results[messageReject])
-		messageSaveVerdict(msg, messageReject, verdictMsg, totalScores[messageReject], totalScores[messageTempFail])
-		return messageReject, verdictMsg
+		determinant := getDecidingResultWithMessage(results[messageReject])
+		StatsCounters["MessageVerdictReject"].increase(1)
+		StatsCounters["MessageVerdictReject"+strings.Title(determinant.module)].increase(1)
+		messageSaveVerdict(msg, messageReject, determinant.message, totalScores[messageReject], totalScores[messageTempFail])
+		return messageReject, determinant.message
 	}
 	if (totalScores[messageTempFail] + totalScores[messageReject]) > Config.ClueGetter.Message_Tempfail_Score {
-		verdictMsg := getMessage(results[messageTempFail])
-		messageSaveVerdict(msg, messageTempFail, verdictMsg, totalScores[messageReject], totalScores[messageTempFail])
-		return messageTempFail, verdictMsg
+		determinant := getDecidingResultWithMessage(results[messageTempFail])
+		StatsCounters["MessageVerdictTempfail"].increase(1)
+		StatsCounters["MessageVerdictTempfail"+strings.Title(determinant.module)].increase(1)
+		messageSaveVerdict(msg, messageTempFail, determinant.message, totalScores[messageReject], totalScores[messageTempFail])
+		return messageTempFail, determinant.message
 	}
 
+	StatsCounters["MessageVerdictPermit"].increase(1)
 	messageSaveVerdict(msg, messagePermit, "", totalScores[messageReject], totalScores[messageTempFail])
 	return messagePermit, ""
 }

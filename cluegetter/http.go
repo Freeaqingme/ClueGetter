@@ -8,9 +8,9 @@
 package cluegetter
 
 import (
-	"net/http"
-	"net"
 	"html/template"
+	"net"
+	"net/http"
 	"os"
 )
 
@@ -48,7 +48,7 @@ func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 	foo := foo{Foo: "Blaat"}
 
 	cwd, _ := os.Getwd()
-	tpl := template.Must(template.ParseFiles(cwd + "/htmlTemplates/index.html", cwd + "/htmlTemplates/skeleton.html"))
+	tpl := template.Must(template.ParseFiles(cwd+"/htmlTemplates/index.html", cwd+"/htmlTemplates/skeleton.html"))
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := tpl.ExecuteTemplate(w, "skeleton.html", foo); err != nil {
@@ -57,14 +57,13 @@ func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-
 func httpStatsHandler(w http.ResponseWriter, r *http.Request) {
 	foo := foo{Foo: "Blaat"}
 
 	//	templates := make(map[string]*template.Template)
 
 	cwd, _ := os.Getwd()
-	tpl := template.Must(template.ParseFiles(cwd + "/htmlTemplates/stats.html", cwd + "/htmlTemplates/skeleton.html"))
+	tpl := template.Must(template.ParseFiles(cwd+"/htmlTemplates/stats.html", cwd+"/htmlTemplates/skeleton.html"))
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := tpl.ExecuteTemplate(w, "skeleton.html", foo); err != nil {

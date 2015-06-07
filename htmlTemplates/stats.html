@@ -1,6 +1,7 @@
 {{ define "title" }}Stats{{ end }}
 {{ define "body" }}
 <p id="cmd"></p>
+<p>All stats except for the Runtime Memstats are data from the last 15 minutes</p>
 <h2>Runtime Memstats</h2>
 <h3>General</h3>
 <table>
@@ -54,6 +55,17 @@
 <table>
     <tr title="Number of RDBMS Queries performed"><td>Queries</td><td id="stats-value-RdbmsQueries"></td></tr>
     <tr title="Number of RDBMS Errors ::sadface:: (better check your logs!)"><td>Errors</td><td id="stats-value-RdbmsErrors"></td></tr>
+</table>
+
+<h2>Message</h2>
+<table>
+    <tr title=""><td>Verdict Permit</td><td>Total</td><td id="stats-value-MessageVerdictPermit"></td></tr>
+    <tr title=""><td>Verdict Tempfail</td><td>Total</td><td id="stats-value-MessageVerdictTempfail"></td></tr>
+    <tr title=""><td>Verdict Reject</td><td>Total</td><td id="stats-value-MessageVerdictReject"></td></tr>
+    <tr title=""><td>Verdict Tempfail</td><td>Quotas</td><td id="stats-value-MessageVerdictTempfailQuotas"></td></tr>
+    <tr title=""><td>Verdict Tempfail</td><td>Spamassassin</td><td id="stats-value-MessageVerdictTempfailSpamassassin"></td></tr>
+    <tr title=""><td>Verdict Reject</td><td>Quotas</td><td id="stats-value-MessageVerdictRejectQuotas"></td></tr>
+    <tr title=""><td>Verdict Reject</td><td>Spamassassin</td><td id="stats-value-MessageVerdictRejectSpamassassin"></td></tr>
 </table>
 
 <h2>Milter</h2>
