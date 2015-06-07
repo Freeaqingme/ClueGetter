@@ -9,7 +9,6 @@ package cluegetter
 
 import (
 	"net/http"
-//	"fmt"
 	"net"
 	"html/template"
 	"os"
@@ -29,8 +28,8 @@ func httpStart(done <-chan struct{}) {
 	}
 	Log.Info("HTTP interface now listening on %s", listener.Addr())
 
-	http.HandleFunc("/", handler)
-//	http.HandleFunc("/view/", handler)
+	http.HandleFunc("/stats/", httpStatsHandler)
+	http.HandleFunc("/", httpIndexHandler)
 
 	go http.Serve(listener, nil)
 
@@ -45,17 +44,30 @@ type foo struct {
 	Foo string
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
+func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 	foo := foo{Foo: "Blaat"}
 
 	cwd, _ := os.Getwd()
-	tmpl, err := template.ParseFiles(cwd + "/httpTemplates/skeleton.html")
-	if err != nil {
+	tpl := template.Must(template.ParseFiles(cwd + "/htmlTemplates/index.html", cwd + "/htmlTemplates/skeleton.html"))
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := tpl.ExecuteTemplate(w, "skeleton.html", foo); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
 
-	if err := tmpl.Execute(w, foo); err != nil {
+}
+
+
+func httpStatsHandler(w http.ResponseWriter, r *http.Request) {
+	foo := foo{Foo: "Blaat"}
+
+	//	templates := make(map[string]*template.Template)
+
+	cwd, _ := os.Getwd()
+	tpl := template.Must(template.ParseFiles(cwd + "/htmlTemplates/stats.html", cwd + "/htmlTemplates/skeleton.html"))
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := tpl.ExecuteTemplate(w, "skeleton.html", foo); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 

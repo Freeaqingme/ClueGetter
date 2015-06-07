@@ -44,6 +44,11 @@ func milterStart() {
 	StatsCounters["MilterCallbackEnvFrom"] = &StatsCounter{}
 	StatsCounters["MilterCallbackEnvRcpt"] = &StatsCounter{}
 	StatsCounters["MilterCallbackHeader"] = &StatsCounter{}
+	StatsCounters["MilterCallbackEoh"] = &StatsCounter{}
+	StatsCounters["MilterCallbackBody"] = &StatsCounter{}
+	StatsCounters["MilterCallbackEom"] = &StatsCounter{}
+	StatsCounters["MilterCallbackAbort"] = &StatsCounter{}
+	StatsCounters["MilterCallbackClose"] = &StatsCounter{}
 	StatsCounters["MilterProtocolErrors"] = &StatsCounter{}
 
 	milter := new(milter)
@@ -152,6 +157,7 @@ func (milter *milter) Eoh(ctx uintptr) (sfsistat int8) {
 	msg := d.getLastMessage()
 	msg.QueueId = m.GetSymVal(ctx, "i")
 
+	StatsCounters["MilterCallbackEoh"].increase(1)
 	Log.Debug("%d milter.Eoh() was called", d.getId())
 	return
 }
@@ -163,12 +169,14 @@ func (milter *milter) Body(ctx uintptr, body []byte) (sfsistat int8) {
 	msg := s.getLastMessage()
 	msg.Body = append(msg.Body, bodyStr)
 
+	StatsCounters["MilterCallbackBody"].increase(1)
 	Log.Debug("%d milter.Body() was called. Length of body: %d", s.getId(), len(bodyStr))
 	return
 }
 
 func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
 	s := milterGetSession(ctx, true)
+	StatsCounters["MilterCallbackEom"].increase(1)
 	Log.Debug("%d milter.Eom() was called", s.getId())
 
 	verdict, msg := messageGetVerdict(s.getLastMessage())
@@ -191,6 +199,7 @@ func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
 }
 
 func (milter *milter) Abort(ctx uintptr) (sfsistat int8) {
+	StatsCounters["MilterCallbackAbort"].increase(1)
 	Log.Debug("milter.Abort() was called")
 	milterGetSession(ctx, false)
 
@@ -198,6 +207,7 @@ func (milter *milter) Abort(ctx uintptr) (sfsistat int8) {
 }
 
 func (milter *milter) Close(ctx uintptr) (sfsistat int8) {
+	StatsCounters["MilterCallbackClose"].increase(1)
 	s := milterGetSession(ctx, false)
 	if s == nil {
 		Log.Debug("%d milter.Close() was called. No context supplied")

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
 
-    <title>Starter Template for Bootstrap</title>
+    <title>{{ template "title" . }} | ClueGetter</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css">
     <style>
@@ -15,7 +15,6 @@
         }
         .starter-template {
             padding: 40px 15px;
-            text-align: center;
         }
     </style>
 </head>
@@ -32,13 +31,14 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="#">ClueGetter</a>
+            <a class="navbar-brand" target="_blank"
+               href="https://github.com/Freeaqingme/ClueGetter">ClueGetter</a>
         </div>
         <div id="navbar" class="collapse navbar-collapse">
             <ul class="nav navbar-nav">
-                <li class="active"><a href="#">Home</a></li>
-                <li><a href="#about">About</a></li>
-                <li><a href="#contact">Contact</a></li>
+                <li><a href="/">Home</a></li>
+                <li><a href="/stats/">Stats</a></li>
+                <!--<li><a href="#contact">Contact</a></li>-->
             </ul>
         </div>
         <!--/.nav-collapse -->
@@ -47,7 +47,7 @@
 
 <div class="container">
     <div class="starter-template">
-        <h1>Bootstrap starter template</h1>
+        <h1>{{ template "title" . }}</h1>
         {{ template "body" . }}
 
     </div>
@@ -56,6 +56,10 @@
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+
+
+        {{ template "script_footer" . }}
 
 </body>
 </html>

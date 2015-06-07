@@ -113,7 +113,6 @@ func statsLog() {
 	}
 }
 
-
 func statsStop() {
 	close(StatsControl)
 	Log.Info("Stats module stopped")
