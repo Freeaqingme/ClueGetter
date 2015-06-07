@@ -39,10 +39,12 @@ func Main() {
 		LoadConfig(*configFile, &Config)
 	}
 
+	done := make(chan struct{})
 	statsStart()
 	rdbmsStart()
 	setInstance()
 
+	httpStart(done)
 	messageStart()
 	quotasStart()
 	milterStart()
@@ -50,10 +52,12 @@ func Main() {
 	s := <-ch
 	Log.Notice(fmt.Sprintf("Received '%s', exiting...", s.String()))
 
+	close(done)
 	milterStop()
 	quotasStop()
 	messageStop()
 	rdbmsStop()
+	statsStop()
 
 	Log.Notice("Successfully ceased all operations.")
 	os.Exit(0)

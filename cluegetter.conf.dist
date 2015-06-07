@@ -1,6 +1,6 @@
 [cluegetter]
-stats-http-listen-port = 1937
-stats-http-listen-host = "0.0.0.0"
+http-listen-port = 1937
+http-listen-host = "0.0.0.0"
 
 rdbms-driver           = mysql
 rdbms-user             = root

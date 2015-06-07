@@ -9,17 +9,12 @@ package cluegetter
 
 import (
 	"expvar"
-	"fmt"
-	"log"
-	"net"
-	"net/http"
 	"sync"
 	"time"
 )
 
 var StatsControl = make(chan struct{})
 var StatsCounters = make(map[string]*StatsCounter)
-var StatsHttpListener *net.TCPListener
 
 type statsDatapoint struct {
 	timestamp int64 // time.Now().Nanoseconds()
@@ -86,8 +81,6 @@ func (s *StatsCounter) prune(name string) {
 }
 
 func statsStart() {
-
-	statsHttpStart()
 	go statsLog()
 	go statsPrune()
 
@@ -120,6 +113,13 @@ func statsLog() {
 	}
 }
 
+
+func statsStop() {
+	close(StatsControl)
+	Log.Info("Stats module stopped")
+}
+
+
 func statsPrune() {
 	ticker := time.NewTicker(900 * time.Second)
 
@@ -138,34 +138,4 @@ func statsPrune() {
 		}
 	}
 
-}
-
-func statsHttpStart() {
-	listen_host := Config.ClueGetter.Stats_Http_Listen_Host
-	listen_port := Config.ClueGetter.Stats_Http_Listen_Port
-
-	laddr, err := net.ResolveTCPAddr("tcp", listen_host+":"+listen_port)
-	if nil != err {
-		log.Fatalln(err)
-	}
-	listener, err := net.ListenTCP("tcp", laddr)
-	if nil != err {
-		log.Fatalln(err)
-	}
-	Log.Info("Stats HTTP interface now listening on %s", listener.Addr())
-
-	http.HandleFunc("/", handler)
-	go http.Serve(listener, nil)
-
-	StatsHttpListener = listener
-}
-
-func statsStop() {
-	close(StatsControl)
-	StatsHttpListener.Close()
-	Log.Info("Stats HTTP Listener closed")
-}
-
-func handler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Path: %s", r.URL.Path[1:])
 }
