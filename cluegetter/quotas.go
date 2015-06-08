@@ -70,7 +70,7 @@ func quotasIsAllowed(msg Message) *MessageCheckResult {
 			module:          "quotas",
 			suggestedAction: messageTempFail,
 			message:         "An internal error occurred",
-			score:           10,
+			score:           100,
 		}
 	}
 	quotas := make(map[uint64]struct{})
@@ -135,7 +135,8 @@ func quotasIsAllowed(msg Message) *MessageCheckResult {
 		module:          "quotas",
 		suggestedAction: messagePermit,
 		message:         "",
-		score:           1, // TODO: Does it make sense, having a score with messagePermit?
+		score:           1,
+		determinants:    determinants,
 	}
 }
 
