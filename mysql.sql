@@ -41,7 +41,9 @@ CREATE TABLE `message` (
   `id` varchar(25) CHARACTER SET ascii NOT NULL,
   `session` bigint(20) unsigned NOT NULL,
   `date` datetime NOT NULL,
-  `sender` varchar(255) NOT NULL DEFAULT '',
+  `messageId` varchar(255) NOT NULL COMMENT 'Value of Message-ID header',
+  `sender_local` varchar(64) NOT NULL,
+  `sender_domain` varchar(253) NOT NULL,
   `body` longtext,
   `rcpt_count` int(10) unsigned NOT NULL DEFAULT '1',
   `verdict` enum('permit','tempfail','reject') DEFAULT NULL,
@@ -50,6 +52,7 @@ CREATE TABLE `message` (
   `tempfailScore` float(6,2) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `session` (`session`),
+  KEY `messageId` (`messageId`(25)),
   CONSTRAINT `message_ibfk_1` FOREIGN KEY (`session`) REFERENCES `session` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -69,7 +72,7 @@ CREATE TABLE `message_header` (
   UNIQUE KEY `id` (`id`),
   KEY `message` (`message`),
   CONSTRAINT `message_header_ibfk_1` FOREIGN KEY (`message`) REFERENCES `message` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=251 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=390 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -103,7 +106,7 @@ CREATE TABLE `message_result` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `message` (`message`,`module`),
   CONSTRAINT `message_result_ibfk_1` FOREIGN KEY (`message`) REFERENCES `message` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=50 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=110 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -126,7 +129,7 @@ CREATE TABLE `quota` (
   KEY `profile` (`profile`),
   KEY `selector_value` (`selector`,`value`),
   CONSTRAINT `quota_ibfk_1` FOREIGN KEY (`profile`) REFERENCES `quota_profile` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=205 DEFAULT CHARSET=ascii;
+) ENGINE=InnoDB AUTO_INCREMENT=207 DEFAULT CHARSET=ascii;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -194,7 +197,7 @@ CREATE TABLE `recipient` (
   `domain` varchar(253) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `local` (`local`,`domain`)
-) ENGINE=InnoDB AUTO_INCREMENT=91 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=136 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -214,7 +217,7 @@ CREATE TABLE `session` (
   UNIQUE KEY `id` (`id`),
   KEY `cluegetter_instance` (`cluegetter_instance`),
   CONSTRAINT `session_ibfk_1` FOREIGN KEY (`cluegetter_instance`) REFERENCES `instance` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=76 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=119 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -226,4 +229,4 @@ CREATE TABLE `session` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-06-07  1:09:01
+-- Dump completed on 2015-06-08 22:22:40

@@ -77,8 +77,8 @@ func messageStart() {
 	StatsCounters["MessageVerdictTempfailQuotas"] = &StatsCounter{}
 	StatsCounters["MessageVerdictTempfailSpamassassin"] = &StatsCounter{}
 
-	stmt, err := Rdbms.Prepare(`INSERT INTO message (id, session, date, sender, body, rcpt_count)
-								VALUES (?, ?, ?, ?, ?, ?)`)
+	stmt, err := Rdbms.Prepare(`INSERT INTO message (id, session, date, messageId, sender_local,
+								sender_domain, body, rcpt_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		Log.Fatal(err)
 	}
@@ -271,12 +271,29 @@ func messageGetEnabledModules() (out map[string]func(Message) *MessageCheckResul
 func messageSave(msg Message) {
 	sess := *msg.getSession()
 
+	var sender_local, sender_domain string
+	if strings.Index(msg.getFrom(), "@") != -1 {
+		sender_local = strings.Split(msg.getFrom(), "@")[0]
+		sender_domain = strings.Split(msg.getFrom(), "@")[1]
+	} else {
+		sender_local = msg.getFrom()
+	}
+
+	messageIdHdr := ""
+	for _, v := range msg.getHeaders() {
+		if strings.EqualFold((*v).getKey(), "Message-Id") {
+			messageIdHdr = (*v).getValue()
+		}
+	}
+
 	StatsCounters["RdbmsQueries"].increase(1)
 	_, err := MessageInsertMsgStmt.Exec(
 		msg.getQueueId(),
 		sess.getId(),
 		time.Now(),
-		msg.getFrom(),
+		messageIdHdr,
+		sender_local,
+		sender_domain,
 		msg.getBody(),
 		msg.getRcptCount(),
 	)

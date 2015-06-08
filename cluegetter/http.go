@@ -100,15 +100,15 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 
 	messages := make([]*httpMessage, 0)
 	rows, _ := Rdbms.Query(`
-		select m.id, m.date, m.sender, m.rcpt_count, m.verdict,
+		SELECT m.id, m.date, m.sender_local || '@' || m.sender_domain sender, m.rcpt_count, m.verdict,
 			GROUP_CONCAT(distinct IF(r.domain = '', r.local, (r.local || '@' || r.domain))) recipients
 			FROM message m
 				LEFT JOIN message_recipient mr on mr.message = m.id
 				LEFT JOIN recipient r ON r.id = mr.recipient
-			WHERE m.sender = ?
+			WHERE (m.sender_local = ? AND m.sender_domain = ?)
 				OR (r.local = ? AND r.domain = ?)
 			GROUP BY m.id ORDER BY date DESC LIMIT 0,250
-	`, address, local, domain)
+	`, local, domain, local, domain)
 	defer rows.Close()
 	for rows.Next() {
 		message := &httpMessage{Recipients: make([]*httpMessageRecipient, 0)}
@@ -144,7 +144,8 @@ func httpReturnJson(w http.ResponseWriter, obj interface{}) {
 func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 	queueId := r.URL.Path[len("/message/"):]
 	row := Rdbms.QueryRow(
-		"SELECT m.session, m.date, m.sender, m.rcpt_count, m.verdict, m.verdict_msg, "+
+		"SELECT m.session, m.date, m.sender_local || '@' || m.sender_domain sender, " +
+			"       m.rcpt_count, m.verdict, m.verdict_msg, "+
 			"       m.rejectScore, m.tempfailScore, s.ip, s.sasl_username "+
 			"FROM message m LEFT JOIN session s ON s.id = m.session WHERE m.id = ?", queueId)
 	msg := &httpMessage{Recipients: make([]*httpMessageRecipient, 0)}
