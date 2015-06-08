@@ -74,6 +74,8 @@ func milterStop() {
 }
 
 func (milter *milter) Connect(ctx uintptr, hostname string, ip net.IP) (sfsistat int8) {
+	defer milterHandleError(ctx, &sfsistat)
+
 	sess := MilterDataIndex.getNewSession()
 	sess.Hostname = hostname
 	sess.Ip = ip.String()
@@ -87,6 +89,8 @@ func (milter *milter) Connect(ctx uintptr, hostname string, ip net.IP) (sfsistat
 }
 
 func (milter *milter) Helo(ctx uintptr, helo string) (sfsistat int8) {
+	defer milterHandleError(ctx, &sfsistat)
+
 	sess := milterGetSession(ctx, true)
 	if sess == nil { // This just doesn't seem to be supported by libmilter :(
 		StatsCounters["MilterProtocolErrors"].increase(1)
@@ -112,6 +116,8 @@ func (milter *milter) Helo(ctx uintptr, helo string) (sfsistat int8) {
 }
 
 func (milter *milter) EnvFrom(ctx uintptr, from []string) (sfsistat int8) {
+	defer milterHandleError(ctx, &sfsistat)
+
 	d := milterGetSession(ctx, true)
 	msg := d.getNewMessage()
 
@@ -127,6 +133,8 @@ func (milter *milter) EnvFrom(ctx uintptr, from []string) (sfsistat int8) {
 }
 
 func (milter *milter) EnvRcpt(ctx uintptr, rcpt []string) (sfsistat int8) {
+	defer milterHandleError(ctx, &sfsistat)
+
 	d := milterGetSession(ctx, true)
 	msg := d.getLastMessage()
 	msg.Rcpt = append(msg.Rcpt, rcpt[0])
@@ -137,6 +145,8 @@ func (milter *milter) EnvRcpt(ctx uintptr, rcpt []string) (sfsistat int8) {
 }
 
 func (milter *milter) Header(ctx uintptr, headerf, headerv string) (sfsistat int8) {
+	defer milterHandleError(ctx, &sfsistat)
+
 	var header MessageHeader
 	header = &milterMessageHeader{headerf, headerv}
 
@@ -150,6 +160,8 @@ func (milter *milter) Header(ctx uintptr, headerf, headerv string) (sfsistat int
 }
 
 func (milter *milter) Eoh(ctx uintptr) (sfsistat int8) {
+	defer milterHandleError(ctx, &sfsistat)
+
 	d := milterGetSession(ctx, true)
 	d.SaslSender = m.GetSymVal(ctx, "{auth_author}")
 	d.SaslMethod = m.GetSymVal(ctx, "{auth_type}")
@@ -163,6 +175,8 @@ func (milter *milter) Eoh(ctx uintptr) (sfsistat int8) {
 }
 
 func (milter *milter) Body(ctx uintptr, body []byte) (sfsistat int8) {
+	defer milterHandleError(ctx, &sfsistat)
+
 	bodyStr := string(body)
 
 	s := milterGetSession(ctx, true)
@@ -175,6 +189,8 @@ func (milter *milter) Body(ctx uintptr, body []byte) (sfsistat int8) {
 }
 
 func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
+	defer milterHandleError(ctx, &sfsistat)
+
 	s := milterGetSession(ctx, true)
 	StatsCounters["MilterCallbackEom"].increase(1)
 	Log.Debug("%d milter.Eom() was called", s.getId())
@@ -199,6 +215,8 @@ func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
 }
 
 func (milter *milter) Abort(ctx uintptr) (sfsistat int8) {
+	defer milterHandleError(ctx, &sfsistat)
+
 	StatsCounters["MilterCallbackAbort"].increase(1)
 	Log.Debug("milter.Abort() was called")
 	milterGetSession(ctx, false)
@@ -207,6 +225,8 @@ func (milter *milter) Abort(ctx uintptr) (sfsistat int8) {
 }
 
 func (milter *milter) Close(ctx uintptr) (sfsistat int8) {
+	defer milterHandleError(ctx, &sfsistat)
+
 	StatsCounters["MilterCallbackClose"].increase(1)
 	s := milterGetSession(ctx, false)
 	if s == nil {
@@ -218,6 +238,19 @@ func (milter *milter) Close(ctx uintptr) (sfsistat int8) {
 		s.persist()
 	}
 
+	return
+}
+
+func milterHandleError(ctx uintptr, sfsistat *int8) {
+	r:= recover()
+	if r == nil {
+		return
+	}
+
+	Log.Error("Panic ocurred while handling milter communication. Recovering. Error: %s", r)
+	StatsCounters["MessagePanics"].increase(1)
+	m.SetReply(ctx, "421", "4.7.0", "An internal error ocurred")
+	*sfsistat = m.Tempfail
 	return
 }
 

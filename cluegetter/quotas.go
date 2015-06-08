@@ -127,7 +127,7 @@ func quotasIsAllowed(msg Message) *MessageCheckResult {
 		StatsCounters["RdbmsQueries"].increase(1)
 		_, err := QuotaInsertQuotaMessageStmt.Exec(quota_id, msg.getQueueId())
 		if err != nil {
-			Log.Fatal(err) // TODO
+			panic("Could not execute QuotaInsertQuotaMessageStmt in quotasIsAllowed(). Error: " + err.Error())
 		}
 	}
 
@@ -234,11 +234,13 @@ func quotasGetRegexCounts(msg Message, factor string, factorValues []string) []*
 		StatsCounters["RdbmsQueries"].increase(1)
 		res, err := QuotaInsertDeducedQuotaStmt.Exec(factorValue, factor, factorValue)
 		if err != nil {
-			Log.Fatal(err) // TODO
+			panic("Could not execute QuotaInsertDeducedQuotaStmt in quotasGetRegexCounts(). Error: " + err.Error())
 		}
 		rowCnt, err := res.RowsAffected()
 		if err != nil {
-			Log.Fatal(err)
+			panic(
+				"Could not get rowsAffected from QuotaInsertDeducedQuotaStmt in quotasGetRegexCounts(). Error: " +
+				err.Error())
 		}
 		totalRowCount = +rowCnt
 	}

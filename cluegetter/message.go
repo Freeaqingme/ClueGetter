@@ -68,6 +68,7 @@ var MessageSetVerdictStmt = *new(*sql.Stmt)
 var MessageInsertModuleResultStmt = *new(*sql.Stmt)
 
 func messageStart() {
+	StatsCounters["MessagePanics"] = &StatsCounter{}
 	StatsCounters["MessageVerdictPermit"] = &StatsCounter{}
 	StatsCounters["MessageVerdictTempfail"] = &StatsCounter{}
 	StatsCounters["MessageVerdictReject"] = &StatsCounter{}
@@ -123,7 +124,19 @@ func messageStop() {
 	Log.Info("Message handler stopped successfully")
 }
 
-func messageGetVerdict(msg Message) (int, string) {
+func messageGetVerdict(msg Message) (verdict int, msgStr string) {
+	defer func() {
+		r:= recover()
+		if r == nil {
+			return
+		}
+		Log.Error("Panic caught in messageGetVerdict(). Recovering. Error: %s", r)
+		StatsCounters["MessagePanics"].increase(1)
+		verdict = messageTempFail
+		msgStr = "An internal error occurred."
+		return
+	}()
+
 	messageSave(msg)
 
 	var results [3][]*MessageCheckResult
@@ -176,7 +189,9 @@ func messageGetVerdict(msg Message) (int, string) {
 
 	StatsCounters["MessageVerdictPermit"].increase(1)
 	messageSaveVerdict(msg, messagePermit, "", totalScores[messageReject], totalScores[messageTempFail])
-	return messagePermit, ""
+	verdict = messagePermit
+	msgStr = ""
+	return
 }
 
 func messageSaveVerdict(msg Message, verdict int, verdictMsg string, rejectScore float64, tempfailScore float64) {
@@ -201,19 +216,34 @@ func messageGetResults(msg Message) chan *MessageCheckResult {
 	var wg sync.WaitGroup
 	out := make(chan *MessageCheckResult)
 
-	if Config.Quotas.Enabled {
+	modules := messageGetEnabledModules()
+	for moduleName, moduleCallback := range modules {
 		wg.Add(1)
-		go func() {
-			out <- quotasIsAllowed(msg)
-			wg.Done()
-		}()
-	}
-	if Config.SpamAssassin.Enabled {
-		wg.Add(1)
-		go func() {
-			out <- saGetResult(msg)
-			wg.Done()
-		}()
+		go func(moduleName string, moduleCallback (func(Message) *MessageCheckResult)) {
+			defer wg.Done()
+			defer func() {
+				r:= recover()
+				if r == nil {
+					return
+				}
+				Log.Error("Panic caught in %s. Recovering. Error: %s", moduleName, r)
+				StatsCounters["MessagePanics"].increase(1)
+
+				determinants := make(map[string]interface{})
+				determinants["error"] = r
+
+				out <- &MessageCheckResult {
+					module: moduleName,
+					suggestedAction: messageTempFail,
+					message: "An internal error ocurred",
+					score:   500,
+					determinants: determinants,
+				}
+				wg.Done()
+			}()
+
+			out <- moduleCallback(msg)
+		}(moduleName, moduleCallback)
 	}
 
 	go func() {
@@ -222,6 +252,20 @@ func messageGetResults(msg Message) chan *MessageCheckResult {
 	}()
 
 	return out
+}
+
+func messageGetEnabledModules() (out map[string]func(Message) *MessageCheckResult) {
+	out = make(map[string]func(Message) *MessageCheckResult)
+
+	if Config.Quotas.Enabled {
+		out["quotas"] = quotasIsAllowed
+	}
+
+	if Config.SpamAssassin.Enabled {
+		out["sa"] = saGetResult
+	}
+
+	return
 }
 
 func messageSave(msg Message) {
@@ -263,19 +307,20 @@ func messageSaveRecipients(recipients []string, msgId string) {
 		res, err := MessageInsertRcptStmt.Exec(local, domain)
 		if err != nil {
 			StatsCounters["RdbmsErrors"].increase(1)
-			Log.Error(err.Error())
+			panic("Could not execute MessageInsertRcptStmt in messageSaveRecipients(). Error: " + err.Error())
 		}
 
 		rcptId, err := res.LastInsertId()
 		if err != nil {
-			Log.Fatal(err)
+			StatsCounters["RdbmsErrors"].increase(1)
+			panic("Could not get lastinsertid from MessageInsertRcptStmt in messageSaveRecipients(). Error: " + err.Error())
 		}
 
 		StatsCounters["RdbmsQueries"].increase(1)
 		_, err = MessageInsertMsgRcptStmt.Exec(msgId, rcptId)
 		if err != nil {
 			StatsCounters["RdbmsErrors"].increase(1)
-			Log.Error(err.Error())
+			panic("Could not get execute MessageInsertMsgRcptStmt in messageSaveRecipients(). Error: " + err.Error())
 		}
 	}
 }

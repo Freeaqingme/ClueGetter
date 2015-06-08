@@ -124,12 +124,12 @@ func (s *milterSession) persist() {
 	if s.id == 0 {
 		res, err := milterSessionInsertStmt.Exec(instance, time.Now(), s.getIp(), s.getSaslUsername())
 		if err != nil {
-			Log.Fatal(err) // TODO
+			panic("Could not execute milterSessionInsertStmt in milterSession.persist(): " + err.Error())
 		}
 
 		id, err := res.LastInsertId()
 		if err != nil {
-			Log.Fatal(err) // TODO
+			panic("Could not get lastinsertid from milterSessionInsertStmt in milterSession.persist(): " + err.Error())
 		}
 
 		s.id = uint64(id)
@@ -137,7 +137,7 @@ func (s *milterSession) persist() {
 
 	_, err := milterSessionUpdateStmt.Exec(s.getIp(), s.getSaslUsername(), s.timeEnd, s.getId())
 	if err != nil {
-		Log.Fatal(err) // TODO
+		panic("Could not execute milterSessionUpdateStmt in milterSession.persist(): " + err.Error())
 	}
 }
 
