@@ -241,7 +241,7 @@ func quotasGetRegexCounts(msg Message, factor string, factorValues []string) []*
 		if err != nil {
 			panic(
 				"Could not get rowsAffected from QuotaInsertDeducedQuotaStmt in quotasGetRegexCounts(). Error: " +
-				err.Error())
+					err.Error())
 		}
 		totalRowCount = +rowCnt
 	}

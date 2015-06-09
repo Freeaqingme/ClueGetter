@@ -126,7 +126,7 @@ func messageStop() {
 
 func messageGetVerdict(msg Message) (verdict int, msgStr string) {
 	defer func() {
-		r:= recover()
+		r := recover()
 		if r == nil {
 			return
 		}
@@ -219,10 +219,10 @@ func messageGetResults(msg Message) chan *MessageCheckResult {
 	modules := messageGetEnabledModules()
 	for moduleName, moduleCallback := range modules {
 		wg.Add(1)
-		go func(moduleName string, moduleCallback (func(Message) *MessageCheckResult)) {
+		go func(moduleName string, moduleCallback func(Message) *MessageCheckResult) {
 			defer wg.Done()
 			defer func() {
-				r:= recover()
+				r := recover()
 				if r == nil {
 					return
 				}
@@ -232,12 +232,12 @@ func messageGetResults(msg Message) chan *MessageCheckResult {
 				determinants := make(map[string]interface{})
 				determinants["error"] = r
 
-				out <- &MessageCheckResult {
-					module: moduleName,
+				out <- &MessageCheckResult{
+					module:          moduleName,
 					suggestedAction: messageTempFail,
-					message: "An internal error ocurred",
-					score:   500,
-					determinants: determinants,
+					message:         "An internal error ocurred",
+					score:           500,
+					determinants:    determinants,
 				}
 				wg.Done()
 			}()

@@ -97,6 +97,9 @@ func (milter *milter) Helo(ctx uintptr, helo string) (sfsistat int8) {
 		m.SetReply(ctx, "421", "4.7.0", "HELO/EHLO can only be specified at start of session")
 		Log.Info("Received HELO/EHLO midway conversation. status=Tempfail rcode=421 xcode=4.7.0 ip=%s",
 			m.GetSymVal(ctx, "{client_addr}"))
+		if Config.ClueGetter.Noop {
+			return
+		}
 		return m.Tempfail
 	}
 
@@ -204,10 +207,16 @@ func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
 	case verdict == messageTempFail:
 		m.SetReply(ctx, "421", "4.7.0", msg)
 		Log.Info("Message TempFail: sess=%d message=%s msg: %s", s.getId(), s.getLastMessage().getQueueId(), msg)
+		if Config.ClueGetter.Noop {
+			return
+		}
 		return m.Tempfail
 	case verdict == messageReject:
 		m.SetReply(ctx, "550", "5.7.1", msg)
 		Log.Info("Message Reject: sess=%d message=%s msg: %s", s.getId(), s.getLastMessage().getQueueId(), msg)
+		if Config.ClueGetter.Noop {
+			return
+		}
 		return m.Reject
 	}
 
@@ -242,13 +251,16 @@ func (milter *milter) Close(ctx uintptr) (sfsistat int8) {
 }
 
 func milterHandleError(ctx uintptr, sfsistat *int8) {
-	r:= recover()
+	r := recover()
 	if r == nil {
 		return
 	}
 
 	Log.Error("Panic ocurred while handling milter communication. Recovering. Error: %s", r)
 	StatsCounters["MessagePanics"].increase(1)
+	if Config.ClueGetter.Noop {
+		return
+	}
 	m.SetReply(ctx, "421", "4.7.0", "An internal error ocurred")
 	*sfsistat = m.Tempfail
 	return

@@ -144,7 +144,7 @@ func httpReturnJson(w http.ResponseWriter, obj interface{}) {
 func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 	queueId := r.URL.Path[len("/message/"):]
 	row := Rdbms.QueryRow(
-		"SELECT m.session, m.date, m.sender_local || '@' || m.sender_domain sender, " +
+		"SELECT m.session, m.date, m.sender_local || '@' || m.sender_domain sender, "+
 			"       m.rcpt_count, m.verdict, m.verdict_msg, "+
 			"       m.rejectScore, m.tempfailScore, s.ip, s.sasl_username "+
 			"FROM message m LEFT JOIN session s ON s.id = m.session WHERE m.id = ?", queueId)
