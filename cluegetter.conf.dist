@@ -18,6 +18,8 @@ message-reject-score   = 5
 # so should always be higher than the reject score.
 message-tempfail-score = 8
 
+noop = false
+
 [quotas]
 enabled = true
 account-sender = false

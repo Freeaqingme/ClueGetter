@@ -25,13 +25,38 @@ type milterDataIndex struct {
 }
 
 func (di *milterDataIndex) getNewSession() *milterSession {
+	sess := &milterSession{timeStart: time.Now()}
+	sess.persist()
+
 	di.mu.Lock()
 	defer di.mu.Unlock()
 
-	sess := &milterSession{timeStart: time.Now()}
-	sess.persist()
 	di.sessions[sess.getId()] = sess
 	return sess
+}
+
+func (di *milterDataIndex) delete(s *milterSession, lock bool) {
+	s.timeEnd = time.Now()
+	s.persist()
+
+	if lock {
+		di.mu.Lock()
+		defer di.mu.Unlock()
+	}
+	delete(di.sessions, s.getId())
+}
+
+func (di *milterDataIndex) prune() {
+	now := time.Now()
+	di.mu.Lock()
+	defer di.mu.Unlock()
+
+	for k, v := range di.sessions {
+		if now.Sub(v.timeStart).Minutes() > 60 {
+			Log.Debug("Pruning session %d", k)
+			di.delete(v, false)
+		}
+	}
 }
 
 var MilterDataIndex milterDataIndex
@@ -66,11 +91,24 @@ func milterStart() {
 		}
 	}()
 
+	go milterPrune()
+
 	Log.Info("Milter module started")
 }
 
 func milterStop() {
 	m.Stop()
+}
+
+func milterPrune() {
+	ticker := time.NewTicker(900 * time.Second)
+
+	for {
+		select {
+		case <-ticker.C:
+			MilterDataIndex.prune()
+		}
+	}
 }
 
 func (milter *milter) Connect(ctx uintptr, hostname string, ip net.IP) (sfsistat int8) {
@@ -91,7 +129,7 @@ func (milter *milter) Connect(ctx uintptr, hostname string, ip net.IP) (sfsistat
 func (milter *milter) Helo(ctx uintptr, helo string) (sfsistat int8) {
 	defer milterHandleError(ctx, &sfsistat)
 
-	sess := milterGetSession(ctx, true)
+	sess := milterGetSession(ctx, true, true)
 	if sess == nil { // This just doesn't seem to be supported by libmilter :(
 		StatsCounters["MilterProtocolErrors"].increase(1)
 		m.SetReply(ctx, "421", "4.7.0", "HELO/EHLO can only be specified at start of session")
@@ -121,7 +159,7 @@ func (milter *milter) Helo(ctx uintptr, helo string) (sfsistat int8) {
 func (milter *milter) EnvFrom(ctx uintptr, from []string) (sfsistat int8) {
 	defer milterHandleError(ctx, &sfsistat)
 
-	d := milterGetSession(ctx, true)
+	d := milterGetSession(ctx, true, false)
 	msg := d.getNewMessage()
 
 	StatsCounters["MilterCallbackEnvFrom"].increase(1)
@@ -138,7 +176,7 @@ func (milter *milter) EnvFrom(ctx uintptr, from []string) (sfsistat int8) {
 func (milter *milter) EnvRcpt(ctx uintptr, rcpt []string) (sfsistat int8) {
 	defer milterHandleError(ctx, &sfsistat)
 
-	d := milterGetSession(ctx, true)
+	d := milterGetSession(ctx, true, false)
 	msg := d.getLastMessage()
 	msg.Rcpt = append(msg.Rcpt, rcpt[0])
 
@@ -153,7 +191,7 @@ func (milter *milter) Header(ctx uintptr, headerf, headerv string) (sfsistat int
 	var header MessageHeader
 	header = &milterMessageHeader{headerf, headerv}
 
-	d := milterGetSession(ctx, true)
+	d := milterGetSession(ctx, true, false)
 	msg := d.getLastMessage()
 	msg.Headers = append(msg.Headers, &header)
 
@@ -165,7 +203,7 @@ func (milter *milter) Header(ctx uintptr, headerf, headerv string) (sfsistat int
 func (milter *milter) Eoh(ctx uintptr) (sfsistat int8) {
 	defer milterHandleError(ctx, &sfsistat)
 
-	d := milterGetSession(ctx, true)
+	d := milterGetSession(ctx, true, false)
 	d.SaslSender = m.GetSymVal(ctx, "{auth_author}")
 	d.SaslMethod = m.GetSymVal(ctx, "{auth_type}")
 	d.SaslUsername = m.GetSymVal(ctx, "{auth_authen}")
@@ -182,7 +220,7 @@ func (milter *milter) Body(ctx uintptr, body []byte) (sfsistat int8) {
 
 	bodyStr := string(body)
 
-	s := milterGetSession(ctx, true)
+	s := milterGetSession(ctx, true, false)
 	msg := s.getLastMessage()
 	msg.Body = append(msg.Body, bodyStr)
 
@@ -194,7 +232,7 @@ func (milter *milter) Body(ctx uintptr, body []byte) (sfsistat int8) {
 func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
 	defer milterHandleError(ctx, &sfsistat)
 
-	s := milterGetSession(ctx, true)
+	s := milterGetSession(ctx, true, false)
 	StatsCounters["MilterCallbackEom"].increase(1)
 	Log.Debug("%d milter.Eom() was called", s.getId())
 
@@ -228,7 +266,7 @@ func (milter *milter) Abort(ctx uintptr) (sfsistat int8) {
 
 	StatsCounters["MilterCallbackAbort"].increase(1)
 	Log.Debug("milter.Abort() was called")
-	milterGetSession(ctx, false)
+	milterGetSession(ctx, false, true)
 
 	return
 }
@@ -237,16 +275,14 @@ func (milter *milter) Close(ctx uintptr) (sfsistat int8) {
 	defer milterHandleError(ctx, &sfsistat)
 
 	StatsCounters["MilterCallbackClose"].increase(1)
-	s := milterGetSession(ctx, false)
+	s := milterGetSession(ctx, false, true)
 	if s == nil {
 		Log.Debug("%d milter.Close() was called. No context supplied")
-	} else {
-		Log.Debug("%d milter.Close() was called", s.getId())
-
-		s.timeEnd = time.Now()
-		s.persist()
+		return
 	}
+	Log.Debug("%d milter.Close() was called", s.getId())
 
+	MilterDataIndex.delete(s, true)
 	return
 }
 
@@ -270,12 +306,20 @@ func milterLog(i ...interface{}) {
 	Log.Debug(fmt.Sprintf("%s", i[:1]), i[1:]...)
 }
 
-func milterGetSession(ctx uintptr, keep bool) *milterSession {
+func milterGetSession(ctx uintptr, keep bool, returnNil bool) *milterSession {
 	var u uint64
 	m.GetPriv(ctx, &u)
 	if keep {
 		m.SetPriv(ctx, u)
 	}
 
-	return MilterDataIndex.sessions[u]
+	MilterDataIndex.mu.Lock()
+	defer MilterDataIndex.mu.Unlock()
+
+	out := MilterDataIndex.sessions[u]
+	if out == nil && !returnNil {
+		panic("Session could not be found in milterDataIndex")
+	}
+
+	return out
 }
