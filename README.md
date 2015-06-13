@@ -23,6 +23,17 @@ you should make sure to test it before using in production. Coming to think
 of it, you should always test anything you take into production. But at
 least you've been warned.
 
+See the screenshots directory to get some ideas on what the HTTP interface
+looks like.
+
+## Changelog
+
+#### 2015-06-13 First release, version 0.2
+Key features:
+* Quota support
+* SpamAssassin integration
+* HTTP Interface
+
 ## Quick Setup
 Copy the example config file:
 ```cp cluegetter.conf.dist cluegetter.conf```
