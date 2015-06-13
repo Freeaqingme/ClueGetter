@@ -1,4 +1,4 @@
-# ClueGetter - Access and Auditing Milter for Postfix
+# ClueGetter - Access and Auditing Milter
 
 Cluegetter provides a means to have an integrated way to determine if a message
 should be accepted by Postfix. All email (metadata) and verdicts are stored in a
