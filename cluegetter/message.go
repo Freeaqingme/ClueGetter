@@ -172,14 +172,14 @@ func messageGetVerdict(msg Message) (verdict int, msgStr string) {
 		return out
 	}
 
-	if totalScores[messageReject] > Config.ClueGetter.Message_Reject_Score {
+	if totalScores[messageReject] >= Config.ClueGetter.Message_Reject_Score {
 		determinant := getDecidingResultWithMessage(results[messageReject])
 		StatsCounters["MessageVerdictReject"].increase(1)
 		StatsCounters["MessageVerdictReject"+strings.Title(determinant.module)].increase(1)
 		messageSaveVerdict(msg, messageReject, determinant.message, totalScores[messageReject], totalScores[messageTempFail])
 		return messageReject, determinant.message
 	}
-	if (totalScores[messageTempFail] + totalScores[messageReject]) > Config.ClueGetter.Message_Tempfail_Score {
+	if (totalScores[messageTempFail] + totalScores[messageReject]) >= Config.ClueGetter.Message_Tempfail_Score {
 		determinant := getDecidingResultWithMessage(results[messageTempFail])
 		StatsCounters["MessageVerdictTempfail"].increase(1)
 		StatsCounters["MessageVerdictTempfail"+strings.Title(determinant.module)].increase(1)

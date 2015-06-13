@@ -1,7 +1,33 @@
 [cluegetter]
-http-listen-port = 1937
-http-listen-host = "0.0.0.0"
 
+# Cluegetter allows to use multiple configurations of ClueGetter
+# alongside each other sharing the same database. This allows for
+# easy correlation (e.g. track a message by message id). The quota
+# configuration is instance specific.
+#
+# A typical use case would be to have several MTAs each with a
+# dedicated role (submission, mx, outbound). One would then define
+# an instance type of 'submission', 'mx' and 'outbound'. All MTAs
+# with the same role would generally use the same instance identifier.
+#
+# An instance identifier must be present in the 'instance' table
+# prior to starting ClueGetter. ClueGetter will not start if the
+# configured instance is not present in the database.
+instance = default
+
+# Enable NoOp mode, ensuring the MTA will never receive a 'Tempfail'
+# or 'Reject' response from ClueGetter. Still, the would-be response
+# is logged.
+#
+# By setting configuring Postfix with milter_default_action=accept and
+# setting the 'noop' directive to true, all mail would be processed as
+# if ClueGetter was not enabled by Postfix.
+noop = false
+
+# RDBMS settings. Cluegetter has only been tested with Mysql, and as
+# such that is the preferred RDBMS to use. Not enabling stictmode
+# may lead to weird, vague, and undebuggable errors. Set at your own
+# peril.
 rdbms-driver           = mysql
 rdbms-user             = root
 rdbms-password         =
@@ -10,24 +36,63 @@ rdbms-address          = localhost:3306
 rdbms-database         = cluegetter
 rdbms-mysql-strictmode = true
 
-instance               = default
-
+# Various modules determine whether an email should be rejected. E.g.
+# when an email is determined to be spam. Rejecting an email will
+# generally result in the delivering MTA sending a bounce to the
+# original sender without trying to send this email again. If the MTA
+# using this instance of ClueGetter is used for submission purposes,
+# clients will get to see an error when sending their mail as well as
+# the reason as to why their email was blocked.
+#
+# Each module returns a suggested action (permit, tempfail or reject)
+# together with a score. If the combined scores for all modules that
+# suggest to reject the message are equal to or exceed this threshold,
+# the message will be rejected.
 message-reject-score   = 5
 
-# The tempfail score includes that of the reject score,
-# so should always be higher than the reject score.
+# Determines above what threshold a message should have the 'tempfail'
+# result. Generally, an MTA receiving a 'tempfail' response will try
+# to deliver a message again after a while.
+#
+# The tempfail score includes that of the reject score, so it should
+# always be higher than the message-reject-score directive.
 message-tempfail-score = 8
 
-noop = false
+# Determine what the milter module should listen at so Postfix can
+# communicate with ClueGetter. Beware that Postfix uses a different
+# syntax: http://www.postfix.org/MILTER_README.html#smtp-only-milters
+#
+# To use a TCP socket, use the format:  inet:port@host
+# To use a unix socket, use the format: unix:pathname
+milter-socket =  "inet:10033@127.0.0.1"
+
+[http]
+# Cluegetter can provide an HTTP interface that displays some runtime
+# statistics and errors, and allows to search for processed messages.
+# If you change the listen-host directive be sure to do configure
+# your firewall appropriately. There is no authentication mechanism
+# whatsoever.
+
+enabled = true
+listen-port = 1937
+listen-host = "127.0.0.1"
 
 [quotas]
+# Enable the Quota module
 enabled = true
-account-sender = false
-account-recipient = true
+
+# Factors to account for. For each factor that's enabled there should
+# be at least one row in the 'quota' table in the database. Furthermore,
+# at least one quota_profile and quota_profile_period should be configured.
 account-client-address = true
-account-sasl-username = true
+account-sender = false
+account-recipient = false
+account-sasl-username = false
 
 [spamassassin]
+# Have message be vetted by SpamAssassin. SpamAssassin should be configured
+# to listen at the specified host and port if the enabled direcive is set
+# to true.
 enabled = true
 host    = 127.0.0.1
 port    = 783

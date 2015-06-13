@@ -15,8 +15,6 @@ type config struct {
 	ClueGetter struct {
 		Instance               string
 		Noop                   bool
-		Http_Listen_Port       string
-		Http_Listen_Host       string
 		Policy_Listen_Port     string
 		Policy_Listen_Host     string
 		Rdbms_Driver           string
@@ -28,6 +26,12 @@ type config struct {
 		Rdbms_Mysql_Strictmode bool
 		Message_Reject_Score   float64
 		Message_Tempfail_Score float64
+		Milter_Socket          string
+	}
+	Http struct {
+		Enabled     bool
+		Listen_Port string
+		Listen_Host string
 	}
 	Quotas struct {
 		Enabled                bool
@@ -54,8 +58,6 @@ func LoadConfig(cfgFile string, cfg *config) {
 func DefaultConfig(cfg *config) {
 	cfg.ClueGetter.Instance = "default"
 	cfg.ClueGetter.Noop = false
-	cfg.ClueGetter.Http_Listen_Port = "1936"
-	cfg.ClueGetter.Http_Listen_Host = "0.0.0.0"
 	cfg.ClueGetter.Policy_Listen_Port = "10032"
 	cfg.ClueGetter.Policy_Listen_Host = "0.0.0.0"
 	cfg.ClueGetter.Rdbms_Driver = "mysql"
@@ -67,12 +69,17 @@ func DefaultConfig(cfg *config) {
 	cfg.ClueGetter.Rdbms_Mysql_Strictmode = true
 	cfg.ClueGetter.Message_Reject_Score = 5
 	cfg.ClueGetter.Message_Tempfail_Score = 8
+	cfg.ClueGetter.Milter_Socket = "inet:10033@127.0.0.1"
 
-	cfg.Quotas.Enabled = false
-	cfg.Quotas.Account_Sender = true
-	cfg.Quotas.Account_Recipient = true
+	cfg.Http.Enabled     = true
+	cfg.Http.Listen_Port = "1937"
+	cfg.Http.Listen_Host = "127.0.0.1"
+
+	cfg.Quotas.Enabled = true
 	cfg.Quotas.Account_Client_Address = true
-	cfg.Quotas.Account_Sasl_Username = true
+	cfg.Quotas.Account_Sender = false
+	cfg.Quotas.Account_Recipient = false
+	cfg.Quotas.Account_Sasl_Username = false
 
 	cfg.SpamAssassin.Enabled = true
 	cfg.SpamAssassin.Host = "127.0.0.1"

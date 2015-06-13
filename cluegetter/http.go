@@ -19,8 +19,12 @@ import (
 )
 
 func httpStart(done <-chan struct{}) {
-	listen_host := Config.ClueGetter.Http_Listen_Host
-	listen_port := Config.ClueGetter.Http_Listen_Port
+	if ! Config.Http.Enabled {
+		Log.Info("HTTP module has not been enabled. Skipping...")
+		return
+	}
+	listen_host := Config.Http.Listen_Host
+	listen_port := Config.Http.Listen_Port
 
 	laddr, err := net.ResolveTCPAddr("tcp", listen_host+":"+listen_port)
 	if nil != err {

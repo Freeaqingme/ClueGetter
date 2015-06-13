@@ -80,7 +80,7 @@ func milterStart() {
 	milter.FilterName = "GlueGetter"
 	milter.Debug = false
 	milter.Flags = m.ADDHDRS | m.ADDRCPT | m.CHGFROM | m.CHGBODY
-	milter.Socket = "inet:10033@127.0.0.1" // Todo: Should be configurable
+	milter.Socket = Config.ClueGetter.Milter_Socket
 
 	go func() {
 		out := m.Run(milter)
