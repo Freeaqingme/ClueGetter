@@ -14,9 +14,10 @@ Current verdict determining modules:
 * SpamAssassin
 
 Planned modules:
-* ClamAv/Clamd - Scan the message for viruses
 * Greylisting
 * Mailqueue - See if/how many messages are stuck in the mail queue
+* ClamAv/Clamd - Scan the message for viruses
+* Reputation - Incorporate previous verdicts in future verdicts.
 
 ClueGetter should be usable, but as long as no 1.0 release has been released,
 you should make sure to test it before using in production. Coming to think
@@ -29,7 +30,6 @@ looks like.
 ## Changelog
 
 #### 2015-06-13 First release, version 0.2
-Key features:
 * Quota support
 * SpamAssassin integration
 * HTTP Interface
@@ -139,10 +139,10 @@ That could look like this:
 
 Now, assuming you also enabled *quotas.account-client-address* in the
 configuration. Whenever a message comes in, ClueGetter will first check if there
-is a row where:
+is a row where
 ```selector = 'client_address' AND value = '<IP>' AND is_regex = 0```
 
-If there is no such row, it will starts to check for rows where
+If there is no such row, it will check for rows where
 ```selector = 'client_address' AND is_regex = 1```
 
 In case there is a message from an IP not seen before, the quota table will look
