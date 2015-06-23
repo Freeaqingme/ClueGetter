@@ -84,7 +84,7 @@ CREATE TABLE quota (
   is_regex tinyint(1) DEFAULT '0',
   profile bigint(20) unsigned NOT NULL,
   instigator bigint(20) unsigned DEFAULT NULL,
-  date_added datetime DEFAULT NULL,
+  date_added timestamp DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY id (id),
   UNIQUE KEY selector (selector,value,profile),
   KEY profile (profile),
