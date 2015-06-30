@@ -6,7 +6,7 @@ CREATE TABLE instance (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   name varchar(20) CHARACTER SET ascii NOT NULL,
   description varchar(255) DEFAULT NULL,
-  UNIQUE KEY id (id)
+  UNIQUE KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE session (
@@ -16,7 +16,7 @@ CREATE TABLE session (
   date_disconnect datetime DEFAULT NULL,
   ip varchar(45) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
   sasl_username varchar(255) NOT NULL DEFAULT '',
-  UNIQUE KEY id (id),
+  UNIQUE KEY (id),
   KEY cluegetter_instance (cluegetter_instance),
   CONSTRAINT session_ibfk_1 FOREIGN KEY (cluegetter_instance) REFERENCES instance (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -45,7 +45,7 @@ CREATE TABLE message_header (
   message varchar(25) CHARACTER SET ascii NOT NULL,
   name varchar(74) CHARACTER SET ascii DEFAULT NULL,
   body text CHARACTER SET ascii,
-  UNIQUE KEY id (id),
+  UNIQUE KEY (id),
   KEY message (message),
   CONSTRAINT message_header_ibfk_1 FOREIGN KEY (message) REFERENCES message (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -72,7 +72,7 @@ CREATE TABLE quota_profile (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   cluegetter_instance bigint(20) unsigned NOT NULL,
   name varchar(32) NOT NULL,
-  UNIQUE KEY id (id),
+  UNIQUE KEY (id),
   KEY cluegetter_instance (cluegetter_instance),
   CONSTRAINT quota_profile_ibfk_1 FOREIGN KEY (cluegetter_instance) REFERENCES instance (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -85,7 +85,7 @@ CREATE TABLE quota (
   profile bigint(20) unsigned NOT NULL,
   instigator bigint(20) unsigned DEFAULT NULL,
   date_added datetime DEFAULT NULL,
-  UNIQUE KEY id (id),
+  UNIQUE KEY (id),
   UNIQUE KEY selector (selector,value,profile),
   KEY profile (profile),
   KEY selector_value (selector,value),
@@ -106,7 +106,7 @@ CREATE TABLE quota_profile_period (
   profile bigint(20) unsigned NOT NULL,
   period int(10) unsigned NOT NULL,
   curb int(10) unsigned NOT NULL,
-  UNIQUE KEY id (id),
+  UNIQUE KEY (id),
   KEY profile (profile),
   CONSTRAINT profile_id FOREIGN KEY (profile) REFERENCES quota_profile (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
