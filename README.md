@@ -125,7 +125,7 @@ quota_profile_period:
 ### Regexes
 Some times it's not possible to know all the factor values that you need a quota
 for in advance. For example, when you want to do rate limiting based on IP
-addresses. For this reason, you can configure use a regex in quota table,
+addresses. For this reason, you can use a regex in the quota table,
 
 That could look like this:
 ```
@@ -160,4 +160,4 @@ as follows after processing it:
 ## License
 
 ClueGetter is distributed under a BSD 2-clause style license.
-Please the *LICENSE* file for specifics.
+Please see the *LICENSE* file for specifics.
