@@ -71,7 +71,7 @@ func DefaultConfig(cfg *config) {
 	cfg.ClueGetter.Message_Tempfail_Score = 8
 	cfg.ClueGetter.Milter_Socket = "inet:10033@127.0.0.1"
 
-	cfg.Http.Enabled     = true
+	cfg.Http.Enabled = true
 	cfg.Http.Listen_Port = "1937"
 	cfg.Http.Listen_Host = "127.0.0.1"
 

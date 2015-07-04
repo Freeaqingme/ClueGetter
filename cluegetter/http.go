@@ -19,7 +19,7 @@ import (
 )
 
 func httpStart(done <-chan struct{}) {
-	if ! Config.Http.Enabled {
+	if !Config.Http.Enabled {
 		Log.Info("HTTP module has not been enabled. Skipping...")
 		return
 	}

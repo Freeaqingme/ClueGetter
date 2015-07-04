@@ -11,9 +11,9 @@ import (
 	"fmt"
 	m "github.com/Freeaqingme/gomilter"
 	"net"
+	"strings"
 	"sync"
 	"time"
-        "strings"
 )
 
 type milter struct {
@@ -193,27 +193,28 @@ func (milter *milter) Header(ctx uintptr, headerf, headerv string) (sfsistat int
 	var header MessageHeader
 	header = &milterMessageHeader{headerf, headerv}
 
-	d := milterGetSession(ctx, true, false)
-	msg := d.getLastMessage()
+	sess := milterGetSession(ctx, true, false)
+	msg := sess.getLastMessage()
 	msg.Headers = append(msg.Headers, &header)
 
 	StatsCounters["MilterCallbackHeader"].increase(1)
-	Log.Debug("%d Milter.Header() called: header %s = %s", d.getId(), headerf, headerv)
+	Log.Debug("%d Milter.Header() called: header %s = %s", sess.getId(), headerf, headerv)
 	return
 }
 
 func (milter *milter) Eoh(ctx uintptr) (sfsistat int8) {
 	defer milterHandleError(ctx, &sfsistat)
 
-	d := milterGetSession(ctx, true, false)
-	d.SaslSender = m.GetSymVal(ctx, "{auth_author}")
-	d.SaslMethod = m.GetSymVal(ctx, "{auth_type}")
-	d.SaslUsername = m.GetSymVal(ctx, "{auth_authen}")
-	msg := d.getLastMessage()
+	sess := milterGetSession(ctx, true, false)
+	sess.SaslSender = m.GetSymVal(ctx, "{auth_author}")
+	sess.SaslMethod = m.GetSymVal(ctx, "{auth_type}")
+	sess.SaslUsername = m.GetSymVal(ctx, "{auth_authen}")
+	msg := sess.getLastMessage()
 	msg.QueueId = m.GetSymVal(ctx, "i")
+	sess.persist()
 
 	StatsCounters["MilterCallbackEoh"].increase(1)
-	Log.Debug("%d milter.Eoh() was called", d.getId())
+	Log.Debug("%d milter.Eoh() was called", sess.getId())
 	return
 }
 
