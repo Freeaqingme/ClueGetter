@@ -28,7 +28,7 @@ CREATE TABLE message (
   messageId varchar(255) NOT NULL COMMENT 'Value of Message-ID header',
   sender_local varchar(64) NOT NULL,
   sender_domain varchar(253) NOT NULL,
-  body longtext,
+  body longtext CHARACTER SET utf8 COLLATE utf8_general_ci,
   rcpt_count int(10) unsigned NOT NULL DEFAULT '1',
   verdict enum('permit','tempfail','reject') DEFAULT NULL,
   verdict_msg text,
