@@ -239,7 +239,6 @@ func messageGetResults(msg Message) chan *MessageCheckResult {
 					score:           500,
 					determinants:    determinants,
 				}
-				wg.Done()
 			}()
 
 			out <- moduleCallback(msg)
