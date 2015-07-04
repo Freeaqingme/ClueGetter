@@ -13,6 +13,7 @@ import (
 	"net"
 	"sync"
 	"time"
+        "strings"
 )
 
 type milter struct {
@@ -165,11 +166,12 @@ func (milter *milter) EnvFrom(ctx uintptr, from []string) (sfsistat int8) {
 	StatsCounters["MilterCallbackEnvFrom"].increase(1)
 	Log.Debug("%d Milter.EnvFrom() called: from = %s", d.getId(), from[0])
 
-	if len(from) != 1 {
+	if len(from) == 0 {
 		StatsCounters["MilterProtocolErrors"].increase(1)
-		Log.Critical("%d Milter.EnvFrom() callback received %d elements: %s", d.getId(), len(from), fmt.Sprint(from))
+		Log.Critical("%d Milter.EnvFrom() callback received %d elements", d.getId(), len(from))
+		panic(fmt.Sprint("%d Milter.EnvFrom() callback received %d elements", d.getId(), len(from)))
 	}
-	msg.From = from[0]
+	msg.From = strings.Trim(from[0], "<>")
 	return
 }
 
@@ -178,7 +180,7 @@ func (milter *milter) EnvRcpt(ctx uintptr, rcpt []string) (sfsistat int8) {
 
 	d := milterGetSession(ctx, true, false)
 	msg := d.getLastMessage()
-	msg.Rcpt = append(msg.Rcpt, rcpt[0])
+	msg.Rcpt = append(msg.Rcpt, strings.Trim(rcpt[0], "<>"))
 
 	StatsCounters["MilterCallbackEnvRcpt"].increase(1)
 	Log.Debug("%d Milter.EnvRcpt() called: rcpt = %s", d.getId(), fmt.Sprint(rcpt))
