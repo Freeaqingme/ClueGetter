@@ -46,7 +46,7 @@ func rdbmsStart() {
 
 func rdbmsStop() {
 	Rdbms.Close()
-	Log.Info("Disconnected from RDBMS %s", rdbmsGetDsn(false))
+	Log.Info("Disconnected from RDBMS %s", rdbmsGetDsn(true))
 }
 
 func rdbmsGetDsn(display bool) string {
