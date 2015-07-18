@@ -28,7 +28,6 @@ CREATE TABLE message (
   messageId varchar(255) NOT NULL COMMENT 'Value of Message-ID header',
   sender_local varchar(64) NOT NULL,
   sender_domain varchar(253) NOT NULL,
-  body longtext CHARACTER SET utf8 COLLATE utf8_general_ci,
   rcpt_count int(10) unsigned NOT NULL DEFAULT '1',
   verdict enum('permit','tempfail','reject') DEFAULT NULL,
   verdict_msg text,
@@ -39,6 +38,14 @@ CREATE TABLE message (
   KEY messageId (messageId(25)),
   CONSTRAINT message_ibfk_1 FOREIGN KEY (session) REFERENCES session (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE message_body (
+  message varchar(25) CHARACTER SET ascii NOT NULL,
+  sequence smallint(5) unsigned NOT NULL,
+  body mediumblob not null,
+  PRIMARY KEY (message, sequence),
+  CONSTRAINT message_body_ibfk_1 FOREIGN KEY (message) REFERENCES message (id)
+) ENGINE=InnoDB;
 
 CREATE TABLE message_header (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,

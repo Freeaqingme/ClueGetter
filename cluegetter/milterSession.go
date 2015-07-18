@@ -9,7 +9,6 @@ package cluegetter
 
 import (
 	"database/sql"
-	"strings"
 	"sync"
 	"time"
 )
@@ -179,8 +178,8 @@ func (m *milterMessage) getRecipients() []string {
 	return m.Rcpt
 }
 
-func (m *milterMessage) getBody() string {
-	return strings.Join(m.Body, "")
+func (m *milterMessage) getBody() []string {
+	return m.Body
 }
 
 /******** milterMessageHeader ********/

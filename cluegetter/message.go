@@ -44,7 +44,7 @@ type Message interface {
 	getFrom() string
 	getRcptCount() int
 	getRecipients() []string
-	getBody() string
+	getBody() []string
 }
 
 type MessageHeader interface {
@@ -61,6 +61,7 @@ type MessageCheckResult struct {
 }
 
 var MessageInsertMsgStmt = *new(*sql.Stmt)
+var MessageInsertMsgBodyStmt = *new(*sql.Stmt)
 var MessageInsertRcptStmt = *new(*sql.Stmt)
 var MessageInsertMsgRcptStmt = *new(*sql.Stmt)
 var MessageInsertMsgHdrStmt = *new(*sql.Stmt)
@@ -78,11 +79,18 @@ func messageStart() {
 	StatsCounters["MessageVerdictTempfailSpamassassin"] = &StatsCounter{}
 
 	stmt, err := Rdbms.Prepare(`INSERT INTO message (id, session, date, messageId, sender_local,
-								sender_domain, body, rcpt_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+								sender_domain, rcpt_count) VALUES (?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		Log.Fatal(err)
 	}
 	MessageInsertMsgStmt = stmt
+
+	stmt, err = Rdbms.Prepare(`INSERT INTO message_body(message, sequence, body) VALUES(?, ?, ?)
+								ON DUPLICATE KEY UPDATE message=LAST_INSERT_ID(message)`)
+	if err != nil {
+		Log.Fatal(err)
+	}
+	MessageInsertMsgBodyStmt = stmt
 
 	stmt, err = Rdbms.Prepare(`INSERT INTO recipient(local, domain) VALUES(?, ?)
 								ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)`)
@@ -293,13 +301,26 @@ func messageSave(msg Message) {
 		messageIdHdr,
 		sender_local,
 		sender_domain,
-		msg.getBody(),
 		msg.getRcptCount(),
 	)
 
 	if err != nil {
 		StatsCounters["RdbmsErrors"].increase(1)
 		Log.Error(err.Error())
+	}
+
+	for key, value := range msg.getBody() {
+		StatsCounters["RdbmsQueries"].increase(1)
+		_, err := MessageInsertMsgBodyStmt.Exec(
+			msg.getQueueId(),
+			key,
+			value,
+		)
+
+		if err != nil {
+			StatsCounters["RdbmsErrors"].increase(1)
+			Log.Error(err.Error())
+		}
 	}
 
 	messageSaveRecipients(msg.getRecipients(), msg.getQueueId())

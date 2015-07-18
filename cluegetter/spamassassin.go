@@ -66,7 +66,9 @@ func saGetRawReply(msg Message) (*spamc.SpamDOut, error) {
 	}
 
 	body = append(body, "")
-	body = append(body, msg.getBody())
+	for _, bodyChunk := range msg.getBody() {
+		body = append(body, bodyChunk)
+	}
 
 	host := Config.SpamAssassin.Host + ": " + strconv.Itoa(Config.SpamAssassin.Port)
 	client := spamc.New(host, 10)
