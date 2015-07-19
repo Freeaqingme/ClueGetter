@@ -9,11 +9,12 @@ Each message has a verdict of one of the following values:
 * Tempfail: Deny delivery, but expect the delivering MTA to deliver it at a later time.
 * Reject: Reject the message, indicating it will not be accepted a next time either.
 
-Current verdict determining modules:
+Available verdict determining modules:
 * Quotas
 * SpamAssassin
 
 Planned modules:
+* Rspamd
 * Greylisting
 * Mailqueue - See if/how many messages are stuck in the mail queue
 * ClamAv/Clamd - Scan the message for viruses
@@ -28,6 +29,14 @@ See the screenshots directory to get some ideas on what the HTTP interface
 looks like.
 
 ## Changelog
+
+#### 2015-07-19 Version 0.2.1
+* Schema change: save body in chunks in separate table
+* Added a makefile to create binary.
+* Assets (like html templates) are now built into binary. No more need to install separately
+* RDBMS password is no more displayed when exiting
+* Parse email addresses in form '<foo@bar>' as 'foo@bar'
+* Fixed some race conditions in error handling
 
 #### 2015-06-13 First release, version 0.2
 * Quota support
@@ -68,7 +77,8 @@ mysql cluegetter < mysql.sql
 
 Run ClueGetter:
 ```
-cluegetter --config ./cluegetter.conf --loglevel=DEBUG
+make
+./bin/cluegetter --config ./cluegetter.conf --loglevel=DEBUG
 ```
 
 ## Quotas
