@@ -10,7 +10,7 @@
 * See also: http://www.postfix.org/SMTPD_POLICY_README.html
 **/
 
-package cluegetter
+package main
 
 import (
 	"database/sql"
