@@ -160,6 +160,7 @@ func messageGetVerdict(msg Message) (verdict int, msgStr string) {
 		totalScores[result.suggestedAction] += result.score
 
 		determinants, _ := json.Marshal(result.determinants)
+		StatsCounters["RdbmsQueries"].increase(1)
 		_, err := MessageInsertModuleResultStmt.Exec(
 			msg.getQueueId(), result.module, verdictValue[result.suggestedAction], result.score, determinants)
 		if err != nil {
