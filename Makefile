@@ -1,4 +1,4 @@
-.PHONY: default cluegetter deps fmt all assets clean
+.PHONY: default cluegetter release deps fmt all assets clean
 export GOPATH:=$(shell pwd)
 
 BUILDTAGS=debug
@@ -10,11 +10,14 @@ deps: assets
 cluegetter: deps
 	go install -tags '$(BUILDTAGS)' cluegetter
 
+release: BUILDTAGS=release
+release: cluegetter
+
 bin/go-bindata:
 	GOOS="" GOARCH="" go get github.com/jteeuwen/go-bindata/go-bindata
 
 assets: bin/go-bindata
-	bin/go-bindata -nomemcopy -pkg=assets -tags=$(BUILDTAGS) \
+	bin/go-bindata -nomemcopy -pkg=assets -prefix="assets/" -tags=$(BUILDTAGS) \
                 -debug=$(if $(findstring debug,$(BUILDTAGS)),true,false) \
                 -o=src/cluegetter/assets/assets_$(BUILDTAGS).go \
                 assets/...
@@ -25,5 +28,7 @@ fmt:
 all: fmt cluegetter
 
 clean:
-	go clean -i -r cluegetter
+	rm -rf bin/
+	rm -rf pkg/
 	rm -rf src/cluegetter/assets/
+	go clean -i -r cluegetter

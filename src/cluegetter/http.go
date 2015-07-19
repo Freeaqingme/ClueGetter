@@ -8,12 +8,12 @@
 package main
 
 import (
+	"cluegetter/assets"
 	"encoding/json"
 	"fmt"
 	"html/template"
 	"net"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 )
@@ -130,9 +130,9 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cwd, _ := os.Getwd()
-	tpl := template.Must(template.ParseFiles(
-		cwd+"/htmlTemplates/messageSearchEmail.html", cwd+"/htmlTemplates/skeleton.html"))
+	tpl := template.New("skeleton.html")
+	tpl.Parse(string(assets.MustAsset("htmlTemplates/messageSearchEmail.html")))
+	tpl.Parse(string(assets.MustAsset("htmlTemplates/skeleton.html")))
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := tpl.ExecuteTemplate(w, "skeleton.html", messages); err != nil {
@@ -196,8 +196,9 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cwd, _ := os.Getwd()
-	tpl := template.Must(template.ParseFiles(cwd+"/htmlTemplates/message.html", cwd+"/htmlTemplates/skeleton.html"))
+	tpl := template.New("skeleton.html")
+	tpl.Parse(string(assets.MustAsset("htmlTemplates/message.html")))
+	tpl.Parse(string(assets.MustAsset("htmlTemplates/skeleton.html")))
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := tpl.ExecuteTemplate(w, "skeleton.html", msg); err != nil {
@@ -218,8 +219,9 @@ func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cwd, _ := os.Getwd()
-	tpl := template.Must(template.ParseFiles(cwd+"/htmlTemplates/index.html", cwd+"/htmlTemplates/skeleton.html"))
+	tpl := template.New("skeleton.html")
+	tpl.Parse(string(assets.MustAsset("htmlTemplates/index.html")))
+	tpl.Parse(string(assets.MustAsset("htmlTemplates/skeleton.html")))
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := tpl.ExecuteTemplate(w, "skeleton.html", foo); err != nil {
@@ -230,8 +232,9 @@ func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 func httpStatsHandler(w http.ResponseWriter, r *http.Request) {
 	foo := foo{Foo: "Blaat"}
 
-	cwd, _ := os.Getwd()
-	tpl := template.Must(template.ParseFiles(cwd+"/htmlTemplates/stats.html", cwd+"/htmlTemplates/skeleton.html"))
+	tpl := template.New("skeleton.html")
+	tpl.Parse(string(assets.MustAsset("htmlTemplates/stats.html")))
+	tpl.Parse(string(assets.MustAsset("htmlTemplates/skeleton.html")))
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := tpl.ExecuteTemplate(w, "skeleton.html", foo); err != nil {
