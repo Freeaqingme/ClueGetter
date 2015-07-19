@@ -270,7 +270,7 @@ func messageGetEnabledModules() (out map[string]func(Message) *MessageCheckResul
 	}
 
 	if Config.SpamAssassin.Enabled {
-		out["sa"] = saGetResult
+		out["spamassassin"] = saGetResult
 	}
 
 	return
