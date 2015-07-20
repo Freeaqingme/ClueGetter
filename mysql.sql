@@ -60,6 +60,7 @@ CREATE TABLE message_header (
 CREATE TABLE message_recipient (
   message varchar(25) CHARACTER SET ascii NOT NULL,
   recipient bigint(20) unsigned NOT NULL,
+  count smallint(5) unsigned NOT NULL DEFAULT 1,
   PRIMARY KEY (message,recipient)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 

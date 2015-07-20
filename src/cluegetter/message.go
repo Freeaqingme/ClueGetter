@@ -99,7 +99,8 @@ func messageStart() {
 	}
 	MessageInsertRcptStmt = stmt
 
-	stmt, err = Rdbms.Prepare(`INSERT INTO message_recipient(message, recipient) VALUES(?, ?)`)
+	stmt, err = Rdbms.Prepare(`INSERT IGNORE INTO message_recipient(message, recipient, count) VALUES(?, ?,1)
+								ON DUPLICATE KEY UPDATE count=count+1`)
 	if err != nil {
 		Log.Fatal(err)
 	}
