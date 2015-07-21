@@ -130,9 +130,11 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	tplMsgSearchEmail, _ := assets.Asset("htmlTemplates/messageSearchEmail.html")
+	tplSkeleton, _ := assets.Asset("htmlTemplates/skeleton.html")
 	tpl := template.New("skeleton.html")
-	tpl.Parse(string(assets.MustAsset("htmlTemplates/messageSearchEmail.html")))
-	tpl.Parse(string(assets.MustAsset("htmlTemplates/skeleton.html")))
+	tpl.Parse(string(tplMsgSearchEmail))
+	tpl.Parse(string(tplSkeleton))
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := tpl.ExecuteTemplate(w, "skeleton.html", messages); err != nil {
@@ -196,9 +198,11 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	tplSkeleton, _ := assets.Asset("htmlTemplates/skeleton.html")
+	tplMsg, _ := assets.Asset("htmlTemplates/message.html")
 	tpl := template.New("skeleton.html")
-	tpl.Parse(string(assets.MustAsset("htmlTemplates/message.html")))
-	tpl.Parse(string(assets.MustAsset("htmlTemplates/skeleton.html")))
+	tpl.Parse(string(tplMsg))
+	tpl.Parse(string(tplSkeleton))
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := tpl.ExecuteTemplate(w, "skeleton.html", msg); err != nil {
@@ -219,9 +223,11 @@ func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	tplIndex, _ := assets.Asset("htmlTemplates/index.html")
+	tplSkeleton, _ := assets.Asset("htmlTemplates/skeleton.html")
 	tpl := template.New("skeleton.html")
-	tpl.Parse(string(assets.MustAsset("htmlTemplates/index.html")))
-	tpl.Parse(string(assets.MustAsset("htmlTemplates/skeleton.html")))
+	tpl.Parse(string(tplIndex))
+	tpl.Parse(string(tplSkeleton))
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := tpl.ExecuteTemplate(w, "skeleton.html", foo); err != nil {
@@ -232,9 +238,11 @@ func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 func httpStatsHandler(w http.ResponseWriter, r *http.Request) {
 	foo := foo{Foo: "Blaat"}
 
+	tplStats, _ := assets.Asset("htmlTemplates/stats.html")
+	tplSkeleton, _ := assets.Asset("htmlTemplates/skeleton.html")
 	tpl := template.New("skeleton.html")
-	tpl.Parse(string(assets.MustAsset("htmlTemplates/stats.html")))
-	tpl.Parse(string(assets.MustAsset("htmlTemplates/skeleton.html")))
+	tpl.Parse(string(tplStats))
+	tpl.Parse(string(tplSkeleton))
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := tpl.ExecuteTemplate(w, "skeleton.html", foo); err != nil {
