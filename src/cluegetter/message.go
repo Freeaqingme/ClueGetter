@@ -80,7 +80,6 @@ func messageStart() {
 	StatsCounters["MessageVerdictTempfailSpamassassin"] = &StatsCounter{}
 	StatsCounters["MessageVerdictTempfailGreylisting"] = &StatsCounter{}
 
-
 	stmt, err := Rdbms.Prepare(`INSERT INTO message (id, session, date, messageId, sender_local,
 								sender_domain, rcpt_count) VALUES (?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {

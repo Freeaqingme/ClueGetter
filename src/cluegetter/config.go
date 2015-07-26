@@ -83,7 +83,7 @@ func DefaultConfig(cfg *config) {
 	cfg.Http.Listen_Host = "127.0.0.1"
 
 	cfg.Greylisting.Enabled = false
-	cfg.Greylisting.Initial_Score = 4.5
+	cfg.Greylisting.Initial_Score = 6.5
 	cfg.Greylisting.Initial_Period = 5
 
 	cfg.Quotas.Enabled = false
