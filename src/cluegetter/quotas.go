@@ -46,7 +46,9 @@ func quotasStart() {
 		INSERT INTO quota (selector, value, profile, instigator, date_added)
 			SELECT DISTINCT q.selector, ?, q.profile, q.id, NOW() FROM quota q
 			WHERE (q.selector = ? AND q.is_regex = 1 AND ? REGEXP q.value
-				AND q.profile IN (SELECT id FROM quota_profile WHERE cluegetter_instance = %d))
+				AND q.profile IN (
+					SELECT qp.id FROM quota_profile qp LEFT JOIN quota_class qc ON qp.class = qc.id
+						WHERE qc.cluegetter_instance = %d))
 			ORDER by q.id ASC`, instance))
 	if err != nil {
 		Log.Fatal(err)
@@ -287,11 +289,12 @@ func quotasGetSelectQuery(factorValueCount map[string]int) string {
 			coalesce(sum(m.rcpt_count), 0) count, coalesce(count(m.rcpt_count), 0) msg_count
 		FROM quota q
 			LEFT JOIN quota_profile p         ON p.id = q.profile
+			LEFT JOIN quota_class c           ON c.id = p.class
 			LEFT JOIN quota_profile_period pp ON p.id = pp.profile
 			LEFT JOIN quota_message	qm        ON qm.quota = q.id AND qm.message != ?
 			LEFT JOIN message m               ON m.id = qm.message AND (m.verdict = 'permit' OR m.verdict IS NULL)
 				AND m.date > FROM_UNIXTIME(UNIX_TIMESTAMP() - %d - pp.period)
-		WHERE (`+strings.Join(pieces, " OR ")+`) AND q.is_regex = 0 AND p.cluegetter_instance = %d
+		WHERE (`+strings.Join(pieces, " OR ")+`) AND q.is_regex = 0 AND c.cluegetter_instance = %d
 			GROUP BY pp.id, q.id`, tzOffset, instance)
 	return sql
 }

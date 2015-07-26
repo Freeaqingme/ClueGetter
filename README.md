@@ -117,12 +117,19 @@ quota:
 +-----+----------------+----------------+----------+---------+------------+
 
 quota_profile:
-+----+--------------------+
-| id | name               |
-+----+--------------------+
-|  1 | small-sasl         |
-|  2 | large-sasl         |
-+----+--------------------+
++----+----------------------------+
+| id | class | name               |
++----+----------------------------+
+|  1 |     1 | small-sasl         |
+|  2 |     1 | large-sasl         |
++----+----------------------------+
+
+quota_class:
++----+-------------------------------+
+| id | instance | name               |
++----+-------------------------------+
+|  1 |        1 | Paying Customers   |
++----+-------------------------------+
 
 quota_profile_period:
 +----+---------+--------+-------+
@@ -133,6 +140,10 @@ quota_profile_period:
 |  3 |       2 |  86400 | 10000 |
 +----+---------+--------+-------+
 ```
+
+The *quota_class* table allows to group multiple quota profiles together. In the
+future this will be used to (optionally) automatically move set quotas up (or
+down) to a different profile within that class.
 
 ### Regexes
 Some times it's not possible to know all the factor values that you need a quota

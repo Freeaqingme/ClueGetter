@@ -76,13 +76,22 @@ CREATE TABLE message_result (
   CONSTRAINT message_result_ibfk_1 FOREIGN KEY (message) REFERENCES message (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-CREATE TABLE quota_profile (
+CREATE TABLE quota_class (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   cluegetter_instance bigint(20) unsigned NOT NULL,
   name varchar(32) NOT NULL,
   PRIMARY KEY (id),
   KEY cluegetter_instance (cluegetter_instance),
-  CONSTRAINT quota_profile_ibfk_1 FOREIGN KEY (cluegetter_instance) REFERENCES instance (id)
+  CONSTRAINT quota_class_ibfk_1 FOREIGN KEY (cluegetter_instance) REFERENCES instance (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE quota_profile (
+  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  class bigint(20) unsigned NOT NULL,
+  name varchar(32) NOT NULL,
+  PRIMARY KEY (id),
+  KEY class (class),
+  CONSTRAINT quota_profile_ibfk_1 FOREIGN KEY (class) REFERENCES quota_class (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE quota (
@@ -127,14 +136,24 @@ CREATE TABLE recipient (
   UNIQUE KEY local (local,domain)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-INSERT INTO instance (id, name, description) VALUES(1, 'default', 'The Default Instance');
-INSERT INTO quota_profile (id, cluegetter_instance, name) VALUES (1, 1, 'Trusted');
-INSERT INTO quota_profile (id, cluegetter_instance, name) VALUES (2, 1, 'Villains');
-INSERT INTO quota_profile_period (id, profile, period, curb) VALUES(1, 1, 300, 500);
-INSERT INTO quota_profile_period (id, profile, period, curb) VALUES(2, 1, 3600, 1000);
-INSERT INTO quota_profile_period (id, profile, period, curb) VALUES(3, 1, 86400, 10000);
-INSERT INTO quota_profile_period (id, profile, period, curb) VALUES(4, 2, 300, 150);
-INSERT INTO quota_profile_period (id, profile, period, curb) VALUES(5, 2, 3600, 500);
+INSERT INTO instance (id, name, description) VALUES (1, 'default', 'The Default Instance');
+INSERT INTO quota_class (id, cluegetter_instance, name) VALUES (1, 1, 'Trusted');
+INSERT INTO quota_class (id, cluegetter_instance, name) VALUES (2, 1, 'Villains');
+INSERT INTO quota_profile (id, class, name) VALUES (1, 1, 'Low Volume');
+INSERT INTO quota_profile (id, class, name) VALUES (2, 1, 'Mid Volume');
+INSERT INTO quota_profile (id, class, name) VALUES (3, 1, 'High Volume');
+INSERT INTO quota_profile (id, class, name) VALUES (4, 2, 'Limited Volume');
+INSERT INTO quota_profile_period (id, profile, period, curb) VALUES(1, 1, 300, 5);
+INSERT INTO quota_profile_period (id, profile, period, curb) VALUES(2, 1, 3600, 10);
+INSERT INTO quota_profile_period (id, profile, period, curb) VALUES(3, 1, 86400, 100);
+INSERT INTO quota_profile_period (id, profile, period, curb) VALUES(4, 2, 300, 50);
+INSERT INTO quota_profile_period (id, profile, period, curb) VALUES(5, 2, 3600, 100);
 INSERT INTO quota_profile_period (id, profile, period, curb) VALUES(6, 2, 86400, 1000);
+INSERT INTO quota_profile_period (id, profile, period, curb) VALUES(7, 3, 300, 500);
+INSERT INTO quota_profile_period (id, profile, period, curb) VALUES(8, 3, 3600, 1000);
+INSERT INTO quota_profile_period (id, profile, period, curb) VALUES(9, 3, 86400, 10000);
+INSERT INTO quota_profile_period (id, profile, period, curb) VALUES(10, 4, 300, 15);
+INSERT INTO quota_profile_period (id, profile, period, curb) VALUES(11, 4, 3600, 50);
+INSERT INTO quota_profile_period (id, profile, period, curb) VALUES(12, 4, 86400, 100);
 INSERT INTO quota (id, selector, value, profile, is_regex, date_added) VALUES (1, 'client_address', '::1',  1, 0, NOW());
-INSERT INTO quota (id, selector, value, profile, is_regex, date_added) VALUES (2, 'client_address', '^.*$', 2, 1, NOW());
+INSERT INTO quota (id, selector, value, profile, is_regex, date_added) VALUES (2, 'client_address', '^.*$', 4, 1, NOW());
