@@ -42,10 +42,12 @@ func quotasStart() {
 	}
 	QuotaInsertQuotaMessageStmt = stmt
 
-	stmt, err = Rdbms.Prepare(`INSERT INTO quota (selector, value, profile, instigator, date_added)
-								SELECT DISTINCT q.selector, ?, q.profile, q.id, NOW() FROM quota q
-								WHERE (q.selector = ? AND q.is_regex = 1 AND ? REGEXP q.value)
-								ORDER by q.id ASC`)
+	stmt, err = Rdbms.Prepare(fmt.Sprintf(`
+		INSERT INTO quota (selector, value, profile, instigator, date_added)
+			SELECT DISTINCT q.selector, ?, q.profile, q.id, NOW() FROM quota q
+			WHERE (q.selector = ? AND q.is_regex = 1 AND ? REGEXP q.value
+				AND q.profile IN (SELECT id FROM quota_profile WHERE cluegetter_instance = %d))
+			ORDER by q.id ASC`, instance))
 	if err != nil {
 		Log.Fatal(err)
 	}
