@@ -15,6 +15,7 @@ type config struct {
 	ClueGetter struct {
 		Instance               string
 		Noop                   bool
+		Exit_On_Panic          bool
 		Policy_Listen_Port     string
 		Policy_Listen_Host     string
 		Rdbms_Driver           string
@@ -32,6 +33,11 @@ type config struct {
 		Enabled     bool
 		Listen_Port string
 		Listen_Host string
+	}
+	Greylisting struct {
+		Enabled        bool
+		Initial_Score  float64
+		Initial_Period uint16
 	}
 	Quotas struct {
 		Enabled                bool
@@ -58,6 +64,7 @@ func LoadConfig(cfgFile string, cfg *config) {
 func DefaultConfig(cfg *config) {
 	cfg.ClueGetter.Instance = "default"
 	cfg.ClueGetter.Noop = false
+	cfg.ClueGetter.Exit_On_Panic = false
 	cfg.ClueGetter.Policy_Listen_Port = "10032"
 	cfg.ClueGetter.Policy_Listen_Host = "0.0.0.0"
 	cfg.ClueGetter.Rdbms_Driver = "mysql"
@@ -75,13 +82,17 @@ func DefaultConfig(cfg *config) {
 	cfg.Http.Listen_Port = "1937"
 	cfg.Http.Listen_Host = "127.0.0.1"
 
-	cfg.Quotas.Enabled = true
+	cfg.Greylisting.Enabled = false
+	cfg.Greylisting.Initial_Score = 4.5
+	cfg.Greylisting.Initial_Period = 5
+
+	cfg.Quotas.Enabled = false
 	cfg.Quotas.Account_Client_Address = true
 	cfg.Quotas.Account_Sender = false
 	cfg.Quotas.Account_Recipient = false
 	cfg.Quotas.Account_Sasl_Username = false
 
-	cfg.SpamAssassin.Enabled = true
+	cfg.SpamAssassin.Enabled = false
 	cfg.SpamAssassin.Host = "127.0.0.1"
 	cfg.SpamAssassin.Port = 783
 }

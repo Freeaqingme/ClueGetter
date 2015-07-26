@@ -75,8 +75,11 @@ func messageStart() {
 	StatsCounters["MessageVerdictReject"] = &StatsCounter{}
 	StatsCounters["MessageVerdictRejectQuotas"] = &StatsCounter{}
 	StatsCounters["MessageVerdictRejectSpamassassin"] = &StatsCounter{}
+	StatsCounters["MessageVerdictRejectGreylisting"] = &StatsCounter{}
 	StatsCounters["MessageVerdictTempfailQuotas"] = &StatsCounter{}
 	StatsCounters["MessageVerdictTempfailSpamassassin"] = &StatsCounter{}
+	StatsCounters["MessageVerdictTempfailGreylisting"] = &StatsCounter{}
+
 
 	stmt, err := Rdbms.Prepare(`INSERT INTO message (id, session, date, messageId, sender_local,
 								sender_domain, rcpt_count) VALUES (?, ?, ?, ?, ?, ?, ?)`)
@@ -135,6 +138,9 @@ func messageStop() {
 
 func messageGetVerdict(msg Message) (verdict int, msgStr string) {
 	defer func() {
+		if Config.ClueGetter.Exit_On_Panic {
+			return
+		}
 		r := recover()
 		if r == nil {
 			return
@@ -232,6 +238,9 @@ func messageGetResults(msg Message) chan *MessageCheckResult {
 		go func(moduleName string, moduleCallback func(Message) *MessageCheckResult) {
 			defer wg.Done()
 			defer func() {
+				if Config.ClueGetter.Exit_On_Panic {
+					return
+				}
 				r := recover()
 				if r == nil {
 					return
@@ -272,6 +281,10 @@ func messageGetEnabledModules() (out map[string]func(Message) *MessageCheckResul
 
 	if Config.SpamAssassin.Enabled {
 		out["spamassassin"] = saGetResult
+	}
+
+	if Config.Greylisting.Enabled {
+		out["greylisting"] = greylistGetResult
 	}
 
 	return

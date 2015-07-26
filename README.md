@@ -12,11 +12,11 @@ Each message has a verdict of one of the following values:
 Available verdict determining modules:
 * Quotas
 * SpamAssassin
+* Greylisting
 
 Planned modules:
 * Rspamd
 * GeoIP - Detect anomalies in the countries used to send mail from
-* Greylisting
 * Mailqueue - See if/how many messages are stuck in the mail queue
 * ClamAv/Clamd - Scan the message for viruses
 * Reputation - Incorporate previous verdicts in future verdicts.

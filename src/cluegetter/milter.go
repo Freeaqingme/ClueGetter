@@ -290,6 +290,9 @@ func (milter *milter) Close(ctx uintptr) (sfsistat int8) {
 }
 
 func milterHandleError(ctx uintptr, sfsistat *int8) {
+	if Config.ClueGetter.Exit_On_Panic {
+		return
+	}
 	r := recover()
 	if r == nil {
 		return

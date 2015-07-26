@@ -24,6 +24,13 @@ instance = default
 # if ClueGetter was not enabled by Postfix.
 noop = false
 
+# By default Cluegetter will try to recover as much as possible from
+# any kind of error it encounters. However, sometimes it may be
+# desirable to stop execution when a panic() occurs. Setting this to
+# true will ensure the application does not recover but halts execution
+# instead.
+exit-on-panic = false
+
 # RDBMS settings. Cluegetter has only been tested with Mysql, and as
 # such that is the preferred RDBMS to use. Not enabling stictmode
 # may lead to weird, vague, and undebuggable errors. Set at your own
@@ -77,9 +84,24 @@ enabled = true
 listen-port = 1937
 listen-host = "127.0.0.1"
 
+[greylisting]
+# When the greylisting module is enabled, hosts that haven not been seen
+# before and that seem a little spammy are temporarily rejected until
+# the initial period has passed by. Most spambots will only try to deliver
+# an email only once or twice within a few minutes. And as such, will be
+# deferred from sending any spam at all.
+
+enabled = true
+
+# Score to give host not seen before.
+initial-score = 7.5
+
+# Period after which a host should try to deliver again.
+initial-period = 5
+
 [quotas]
 # Enable the Quota module
-enabled = true
+enabled = false
 
 # Factors to account for. For each factor that's enabled there should
 # be at least one row in the 'quota' table in the database. Furthermore,
@@ -93,6 +115,6 @@ account-sasl-username = false
 # Have message be vetted by SpamAssassin. SpamAssassin should be configured
 # to listen at the specified host and port if the enabled direcive is set
 # to true.
-enabled = true
+enabled = false
 host    = 127.0.0.1
 port    = 783
