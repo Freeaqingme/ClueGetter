@@ -20,7 +20,7 @@ Planned modules:
 * Mailqueue - See if/how many messages are stuck in the mail queue
 * ClamAv/Clamd - Scan the message for viruses
 * Reputation - Incorporate previous verdicts in future verdicts.
-* SRS
+* SRS - Implement with proper support for virtual domains
 
 ClueGetter should be usable, but as long as no 1.0 release has been released,
 you should make sure to test it before using in production. Coming to think
