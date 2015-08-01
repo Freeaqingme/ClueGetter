@@ -11,16 +11,23 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 )
 
-var greylistOncePrepStmt = *new(sync.Once)
 var greylistGetRecentVerdictsStmt = *new(*sql.Stmt)
+var greylistSelectFromWhitelist = *new(*sql.Stmt)
+var greylistUpdateWhitelistStmt = *new(*sql.Stmt)
 
 type greylistVerdict struct {
 	verdict string
 	date    *time.Time
+}
+
+func greylistStart() {
+	greylistPrepStmt()
+	go greylistUpdateWhitelist()
+
+	Log.Info("Greylist module started")
 }
 
 func greylistPrepStmt() {
@@ -43,10 +50,80 @@ func greylistPrepStmt() {
 	}
 
 	greylistGetRecentVerdictsStmt = stmt
+
+	stmt, err = Rdbms.Prepare(fmt.Sprintf(`
+		INSERT INTO greylist_whitelist (cluegetter_instance, ip, last_seen)
+		SELECT s.cluegetter_instance, s.ip, MAX(m.date)
+			FROM message m
+				LEFT JOIN message_recipient mr ON mr.message = m.id
+				LEFT JOIN recipient r ON mr.recipient = r.id
+				LEFT JOIN session s ON s.id = m.session
+			 WHERE s.cluegetter_instance = %d
+				AND m.date > FROM_UNIXTIME(UNIX_TIMESTAMP() - %d - 86400)
+				AND m.verdict = 'permit'
+			GROUP BY s.cluegetter_instance, s.ip
+		ON DUPLICATE KEY UPDATE last_seen = VALUES(last_seen)
+	`, instance, tzOffset))
+
+	greylistUpdateWhitelistStmt = stmt
+
+	stmt, err = Rdbms.Prepare(fmt.Sprintf(`
+		SELECT 1 FROM greylist_whitelist
+		WHERE cluegetter_instance = %d
+			AND	ip = ?
+		LIMIT 0,1
+	`, instance))
+	if err != nil {
+		Log.Fatal(err)
+	}
+
+	greylistSelectFromWhitelist = stmt
+}
+
+func greylistUpdateWhitelist() {
+	ticker := time.NewTicker(300 * time.Second)
+
+	for {
+		select {
+		case <-ticker.C:
+			t0 := time.Now()
+			res, err := greylistUpdateWhitelistStmt.Exec()
+			if err != nil {
+				Log.Error("Could not update greylist whitelist: %s", err.Error())
+			}
+
+			rowCnt, err := res.RowsAffected()
+			if err != nil {
+				panic(err)
+			}
+
+			Log.Info("Updated greylist whitelist with %d to %d entries in %s",
+				int(rowCnt/2), rowCnt, time.Now().Sub(t0).String())
+		}
+	}
 }
 
 func greylistGetResult(msg Message) *MessageCheckResult {
-	greylistOncePrepStmt.Do(greylistPrepStmt)
+	ip := (*msg.getSession()).getIp()
+	StatsCounters["RdbmsQueries"].increase(1)
+	whitelistRows, err := greylistSelectFromWhitelist.Query(ip)
+
+	if err != nil {
+		StatsCounters["RdbmsErrors"].increase(1)
+		Log.Error("Error occurred while retrieving from whitelist: %s", err.Error())
+	} else {
+		defer whitelistRows.Close()
+		for whitelistRows.Next() {
+			Log.Debug("Found %s in greylist whitelist", ip)
+			return &MessageCheckResult{
+				module:          "greylisting",
+				suggestedAction: messagePermit,
+				message:         "",
+				score:           1,
+				determinants:    map[string]interface{}{"Found in whitelist": "True"},
+			}
+		}
+	}
 
 	verdicts := greylistGetRecentVerdicts(msg)
 	allowCount := 0
@@ -86,7 +163,7 @@ func greylistGetResult(msg Message) *MessageCheckResult {
 	return &MessageCheckResult{
 		module:          "greylisting",
 		suggestedAction: messageTempFail,
-		message:         fmt.Sprintf("Greylisting in effect, please come back later"),
+		message:         "Greylisting in effect, please come back later",
 		score:           Config.Greylisting.Initial_Score,
 		determinants:    determinants,
 	}
@@ -107,6 +184,7 @@ func greylistGetRecentVerdicts(msg Message) *[]greylistVerdict {
 		panic("Error occurred while retrieving past verdicts")
 	}
 
+	defer verdictRows.Close()
 	verdicts := make([]greylistVerdict, 0)
 	for verdictRows.Next() {
 		verdict := greylistVerdict{}

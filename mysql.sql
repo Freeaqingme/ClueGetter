@@ -9,6 +9,16 @@ CREATE TABLE instance (
   PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+CREATE TABLE greylist_whitelist (
+  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  cluegetter_instance bigint(20) unsigned NOT NULL,
+  ip varbinary(16) NOT NULL,
+  last_seen datetime DEFAULT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY cluegetter_instance (cluegetter_instance,ip),
+  CONSTRAINT greylist_whitelist_ibfk_1 FOREIGN KEY (cluegetter_instance) REFERENCES instance (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 CREATE TABLE session (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   cluegetter_instance bigint(20) unsigned NOT NULL,
