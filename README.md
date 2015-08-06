@@ -31,6 +31,12 @@ See the screenshots directory to get some ideas on what the HTTP interface
 looks like.
 
 ## Changelog
+#### 2015-08-06 Version 0.2.2
+* New feature: Greylisting
+* New feature: Added exit-on-panic config directive, giving more accurate stack traces
+* New Feature: Quota classes, allowing to group quota profiles
+* Bugfix: Don't panic on messages that has the same recipient multiple times
+* Build change: Assets are now compiled into the binary (when making a production build)
 
 #### 2015-07-19 Version 0.2.1
 * Schema change: save body in chunks in separate table
