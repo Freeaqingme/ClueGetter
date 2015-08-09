@@ -44,6 +44,7 @@ func main() {
 	rdbmsStart()
 	setInstance()
 
+	milterSessionStart()
 	httpStart(done)
 	messageStart()
 	quotasStart()

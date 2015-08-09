@@ -9,7 +9,6 @@ package main
 
 import (
 	"database/sql"
-	"sync"
 	"time"
 )
 
@@ -115,10 +114,13 @@ func (s *milterSession) getHelo() string {
 	return s.Helo
 }
 
-func (s *milterSession) persist() {
-	var once sync.Once
-	once.Do(milterSessionPrepStmt)
+func milterSessionStart() {
+	milterSessionPrepStmt()
 
+	Log.Info("Milter Session module started successfully")
+}
+
+func (s *milterSession) persist() {
 	StatsCounters["RdbmsQueries"].increase(1)
 	if s.id == 0 {
 		res, err := milterSessionInsertStmt.Exec(instance, time.Now(), s.getIp(), s.getSaslUsername())

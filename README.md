@@ -34,7 +34,7 @@ looks like.
 #### 2015-08-06 Version 0.2.2
 * New feature: Greylisting
 * New feature: Added exit-on-panic config directive, giving more accurate stack traces
-* New Feature: Quota classes, allowing to group quota profiles
+* New Feature: Quota classes, allow to group quota profiles
 * Bugfix: Don't panic on messages that has the same recipient multiple times
 * Build change: Assets are now compiled into the binary (when making a production build)
 
