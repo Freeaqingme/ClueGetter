@@ -157,11 +157,7 @@ func milterSessionStart() {
 
 		ipEnd := make([]byte, len(ip.IP))
 		for k, v := range ip.IP {
-			ipEnd[k] = v
-		}
-
-		for i := 0; i < len(ip.IP); i++ {
-			ipEnd[i] = ipEnd[i] | (ip.Mask[i] ^ 0xff)
+			ipEnd[k] = v | (ip.Mask[k] ^ 0xff)
 		}
 
 		mask, _ := strconv.Atoi(ipString[strings.Index(ipString, "/")+1:])
