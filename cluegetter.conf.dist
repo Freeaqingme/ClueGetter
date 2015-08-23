@@ -73,6 +73,10 @@ message-tempfail-score = 8
 # To use a unix socket, use the format: unix:pathname
 milter-socket =  "inet:10033@127.0.0.1"
 
+# IP's to always allow, no matter what.
+whitelist = "127.0.0.0/8"
+whitelist = "::1"
+
 [http]
 # Cluegetter can provide an HTTP interface that displays some runtime
 # statistics and errors, and allows to search for processed messages.

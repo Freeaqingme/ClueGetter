@@ -241,9 +241,14 @@ func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
 
 	verdict, msg := messageGetVerdict(s.getLastMessage())
 
+	if s.isWhitelisted() {
+		verdict = messagePermit
+		msg = "Whitelisted"
+	}
+
 	switch {
 	case verdict == messagePermit:
-		Log.Info("Message Permit: sess=%d message=%s", s.getId(), s.getLastMessage().getQueueId())
+		Log.Info("Message Permit: sess=%d message=%s %s", s.getId(), s.getLastMessage().getQueueId(), msg)
 		return
 	case verdict == messageTempFail:
 		m.SetReply(ctx, "421", "4.7.0", msg)
@@ -303,6 +308,12 @@ func milterHandleError(ctx uintptr, sfsistat *int8) {
 	if Config.ClueGetter.Noop {
 		return
 	}
+
+	s := milterGetSession(ctx, true, true)
+	if s != nil && s.isWhitelisted() {
+		return
+	}
+
 	m.SetReply(ctx, "421", "4.7.0", "An internal error ocurred")
 	*sfsistat = m.Tempfail
 	return

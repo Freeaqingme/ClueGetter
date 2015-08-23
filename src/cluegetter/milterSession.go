@@ -8,7 +8,12 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
+	"fmt"
+	"net"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -31,8 +36,15 @@ type milterSession struct {
 	Helo         string
 }
 
+type milterSessionWhitelistRange struct {
+	ipStart net.IP
+	ipEnd   net.IP
+	mask    int
+}
+
 var milterSessionInsertStmt = *new(*sql.Stmt)
 var milterSessionUpdateStmt = *new(*sql.Stmt)
+var milterSessionWhitelist []*milterSessionWhitelistRange
 
 func milterSessionPrepStmt() {
 	stmt, err := Rdbms.Prepare(`
@@ -114,8 +126,47 @@ func (s *milterSession) getHelo() string {
 	return s.Helo
 }
 
+func (s *milterSession) isWhitelisted() bool {
+	testIP := net.ParseIP(s.getIp()).To16()
+	for _, whitelistRange := range milterSessionWhitelist {
+		if bytes.Compare(testIP, whitelistRange.ipStart) >= 0 &&
+			bytes.Compare(testIP, whitelistRange.ipEnd) <= 0 {
+			return true
+		}
+	}
+
+	return false
+}
+
 func milterSessionStart() {
 	milterSessionPrepStmt()
+
+	milterSessionWhitelist = make([]*milterSessionWhitelistRange, len(Config.ClueGetter.Whitelist))
+	for idx, ipString := range Config.ClueGetter.Whitelist {
+		if !strings.Contains(ipString, "/") {
+			if strings.Contains(ipString, ":") {
+				ipString = ipString + "/128"
+			} else {
+				ipString = ipString + "/32"
+			}
+		}
+		_, ip, err := net.ParseCIDR(ipString)
+		if ip == nil || err != nil {
+			panic(fmt.Sprintf("Invalid whitelist ip specified '%s': %s", ipString, err))
+		}
+
+		ipEnd := make([]byte, len(ip.IP))
+		for k, v := range ip.IP {
+			ipEnd[k] = v
+		}
+
+		for i := 0; i < len(ip.IP); i++ {
+			ipEnd[i] = ipEnd[i] | (ip.Mask[i] ^ 0xff)
+		}
+
+		mask, _ := strconv.Atoi(ipString[strings.Index(ipString, "/")+1:])
+		milterSessionWhitelist[idx] = &milterSessionWhitelistRange{ip.IP.To16(), net.IP(ipEnd).To16(), mask}
+	}
 
 	Log.Info("Milter Session module started successfully")
 }
