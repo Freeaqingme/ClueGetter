@@ -31,6 +31,10 @@ See the screenshots directory to get some ideas on what the HTTP interface
 looks like.
 
 ## Changelog
+#### 2015-08-25 Version 0.2.3
+* New featuer: Whitelisting
+* Bugfix: Bugfix: Don't prepare new db prepared statement for each new session
+
 #### 2015-08-06 Version 0.2.2
 * New feature: Greylisting
 * New feature: Added exit-on-panic config directive, giving more accurate stack traces
