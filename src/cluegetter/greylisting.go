@@ -10,6 +10,8 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	libspf2 "github.com/Freeaqingme/go-libspf2"
+	"net"
 	"strings"
 	"time"
 )
@@ -17,6 +19,7 @@ import (
 var greylistGetRecentVerdictsStmt = *new(*sql.Stmt)
 var greylistSelectFromWhitelist = *new(*sql.Stmt)
 var greylistUpdateWhitelistStmt = *new(*sql.Stmt)
+var greylistSpf2 = libspf2.NewClient()
 
 type greylistVerdict struct {
 	verdict string
@@ -105,6 +108,23 @@ func greylistUpdateWhitelist() {
 
 func greylistGetResult(msg Message) *MessageCheckResult {
 	ip := (*msg.getSession()).getIp()
+
+	res, spfDomain, spfWhitelistErr := greylistIsSpfWhitelisted(net.ParseIP(ip))
+	if res {
+		Log.Debug("Found %s in %s SPF record", ip, spfDomain)
+		return &MessageCheckResult{
+			module:          "greylisting",
+			suggestedAction: messagePermit,
+			message:         "",
+			score:           1,
+			determinants: map[string]interface{}{
+				"Found in SPF whitelist": "true",
+				"SpfError":               spfWhitelistErr,
+				"SpfDomain":              spfDomain,
+			},
+		}
+	}
+
 	StatsCounters["RdbmsQueries"].increase(1)
 	whitelistRows, err := greylistSelectFromWhitelist.Query(ip)
 
@@ -120,7 +140,12 @@ func greylistGetResult(msg Message) *MessageCheckResult {
 				suggestedAction: messagePermit,
 				message:         "",
 				score:           1,
-				determinants:    map[string]interface{}{"Found in whitelist": "True"},
+				determinants: map[string]interface{}{
+					"Found in whitelist":     "true",
+					"Found in SPF whitelist": "false",
+					"SpfError":               spfWhitelistErr,
+					"SpfDomain":              spfDomain,
+				},
 			}
 		}
 	}
@@ -142,9 +167,13 @@ func greylistGetResult(msg Message) *MessageCheckResult {
 		timeDiff = time.Since((*firstVerdict.date)).Minutes()
 	}
 	determinants := map[string]interface{}{
-		"verdicts_allow":    allowCount,
-		"verdicts_disallow": disallowCount,
-		"time_diff":         timeDiff,
+		"verdicts_allow":         allowCount,
+		"verdicts_disallow":      disallowCount,
+		"time_diff":              timeDiff,
+		"Found in whitelist":     "false",
+		"Found in SPF whitelist": "false",
+		"SpfError":               spfWhitelistErr,
+		"SpfDomain":              spfDomain,
 	}
 
 	Log.Debug("%d Got %d allow verdicts, %d disallow verdicts in greylist module. First verdict was %f minutes ago",
@@ -167,6 +196,25 @@ func greylistGetResult(msg Message) *MessageCheckResult {
 		score:           Config.Greylisting.Initial_Score,
 		determinants:    determinants,
 	}
+}
+
+func greylistIsSpfWhitelisted(ip net.IP) (bool, string, error) {
+	var error error
+	for _, whitelistDomain := range Config.Greylisting.Whitelist_Spf {
+		res, err := greylistSpf2.Query(whitelistDomain, ip)
+		if err != nil {
+			error = err
+			Log.Error("Error while retrieving SPF for %s from %s: %s", ip, whitelistDomain, err)
+			continue
+		}
+
+		Log.Debug("Got SPF result for %s from %s: %s", ip, whitelistDomain, res)
+		if res == libspf2.SPFResultPASS {
+			return true, whitelistDomain, error
+		}
+	}
+
+	return false, "", error
 }
 
 func greylistGetRecentVerdicts(msg Message) *[]greylistVerdict {

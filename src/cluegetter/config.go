@@ -39,6 +39,7 @@ type config struct {
 		Enabled        bool
 		Initial_Score  float64
 		Initial_Period uint16
+		Whitelist_Spf  []string
 	}
 	Quotas struct {
 		Enabled                bool
@@ -87,6 +88,7 @@ func DefaultConfig(cfg *config) {
 	cfg.Greylisting.Enabled = false
 	cfg.Greylisting.Initial_Score = 7.0
 	cfg.Greylisting.Initial_Period = 5
+	cfg.Greylisting.Whitelist_Spf = []string{}
 
 	cfg.Quotas.Enabled = false
 	cfg.Quotas.Account_Client_Address = true

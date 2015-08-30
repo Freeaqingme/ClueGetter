@@ -95,13 +95,23 @@ listen-host = "127.0.0.1"
 # an email only once or twice within a few minutes. And as such, will be
 # deferred from sending any spam at all.
 
-enabled = true
+enabled = false
 
 # Score to give host not seen before.
 initial-score = 7
 
 # Period after which a host should try to deliver again.
 initial-period = 5
+
+# A list of host names to retrieve the SPF records for and whitelist
+# the ip's contained in the SPF rcords.
+whitelist-spf = transip.email
+whitelist-spf = aol.com
+whitelist-spf = gmail.com
+whitelist-spf = hotmail.com
+whitelist-spf = outlook.com
+whitelist-spf = skynet.be
+whitelist-spf = servers.mcsv.net  # MailChimp & Mandrill
 
 [quotas]
 # Enable the Quota module
