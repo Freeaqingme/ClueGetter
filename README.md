@@ -32,7 +32,7 @@ looks like.
 
 ## Changelog
 #### 2015-08-25 Version 0.2.3
-* New featuer: Whitelisting
+* New feature: Whitelisting
 * Bugfix: Bugfix: Don't prepare new db prepared statement for each new session
 
 #### 2015-08-06 Version 0.2.2
