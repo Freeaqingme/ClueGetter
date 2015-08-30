@@ -31,6 +31,9 @@ See the screenshots directory to get some ideas on what the HTTP interface
 looks like.
 
 ## Changelog
+#### 2015-08-30 Version 0.2.4
+* New feature: Allow to specify a whitelist for greylists based on SPF records
+
 #### 2015-08-25 Version 0.2.3
 * New feature: Whitelisting
 * Bugfix: Bugfix: Don't prepare new db prepared statement for each new session
