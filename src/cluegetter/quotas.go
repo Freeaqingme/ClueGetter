@@ -326,7 +326,9 @@ func quotasGetMsgFactors(msg Message) map[string][]string {
 		factors["sender"] = []string{msg.getFrom()}
 	}
 	if Config.Quotas.Account_Recipient {
-		factors["recipient"] = msg.getRecipients()
+		rcpts := make([]string, len(msg.getRecipients()))
+		copy(rcpts, msg.getRecipients())
+		factors["recipient"] = rcpts
 	}
 	if Config.Quotas.Account_Client_Address {
 		factors["client_address"] = []string{sess.getIp()}
