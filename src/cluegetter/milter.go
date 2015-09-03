@@ -171,7 +171,7 @@ func (milter *milter) EnvFrom(ctx uintptr, from []string) (sfsistat int8) {
 		Log.Critical("%d Milter.EnvFrom() callback received %d elements", d.getId(), len(from))
 		panic(fmt.Sprint("%d Milter.EnvFrom() callback received %d elements", d.getId(), len(from)))
 	}
-	msg.From = strings.Trim(from[0], "<>")
+	msg.From = strings.ToLower(strings.Trim(from[0], "<>"))
 	return
 }
 
@@ -180,7 +180,7 @@ func (milter *milter) EnvRcpt(ctx uintptr, rcpt []string) (sfsistat int8) {
 
 	d := milterGetSession(ctx, true, false)
 	msg := d.getLastMessage()
-	msg.Rcpt = append(msg.Rcpt, strings.Trim(rcpt[0], "<>"))
+	msg.Rcpt = append(msg.Rcpt, strings.ToLower(strings.Trim(rcpt[0], "<>")))
 
 	StatsCounters["MilterCallbackEnvRcpt"].increase(1)
 	Log.Debug("%d Milter.EnvRcpt() called: rcpt = %s", d.getId(), fmt.Sprint(rcpt))

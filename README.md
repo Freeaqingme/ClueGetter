@@ -31,6 +31,11 @@ See the screenshots directory to get some ideas on what the HTTP interface
 looks like.
 
 ## Changelog
+#### 2015-09-01 Version 0.2.5
+* Bugfix: Allow quota and greylist module to run concurrently
+* Bugfix: Email addresses should be case insensitive, prevent duplicate key errors in quota module
+* Change: Only display stats every 180 secs rather than every 60 secs
+
 #### 2015-08-30 Version 0.2.4
 * New feature: Allow to specify a whitelist for greylists based on SPF records
 

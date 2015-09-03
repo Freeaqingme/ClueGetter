@@ -98,7 +98,7 @@ func statsPublish() interface{} {
 }
 
 func statsLog() {
-	ticker := time.NewTicker(60 * time.Second)
+	ticker := time.NewTicker(180 * time.Second)
 
 	for {
 		select {
