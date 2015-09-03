@@ -12,7 +12,7 @@ CREATE TABLE instance (
 CREATE TABLE greylist_whitelist (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   cluegetter_instance bigint(20) unsigned NOT NULL,
-  ip varbinary(16) NOT NULL,
+  ip varchar(45) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
   last_seen datetime DEFAULT NULL,
   PRIMARY KEY (id),
   UNIQUE KEY cluegetter_instance (cluegetter_instance,ip),
