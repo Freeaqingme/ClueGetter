@@ -12,7 +12,7 @@ CREATE TABLE instance (
 CREATE TABLE greylist_whitelist (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   cluegetter_instance bigint(20) unsigned NOT NULL,
-  ip varbinary(16) NOT NULL,
+  ip varchar(45) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
   last_seen datetime DEFAULT NULL,
   PRIMARY KEY (id),
   UNIQUE KEY cluegetter_instance (cluegetter_instance,ip),
@@ -36,7 +36,7 @@ CREATE TABLE message (
   session bigint(20) unsigned NOT NULL,
   date datetime NOT NULL,
   messageId varchar(255) NOT NULL COMMENT 'Value of Message-ID header',
-  sender_local varchar(64) NOT NULL,
+  sender_local varchar(255) not null
   sender_domain varchar(253) NOT NULL,
   rcpt_count int(10) unsigned NOT NULL DEFAULT '1',
   verdict enum('permit','tempfail','reject') DEFAULT NULL,
@@ -140,7 +140,7 @@ CREATE TABLE quota_profile_period (
 
 CREATE TABLE recipient (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  local varchar(64) DEFAULT NULL,
+  local varchar(255) NOT NULL,
   domain varchar(253) DEFAULT NULL,
   PRIMARY KEY (id),
   UNIQUE KEY local (local,domain)
