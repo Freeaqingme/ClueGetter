@@ -69,16 +69,16 @@ var MessageSetVerdictStmt = *new(*sql.Stmt)
 var MessageInsertModuleResultStmt = *new(*sql.Stmt)
 
 func messageStart() {
-	StatsCounters["MessagePanics"] = &StatsCounter{}
-	StatsCounters["MessageVerdictPermit"] = &StatsCounter{}
-	StatsCounters["MessageVerdictTempfail"] = &StatsCounter{}
-	StatsCounters["MessageVerdictReject"] = &StatsCounter{}
-	StatsCounters["MessageVerdictRejectQuotas"] = &StatsCounter{}
-	StatsCounters["MessageVerdictRejectSpamassassin"] = &StatsCounter{}
-	StatsCounters["MessageVerdictRejectGreylisting"] = &StatsCounter{}
-	StatsCounters["MessageVerdictTempfailQuotas"] = &StatsCounter{}
-	StatsCounters["MessageVerdictTempfailSpamassassin"] = &StatsCounter{}
-	StatsCounters["MessageVerdictTempfailGreylisting"] = &StatsCounter{}
+	statsInitCounter("MessagePanics")
+	statsInitCounter("MessageVerdictPermit")
+	statsInitCounter("MessageVerdictTempfail")
+	statsInitCounter("MessageVerdictReject")
+	statsInitCounter("MessageVerdictRejectQuotas")
+	statsInitCounter("MessageVerdictRejectSpamassassin")
+	statsInitCounter("MessageVerdictRejectGreylisting")
+	statsInitCounter("MessageVerdictTempfailQuotas")
+	statsInitCounter("MessageVerdictTempfailSpamassassin")
+	statsInitCounter("MessageVerdictTempfailGreylisting")
 
 	stmt, err := Rdbms.Prepare(`INSERT INTO message (id, session, date, messageId, sender_local,
 								sender_domain, rcpt_count) VALUES (?, ?, ?, ?, ?, ?, ?)`)

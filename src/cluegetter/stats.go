@@ -15,6 +15,7 @@ import (
 
 var StatsControl = make(chan struct{})
 var StatsCounters = make(map[string]*StatsCounter)
+var StatsCountersMutex = &sync.Mutex{}
 
 type statsDatapoint struct {
 	timestamp int64 // time.Now().Nanoseconds()
@@ -87,9 +88,18 @@ func statsStart() {
 	expvar.Publish("statscounters", expvar.Func(statsPublish))
 }
 
-func statsPublish() interface{} {
-	out := map[string]int32{}
+func statsInitCounter(name string) {
+	StatsCountersMutex.Lock()
+	defer StatsCountersMutex.Unlock()
 
+	StatsCounters[name] = &StatsCounter{}
+}
+
+func statsPublish() interface{} {
+	StatsCountersMutex.Lock()
+	defer StatsCountersMutex.Unlock()
+
+	out := map[string]int32{}
 	for key := range StatsCounters {
 		out[key] = StatsCounters[key].getTotalCounter()
 	}
@@ -103,9 +113,11 @@ func statsLog() {
 	for {
 		select {
 		case <-ticker.C:
+			StatsCountersMutex.Lock()
 			for key := range StatsCounters {
 				Log.Debug("%s: %d", key, StatsCounters[key].getTotalCounter())
 			}
+			defer StatsCountersMutex.Unlock()
 		case <-StatsControl:
 			ticker.Stop()
 			return
@@ -124,12 +136,16 @@ func statsPrune() {
 	for {
 		select {
 		case <-ticker.C:
+			StatsCountersMutex.Lock()
+
 			for key := range StatsCounters {
 				if StatsCounters[key].ignore_prune == true {
 					continue
 				}
 				StatsCounters[key].prune(key)
 			}
+
+			defer StatsCountersMutex.Unlock()
 		case <-StatsControl:
 			ticker.Stop()
 			return

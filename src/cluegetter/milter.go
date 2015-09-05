@@ -65,17 +65,17 @@ var MilterDataIndex milterDataIndex
 func milterStart() {
 	MilterDataIndex = milterDataIndex{sessions: make(map[uint64]*milterSession)}
 
-	StatsCounters["MilterCallbackConnect"] = &StatsCounter{}
-	StatsCounters["MilterCallbackHelo"] = &StatsCounter{}
-	StatsCounters["MilterCallbackEnvFrom"] = &StatsCounter{}
-	StatsCounters["MilterCallbackEnvRcpt"] = &StatsCounter{}
-	StatsCounters["MilterCallbackHeader"] = &StatsCounter{}
-	StatsCounters["MilterCallbackEoh"] = &StatsCounter{}
-	StatsCounters["MilterCallbackBody"] = &StatsCounter{}
-	StatsCounters["MilterCallbackEom"] = &StatsCounter{}
-	StatsCounters["MilterCallbackAbort"] = &StatsCounter{}
-	StatsCounters["MilterCallbackClose"] = &StatsCounter{}
-	StatsCounters["MilterProtocolErrors"] = &StatsCounter{}
+	statsInitCounter("MilterCallbackConnect")
+	statsInitCounter("MilterCallbackHelo")
+	statsInitCounter("MilterCallbackEnvFrom")
+	statsInitCounter("MilterCallbackEnvRcpt")
+	statsInitCounter("MilterCallbackHeader")
+	statsInitCounter("MilterCallbackEoh")
+	statsInitCounter("MilterCallbackBody")
+	statsInitCounter("MilterCallbackEom")
+	statsInitCounter("MilterCallbackAbort")
+	statsInitCounter("MilterCallbackClose")
+	statsInitCounter("MilterProtocolErrors")
 
 	milter := new(milter)
 	milter.FilterName = "GlueGetter"
