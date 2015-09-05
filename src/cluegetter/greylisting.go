@@ -218,10 +218,19 @@ func greylistIsSpfWhitelisted(ip net.IP) (bool, string, error) {
 }
 
 func greylistGetRecentVerdicts(msg Message) *[]greylistVerdict {
+	fromLocal := ""
+	fromDomain := ""
+	if strings.Index(msg.getFrom(), "@") != -1 {
+		fromLocal = strings.Split(msg.getFrom(), "@")[0]
+		fromDomain = strings.Split(msg.getFrom(), "@")[1]
+	} else {
+		fromLocal = msg.getFrom()
+	}
+
 	StatsCounters["RdbmsQueries"].increase(1)
 	verdictRows, err := greylistGetRecentVerdictsStmt.Query(
-		strings.Split(msg.getFrom(), "@")[0],
-		strings.Split(msg.getFrom(), "@")[1],
+		fromLocal,
+		fromDomain,
 		strings.Split(msg.getRecipients()[0], "@")[0],
 		strings.Split(msg.getRecipients()[0], "@")[1],
 		(*msg.getSession()).getIp(),
