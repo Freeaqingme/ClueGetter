@@ -10,8 +10,10 @@ package main
 import (
 	"fmt"
 	spamc "github.com/Freeaqingme/go-spamc"
+	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type saReport struct {
@@ -59,7 +61,20 @@ func saGetResult(msg Message) *MessageCheckResult {
 }
 
 func saGetRawReply(msg Message) (*spamc.SpamDOut, error) {
+	fqdn, err := os.Hostname()
+	if err != nil {
+		Log.Error("Could not determine FQDN")
+		fqdn = "localhost"
+	}
 	body := make([]string, 0)
+
+	// Let SA know where the email came from.
+	body = append(body, fmt.Sprintf("Received: from [%s]\n\tby %s with SMTP id %d@%s; %s",
+		(*msg.getSession()).getIp(),
+		fqdn,
+		(*msg.getSession()).getId(),
+		fqdn,
+		time.Now().Format(time.RFC1123Z)))
 
 	for _, header := range msg.getHeaders() {
 		body = append(body, (*header).getKey()+": "+(*header).getValue())
