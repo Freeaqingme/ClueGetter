@@ -31,6 +31,12 @@ See the screenshots directory to get some ideas on what the HTTP interface
 looks like.
 
 ## Changelog
+#### 2015-09-10 Version 0.2.6
+* Bugfix: Allow nullsenders (From: <>)
+* Improvement: Add additional locking around stats, preventing race conditions
+* Schema change: Allow for longer local parts than RFC suggests
+* Schema change: change address field from varbinary(16) to varchar(45)
+
 #### 2015-09-01 Version 0.2.5
 * Bugfix: Allow quota and greylist module to run concurrently
 * Bugfix: Email addresses should be case insensitive, prevent duplicate key errors in quota module
