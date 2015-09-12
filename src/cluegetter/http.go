@@ -103,16 +103,19 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	messages := make([]*httpMessage, 0)
-	rows, _ := Rdbms.Query(`
+	rows, err := Rdbms.Query(`
 		SELECT m.id, m.date, m.sender_local || '@' || m.sender_domain sender, m.rcpt_count, m.verdict,
 			GROUP_CONCAT(distinct IF(r.domain = '', r.local, (r.local || '@' || r.domain))) recipients
 			FROM message m
 				LEFT JOIN message_recipient mr on mr.message = m.id
 				LEFT JOIN recipient r ON r.id = mr.recipient
-			WHERE (m.sender_local = ? AND m.sender_domain = ?)
-				OR (r.local = ? AND r.domain = ?)
+			WHERE (m.sender_domain = ? AND (m.sender_local = ? OR ? = ''))
+				OR (r.domain = ? AND (r.local = ? OR ? = ''))
 			GROUP BY m.id ORDER BY date DESC LIMIT 0,250
-	`, local, domain, local, domain)
+	`, domain, local, local, domain, local, local)
+	if err != nil {
+		panic(err)
+	}
 	defer rows.Close()
 	for rows.Next() {
 		message := &httpMessage{Recipients: make([]*httpMessageRecipient, 0)}
