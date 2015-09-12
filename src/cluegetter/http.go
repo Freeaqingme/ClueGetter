@@ -9,6 +9,7 @@ package main
 
 import (
 	"cluegetter/assets"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -39,6 +40,8 @@ func httpStart(done <-chan struct{}) {
 	http.HandleFunc("/stats/", httpStatsHandler)
 	http.HandleFunc("/message/", httpHandlerMessage)
 	http.HandleFunc("/message/searchEmail/", httpHandlerMessageSearchEmail)
+	http.HandleFunc("/message/searchClientAddress/", httpHandlerMessageSearchClientAddress)
+	http.HandleFunc("/message/searchSaslUser/", httpHandleMessageSearchSaslUser)
 	http.HandleFunc("/", httpIndexHandler)
 
 	go http.Serve(listener, nil)
@@ -102,7 +105,6 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 		domain = address
 	}
 
-	messages := make([]*httpMessage, 0)
 	rows, err := Rdbms.Query(`
 		SELECT m.id, m.date, m.sender_local || '@' || m.sender_domain sender, m.rcpt_count, m.verdict,
 			GROUP_CONCAT(distinct IF(r.domain = '', r.local, (r.local || '@' || r.domain))) recipients
@@ -117,6 +119,51 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 	defer rows.Close()
+	httpProcessSearchResultRows(w, r, rows)
+}
+
+func httpHandlerMessageSearchClientAddress(w http.ResponseWriter, r *http.Request) {
+	address := r.URL.Path[len("/message/searchClientAddress/"):]
+
+	rows, err := Rdbms.Query(`
+		SELECT m.id, m.date, m.sender_local || '@' || m.sender_domain sender, m.rcpt_count, m.verdict,
+			GROUP_CONCAT(distinct IF(r.domain = '', r.local, (r.local || '@' || r.domain))) recipients
+			FROM message m
+				LEFT JOIN message_recipient mr on mr.message = m.id
+				LEFT JOIN recipient r ON r.id = mr.recipient
+				LEFT JOIN session s ON m.session = s.id
+			WHERE s.ip = ?
+			GROUP BY m.id ORDER BY date DESC LIMIT 0,250
+	`, net.ParseIP(address).String())
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+	httpProcessSearchResultRows(w, r, rows)
+}
+
+func httpHandleMessageSearchSaslUser(w http.ResponseWriter, r *http.Request) {
+	saslUser := r.URL.Path[len("/message/searchSaslUser/"):]
+
+	rows, err := Rdbms.Query(`
+		SELECT m.id, m.date, m.sender_local || '@' || m.sender_domain sender, m.rcpt_count, m.verdict,
+			GROUP_CONCAT(distinct IF(r.domain = '', r.local, (r.local || '@' || r.domain))) recipients
+			FROM message m
+				LEFT JOIN message_recipient mr on mr.message = m.id
+				LEFT JOIN recipient r ON r.id = mr.recipient
+				LEFT JOIN session s ON m.session = s.id
+			WHERE s.sasl_username = ?
+			GROUP BY m.id ORDER BY date DESC LIMIT 0,250
+	`, saslUser)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+	httpProcessSearchResultRows(w, r, rows)
+}
+
+func httpProcessSearchResultRows(w http.ResponseWriter, r *http.Request, rows *sql.Rows) {
+	messages := make([]*httpMessage, 0)
 	for rows.Next() {
 		message := &httpMessage{Recipients: make([]*httpMessageRecipient, 0)}
 		var rcptsStr string
@@ -223,6 +270,16 @@ func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.FormValue("mailAddress") != "" {
 		http.Redirect(w, r, "/message/searchEmail/"+r.FormValue("mailAddress"), http.StatusFound)
+		return
+	}
+
+	if r.FormValue("clientAddress") != "" {
+		http.Redirect(w, r, "/message/searchClientAddress/"+r.FormValue("clientAddress"), http.StatusFound)
+		return
+	}
+
+	if r.FormValue("saslUser") != "" {
+		http.Redirect(w, r, "/message/searchSaslUser/"+r.FormValue("saslUser"), http.StatusFound)
 		return
 	}
 
