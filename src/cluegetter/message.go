@@ -10,6 +10,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -71,7 +72,7 @@ var MessageInsertModuleResultStmt = *new(*sql.Stmt)
 var MessageInsertHeaders = make([]*milterMessageHeader, 0)
 
 func messageStart() {
-	for _, hdrString := range Config.ClueGetter.Insert_Headers {
+	for _, hdrString := range Config.ClueGetter.Add_Header {
 		if strings.Index(hdrString, ":") < 1 {
 			Log.Fatal("Invalid header specified: ", hdrString)
 		}
@@ -149,7 +150,7 @@ func messageStop() {
 	Log.Info("Message handler stopped successfully")
 }
 
-func messageGetVerdict(msg Message) (verdict int, msgStr string) {
+func messageGetVerdict(msg Message) (verdict int, msgStr string, results [3][]*MessageCheckResult) {
 	defer func() {
 		if Config.ClueGetter.Exit_On_Panic {
 			return
@@ -167,7 +168,6 @@ func messageGetVerdict(msg Message) (verdict int, msgStr string) {
 
 	messageSave(msg)
 
-	var results [3][]*MessageCheckResult
 	results[messagePermit] = make([]*MessageCheckResult, 0)
 	results[messageTempFail] = make([]*MessageCheckResult, 0)
 	results[messageReject] = make([]*MessageCheckResult, 0)
@@ -206,14 +206,14 @@ func messageGetVerdict(msg Message) (verdict int, msgStr string) {
 		StatsCounters["MessageVerdictReject"].increase(1)
 		StatsCounters["MessageVerdictReject"+strings.Title(determinant.module)].increase(1)
 		messageSaveVerdict(msg, messageReject, determinant.message, totalScores[messageReject], totalScores[messageTempFail])
-		return messageReject, determinant.message
+		return messageReject, determinant.message, results
 	}
 	if (totalScores[messageTempFail] + totalScores[messageReject]) >= Config.ClueGetter.Message_Tempfail_Score {
 		determinant := getDecidingResultWithMessage(results[messageTempFail])
 		StatsCounters["MessageVerdictTempfail"].increase(1)
 		StatsCounters["MessageVerdictTempfail"+strings.Title(determinant.module)].increase(1)
 		messageSaveVerdict(msg, messageTempFail, determinant.message, totalScores[messageReject], totalScores[messageTempFail])
-		return messageTempFail, determinant.message
+		return messageTempFail, determinant.message, results
 	}
 
 	StatsCounters["MessageVerdictPermit"].increase(1)
@@ -403,6 +403,18 @@ func messageSaveHeaders(msg Message) {
 	}
 }
 
-func messageGetHeadersToAdd(msg Message) []*milterMessageHeader {
-	return MessageInsertHeaders
+func messageGetHeadersToAdd(msg Message, results [3][]*MessageCheckResult) []*milterMessageHeader {
+	out := make([]*milterMessageHeader, len(MessageInsertHeaders))
+	copy(out, MessageInsertHeaders)
+
+	if Config.ClueGetter.Add_Header_X_Spam_Score {
+		spamscore := 0.0
+		for _, result := range results[messageReject] {
+			spamscore += result.score
+		}
+
+		out = append(out, &milterMessageHeader{"X-Spam-Score", fmt.Sprintf("%.2f", spamscore)})
+	}
+
+	return out
 }

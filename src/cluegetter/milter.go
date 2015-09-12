@@ -240,8 +240,8 @@ func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
 	StatsCounters["MilterCallbackEom"].increase(1)
 	Log.Debug("%d milter.Eom() was called", s.getId())
 
-	verdict, msg := messageGetVerdict(s.getLastMessage())
-	for _, hdr := range messageGetHeadersToAdd(s.getLastMessage()) {
+	verdict, msg, results := messageGetVerdict(s.getLastMessage())
+	for _, hdr := range messageGetHeadersToAdd(s.getLastMessage(), results) {
 		m.AddHeader(ctx, hdr.getKey(), hdr.getValue())
 	}
 

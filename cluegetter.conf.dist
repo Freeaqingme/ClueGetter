@@ -79,8 +79,11 @@ whitelist = "::1"
 
 # Insert headers into each message. Can be repeated multiple times.
 # Key and value are separated by a ':'.
-# insert-headers = X-Report-Abuse-To: abuse@example.com
-insert-headers = X-Note: This Email was scanned by ClueGetter
+# add-header = X-Report-Abuse-To: abuse@example.com
+add-header = X-Note: This Email was scanned by ClueGetter
+
+# Add a header named 'X-Spam-Score' indicating the total reject score.
+add-header-x-spam-score = true
 
 [http]
 # Cluegetter can provide an HTTP interface that displays some runtime
