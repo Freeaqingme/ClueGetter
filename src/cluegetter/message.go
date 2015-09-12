@@ -34,6 +34,7 @@ type Session interface {
 	getIp() string
 	getHostname() string
 	getHelo() string
+	getMtaHostName() string
 }
 
 type Message interface {

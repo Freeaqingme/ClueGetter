@@ -34,6 +34,7 @@ type milterSession struct {
 	Ip           string
 	Hostname     string
 	Helo         string
+	MtaHostName  string
 }
 
 type milterSessionWhitelistRange struct {
@@ -124,6 +125,10 @@ func (s *milterSession) getHostname() string {
 
 func (s *milterSession) getHelo() string {
 	return s.Helo
+}
+
+func (s *milterSession) getMtaHostName() string {
+	return s.MtaHostName
 }
 
 func (s *milterSession) isWhitelisted() bool {

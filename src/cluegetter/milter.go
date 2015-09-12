@@ -152,6 +152,7 @@ func (milter *milter) Helo(ctx uintptr, helo string) (sfsistat int8) {
 	sess.CipherBits = m.GetSymVal(ctx, "{cipher_bits}")
 	sess.Cipher = m.GetSymVal(ctx, "{cipher}")
 	sess.TlsVersion = m.GetSymVal(ctx, "{tls_version}")
+	sess.MtaHostName = m.GetSymVal(ctx, "j")
 	sess.persist()
 
 	return
