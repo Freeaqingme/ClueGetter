@@ -29,6 +29,7 @@ type config struct {
 		Message_Tempfail_Score float64
 		Milter_Socket          string
 		Whitelist              []string
+		Insert_Headers         []string
 	}
 	Http struct {
 		Enabled     bool
@@ -80,6 +81,7 @@ func DefaultConfig(cfg *config) {
 	cfg.ClueGetter.Message_Tempfail_Score = 8
 	cfg.ClueGetter.Milter_Socket = "inet:10033@127.0.0.1"
 	cfg.ClueGetter.Whitelist = []string{} // "127.0.0.0/8", "::1" }
+	cfg.ClueGetter.Insert_Headers = []string{}
 
 	cfg.Http.Enabled = true
 	cfg.Http.Listen_Port = "1937"

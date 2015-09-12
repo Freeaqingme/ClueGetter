@@ -77,6 +77,11 @@ milter-socket =  "inet:10033@127.0.0.1"
 whitelist = "127.0.0.0/8"
 whitelist = "::1"
 
+# Insert headers into each message. Can be repeated multiple times.
+# Key and value are separated by a ':'.
+# insert-headers = X-Report-Abuse-To: abuse@example.com
+insert-headers = X-Note: This Email was scanned by ClueGetter
+
 [http]
 # Cluegetter can provide an HTTP interface that displays some runtime
 # statistics and errors, and allows to search for processed messages.

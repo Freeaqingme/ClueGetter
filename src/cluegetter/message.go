@@ -68,8 +68,21 @@ var MessageInsertMsgRcptStmt = *new(*sql.Stmt)
 var MessageInsertMsgHdrStmt = *new(*sql.Stmt)
 var MessageSetVerdictStmt = *new(*sql.Stmt)
 var MessageInsertModuleResultStmt = *new(*sql.Stmt)
+var MessageInsertHeaders = make([]*milterMessageHeader, 0)
 
 func messageStart() {
+	for _, hdrString := range Config.ClueGetter.Insert_Headers {
+		if strings.Index(hdrString, ":") < 1 {
+			Log.Fatal("Invalid header specified: ", hdrString)
+		}
+
+		header := &milterMessageHeader{
+			strings.SplitN(hdrString, ":", 2)[0],
+			strings.Trim(strings.SplitN(hdrString, ":", 2)[1], " "),
+		}
+		MessageInsertHeaders = append(MessageInsertHeaders, header)
+	}
+
 	statsInitCounter("MessagePanics")
 	statsInitCounter("MessageVerdictPermit")
 	statsInitCounter("MessageVerdictTempfail")
@@ -388,4 +401,8 @@ func messageSaveHeaders(msg Message) {
 			Log.Error(err.Error())
 		}
 	}
+}
+
+func messageGetHeadersToAdd(msg Message) []*milterMessageHeader {
+	return MessageInsertHeaders
 }

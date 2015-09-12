@@ -241,6 +241,9 @@ func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
 	Log.Debug("%d milter.Eom() was called", s.getId())
 
 	verdict, msg := messageGetVerdict(s.getLastMessage())
+	for _, hdr := range messageGetHeadersToAdd(s.getLastMessage()) {
+		m.AddHeader(ctx, hdr.getKey(), hdr.getValue())
+	}
 
 	if s.isWhitelisted() {
 		verdict = messagePermit
