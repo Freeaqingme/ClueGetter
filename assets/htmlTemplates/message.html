@@ -21,9 +21,9 @@
     <dt>Verdict Message</dt>
     <dd>{{printf "%s" .VerdictMsg}}</dd>
     <dt>Reject Score</dt>
-    <dd>{{printf "%f" .RejectScore}}</dd>
+    <dd>{{printf "%.2f" .RejectScore}}</dd>
     <dt>Tempfail Score</dt>
-    <dd>{{printf "%f" .TempfailScore}}</dd>
+    <dd>{{printf "%.2f" .TempfailScore}}</dd>
     <dt>Headers</dt>
     <dd>
         <dl class="dl-horizontal">
@@ -45,7 +45,7 @@
         <tr>
             <td>{{ $value.Module }}</td>
             <td>{{ $value.Verdict }}</td>
-            <td>{{ $value.Score }}</td>
+            <td>{{ printf "%.2f" $value.Score }}</td>
             <td class="determinant">{{ $value.Determinants }}</td>
         </tr>
     {{ end }}
