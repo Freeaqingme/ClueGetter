@@ -31,6 +31,15 @@ See the screenshots directory to get some ideas on what the HTTP interface
 looks like.
 
 ## Changelog
+#### 2015-09-13 Version 0.3
+* New Feature: Bounce Handler, used to keep track of bounces
+* New Feature: Allow to search by Domain, IP and SASL User in web interface
+* New Feature: Insert x-spam-score headers (optional)
+* New Feature: Allow to insert static header lines
+* Improvement: Only load modules if they're actually enabled
+* Improvement: Round scores in html frontend to two digits
+* Bugfix: SpamAssassin was missing a received-by header, not well able to determine the source ip.
+
 #### 2015-09-10 Version 0.2.6
 * Bugfix: Allow nullsenders (From: <>)
 * Improvement: Add additional locking around stats, preventing race conditions
