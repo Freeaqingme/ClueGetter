@@ -13,11 +13,11 @@ Available verdict determining modules:
 * Quotas
 * SpamAssassin
 * Greylisting
+* Bounce Handling
 
 Planned modules:
 * Rspamd
 * GeoIP - Detect anomalies in the countries used to send mail from
-* Mailqueue - See if/how many messages are stuck in the mail queue
 * ClamAv/Clamd - Scan the message for viruses
 * Reputation - Incorporate previous verdicts in future verdicts.
 * SRS - Implement with proper support for virtual domains
@@ -38,7 +38,7 @@ looks like.
 * New Feature: Allow to insert static header lines
 * Improvement: Only load modules if they're actually enabled
 * Improvement: Round scores in html frontend to two digits
-* Bugfix: SpamAssassin was missing a received-by header, not well able to determine the source ip.
+* Bugfix: Add missing received-by header for SpamAssassin so it can determine the correct ip
 
 #### 2015-09-10 Version 0.2.6
 * Bugfix: Allow nullsenders (From: <>)
@@ -230,6 +230,9 @@ bounce-processing: |"/bin/nc cluegetter.host 10034"
 
 Afterwards, all that needs to be done is update the ClueGetter config,
  set *enabled=true* in the bounceHandler section and give it a restart.
+ 
+This feature can be used independently from any of the other modules. It does
+not rely on having an archive of your email.
 
 ## License
 
