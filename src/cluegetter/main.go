@@ -51,12 +51,14 @@ func main() {
 	saStart()
 	greylistStart()
 	milterStart()
+	bounceHandlerStart()
 
 	s := <-ch
 	Log.Notice(fmt.Sprintf("Received '%s', exiting...", s.String()))
 
 	close(done)
 	milterStop()
+	bounceHandlerStop()
 	quotasStop()
 	messageStop()
 	rdbmsStop()

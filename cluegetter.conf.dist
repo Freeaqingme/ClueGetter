@@ -96,6 +96,14 @@ enabled = true
 listen-port = 1937
 listen-host = "127.0.0.1"
 
+[bounceHandler]
+# Enable the Bounce Handler functionality in order to get insights in
+# What emails could not be (immediately) delivered. Please refer to the
+# README file for instructions on how to use this.
+enabled     = false
+listen-port = 10034
+listen-host = "127.0.0.1"
+
 [greylisting]
 # When the greylisting module is enabled, hosts that haven not been seen
 # before and that seem a little spammy are temporarily rejected until

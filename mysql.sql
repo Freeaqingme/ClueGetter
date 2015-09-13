@@ -146,6 +146,31 @@ CREATE TABLE recipient (
   UNIQUE KEY local (local,domain)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+CREATE TABLE bounce (
+  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  cluegetter_instance bigint(20) unsigned NOT NULL,
+  date datetime NOT NULL,
+  mta varchar(128) NOT NULL,
+  queueId varchar(25) CHARACTER SET ascii NOT NULL,
+  sender varchar(255) NOT NULL,
+  PRIMARY KEY (id),
+  KEY queueId(queueId),
+  KEY cluegetter_instance(cluegetter_instance),
+  CONSTRAINT bounce_ibfk_1 FOREIGN KEY (cluegetter_instance) REFERENCES instance (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE bounce_report (
+  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  bounce bigint(20) unsigned NOT NULL,
+  status varchar(16) NOT NULL,
+  orig_rcpt varchar(255) NOT NULL,
+  final_rcpt varchar(255) NOT NULL,
+  remote_mta varchar(128) NOT NULL,
+  diag_code text,
+  PRIMARY KEY (id),
+  CONSTRAINT bounce_report_ibfk_1 FOREIGN KEY (bounce) REFERENCES bounce (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 INSERT INTO instance (id, name, description) VALUES (1, 'default', 'The Default Instance');
 INSERT INTO quota_class (id, cluegetter_instance, name) VALUES (1, 1, 'Trusted');
 INSERT INTO quota_class (id, cluegetter_instance, name) VALUES (2, 1, 'Villains');

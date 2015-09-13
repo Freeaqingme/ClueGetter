@@ -204,6 +204,24 @@ as follows after processing it:
 +-----+----------------+----------------+----------+---------+------------+
 ```
 
+## Bounce Handling
+It's possible to track all bounces and deferred messages. To accomplish this,
+you need to add some configuration to Postfix.
+
+Main.cf:
+```
+notify_classes = resource, software, bounce, data, delay, protocol
+bounce_notice_recipient = bounce-processing
+```
+
+In your aliases file (don't forget to run *postalias* afterwards):
+```
+bounce-processing: |"/bin/nc cluegetter.host 10034"
+```
+
+Afterwards, all that needs to be done is update the ClueGetter config,
+ set *enabled=true* in the bounceHandler section and give it a restart.
+
 ## License
 
 ClueGetter is distributed under a BSD 2-clause style license.

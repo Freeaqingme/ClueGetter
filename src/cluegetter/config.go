@@ -37,6 +37,11 @@ type config struct {
 		Listen_Port string
 		Listen_Host string
 	}
+	BounceHandler struct {
+		Enabled     bool
+		Listen_Port string
+		Listen_Host string
+	}
 	Greylisting struct {
 		Enabled        bool
 		Initial_Score  float64
@@ -88,6 +93,10 @@ func DefaultConfig(cfg *config) {
 	cfg.Http.Enabled = true
 	cfg.Http.Listen_Port = "1937"
 	cfg.Http.Listen_Host = "127.0.0.1"
+
+	cfg.BounceHandler.Enabled = false
+	cfg.BounceHandler.Listen_Port = "10034"
+	cfg.BounceHandler.Listen_Host = "127.0.0.1"
 
 	cfg.Greylisting.Enabled = false
 	cfg.Greylisting.Initial_Score = 7.0
