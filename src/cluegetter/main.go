@@ -48,8 +48,9 @@ func main() {
 	httpStart(done)
 	messageStart()
 	quotasStart()
-	milterStart()
+	saStart()
 	greylistStart()
+	milterStart()
 
 	s := <-ch
 	Log.Notice(fmt.Sprintf("Received '%s', exiting...", s.String()))

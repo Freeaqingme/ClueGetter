@@ -27,6 +27,11 @@ type greylistVerdict struct {
 }
 
 func greylistStart() {
+	if Config.Greylisting.Enabled != true {
+		Log.Info("Skipping Greylist module because it was not enabled in the config")
+		return
+	}
+
 	greylistPrepStmt()
 	go greylistUpdateWhitelist()
 

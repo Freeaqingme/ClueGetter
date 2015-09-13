@@ -29,6 +29,11 @@ var QuotaInsertQuotaMessageStmt = *new(*sql.Stmt)
 var QuotaInsertDeducedQuotaStmt = *new(*sql.Stmt)
 
 func quotasStart() {
+	if Config.Quotas.Enabled != true {
+		Log.Info("Skipping Quota module because it was not enabled in the config")
+		return
+	}
+
 	stmt, err := Rdbms.Prepare(quotasGetSelectQuery(nil))
 	if err != nil {
 		Log.Fatal(err)
@@ -59,6 +64,10 @@ func quotasStart() {
 }
 
 func quotasStop() {
+	if Config.Quotas.Enabled != true {
+		return
+	}
+
 	QuotasSelectStmt.Close()
 	QuotaInsertQuotaMessageStmt.Close()
 	QuotaInsertDeducedQuotaStmt.Close()

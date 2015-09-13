@@ -28,6 +28,15 @@ type saReportFact struct {
 	Description string
 }
 
+func saStart() {
+	if Config.SpamAssassin.Enabled != true {
+		Log.Info("Skipping SpamAssassin module because it was not enabled in the config")
+		return
+	}
+
+	Log.Info("SpamAssassin module started successfully")
+}
+
 func saGetResult(msg Message) *MessageCheckResult {
 	rawReply, err := saGetRawReply(msg)
 	if err != nil || rawReply.Code != spamc.EX_OK {
