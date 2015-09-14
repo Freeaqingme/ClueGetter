@@ -24,11 +24,12 @@ var instance uint
 
 func main() {
 	configFile := flag.String("config", "", "Path to Config File")
+	logFile := flag.String("logfile", "", "Log file to use. Will use STDOUT/STDERR otherwise.")
 	logLevel := flag.String("loglevel", "NOTICE",
 		"Log Level. One of: CRITICAL, ERROR, WARNING, NOTICE, INFO, DEBUG)")
 	flag.Parse()
 
-	initLogging(*logLevel)
+	initLogging(*logLevel, *logFile)
 	Log.Notice("Starting ClueGetter...")
 
 	ch := make(chan os.Signal)
@@ -68,7 +69,7 @@ func main() {
 	os.Exit(0)
 }
 
-func initLogging(logLevelStr string) {
+func initLogging(logLevelStr string, logPath string) {
 	logLevel, err := logging.LogLevel(logLevelStr)
 	if err != nil {
 		log.Fatal("Invalid log level specified")
@@ -84,6 +85,15 @@ func initLogging(logLevelStr string) {
 	syslogBackend, err := logging.NewSyslogBackendPriority("cluegetter", syslog.LOG_MAIL)
 	if err != nil {
 		Log.Fatal(err)
+	}
+
+	if logPath != "" {
+		logFile, err := os.OpenFile(logPath, os.O_WRONLY|os.O_APPEND, 0644)
+		if err != nil {
+			Log.Fatal(err)
+		}
+		syscall.Dup2(int(logFile.Fd()), 1)
+		syscall.Dup2(int(logFile.Fd()), 2)
 	}
 
 	logging.SetBackend(syslogBackend, stdoutLeveled)
