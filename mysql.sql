@@ -36,9 +36,9 @@ CREATE TABLE message (
   session bigint(20) unsigned NOT NULL,
   date datetime NOT NULL,
   messageId varchar(255) NOT NULL COMMENT 'Value of Message-ID header',
-  sender_local varchar(255) not null
+  sender_local varchar(255) NOT NULL,
   sender_domain varchar(253) NOT NULL,
-  rcpt_count int(10) unsigned NOT NULL DEFAULT '1',
+  rcpt_count int(10) unsigned NOT NULL DEFAULT 1,
   verdict enum('permit','tempfail','reject') DEFAULT NULL,
   verdict_msg text,
   rejectScore float(6,2) DEFAULT NULL,
