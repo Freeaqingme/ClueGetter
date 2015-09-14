@@ -110,7 +110,7 @@ func saBuildInputMessage(msg Message) []string {
 func saGetRawReply(msg Message) (*spamc.SpamDOut, error) {
 	body := saBuildInputMessage(msg)
 
-	host := Config.SpamAssassin.Host + ": " + strconv.Itoa(Config.SpamAssassin.Port)
+	host := Config.SpamAssassin.Host + ":" + strconv.Itoa(Config.SpamAssassin.Port)
 	client := spamc.New(host, 10)
 	return client.Report(strings.Join(body, "\r\n"), msg.getRecipients()[0])
 }
