@@ -1,4 +1,4 @@
-// GlueGetter - Does things with mail
+// ClueGetter - Does things with mail
 //
 // Copyright 2015 Dolf Schimmel, Freeaqingme.
 //

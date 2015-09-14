@@ -1,4 +1,4 @@
-// GlueGetter - Does things with mail
+// ClueGetter - Does things with mail
 //
 // Copyright 2015 Dolf Schimmel, Freeaqingme.
 //
@@ -78,7 +78,7 @@ func milterStart() {
 	statsInitCounter("MilterProtocolErrors")
 
 	milter := new(milter)
-	milter.FilterName = "GlueGetter"
+	milter.FilterName = "ClueGetter"
 	milter.Debug = false
 	milter.Flags = m.ADDHDRS | m.ADDRCPT | m.CHGFROM | m.CHGBODY
 	milter.Socket = Config.ClueGetter.Milter_Socket

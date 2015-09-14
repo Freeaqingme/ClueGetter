@@ -9,7 +9,7 @@ Each message has a verdict of one of the following values:
 * Tempfail: Deny delivery, but expect the delivering MTA to deliver it at a later time.
 * Reject: Reject the message, indicating it will not be accepted a next time either.
 
-Available verdict determining modules:
+Available modules:
 * Quotas
 * SpamAssassin
 * Greylisting
