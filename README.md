@@ -31,6 +31,10 @@ See the screenshots directory to get some ideas on what the HTTP interface
 looks like.
 
 ## Changelog
+#### 2015-09-15 Version 0.3.1
+* New Feature: Allow to log to a file instead of just STDOUT/STDERR
+* Bugfix: SpamAssassin module would not work with Golang 1.5
+
 #### 2015-09-13 Version 0.3
 * New Feature: Bounce Handler, used to keep track of bounces
 * New Feature: Allow to search by Domain, IP and SASL User in web interface
