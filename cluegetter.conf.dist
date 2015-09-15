@@ -78,9 +78,10 @@ whitelist = "127.0.0.0/8"
 whitelist = "::1"
 
 # Insert headers into each message. Can be repeated multiple times.
-# Key and value are separated by a ':'.
+# Key and value are separated by a ':'. '%h' will automatically be
+# replaced by the hostname.
 # add-header = X-Report-Abuse-To: abuse@example.com
-add-header = X-Note: This Email was scanned by ClueGetter
+add-header = X-Scanned-By: ClueGetter at %h
 
 # Add a header named 'X-Spam-Score' indicating the total reject score.
 add-header-x-spam-score = true

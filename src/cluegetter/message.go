@@ -404,6 +404,7 @@ func messageSaveHeaders(msg Message) {
 }
 
 func messageGetHeadersToAdd(msg Message, results [3][]*MessageCheckResult) []*milterMessageHeader {
+	sess := *msg.getSession()
 	out := make([]*milterMessageHeader, len(MessageInsertHeaders))
 	copy(out, MessageInsertHeaders)
 
@@ -414,6 +415,10 @@ func messageGetHeadersToAdd(msg Message, results [3][]*MessageCheckResult) []*mi
 		}
 
 		out = append(out, &milterMessageHeader{"X-Spam-Score", fmt.Sprintf("%.2f", spamscore)})
+	}
+
+	for k,v := range out {
+		out[k].Value = strings.Replace(v.Value, "%h", sess.getMtaHostName(), -1)
 	}
 
 	return out
