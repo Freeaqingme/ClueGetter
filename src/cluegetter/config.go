@@ -13,24 +13,25 @@ import (
 
 type config struct {
 	ClueGetter struct {
-		Instance                string
-		Noop                    bool
-		Exit_On_Panic           bool
-		Policy_Listen_Port      string
-		Policy_Listen_Host      string
-		Rdbms_Driver            string
-		Rdbms_User              string
-		Rdbms_Address           string
-		Rdbms_Password          string
-		Rdbms_Protocol          string
-		Rdbms_Database          string
-		Rdbms_Mysql_Strictmode  bool
-		Message_Reject_Score    float64
-		Message_Tempfail_Score  float64
-		Milter_Socket           string
-		Whitelist               []string
-		Add_Header              []string
-		Add_Header_X_Spam_Score bool
+		Instance                  string
+		Noop                      bool
+		Exit_On_Panic             bool
+		Policy_Listen_Port        string
+		Policy_Listen_Host        string
+		Rdbms_Driver              string
+		Rdbms_User                string
+		Rdbms_Address             string
+		Rdbms_Password            string
+		Rdbms_Protocol            string
+		Rdbms_Database            string
+		Rdbms_Mysql_Strictmode    bool
+		Message_Reject_Score      float64
+		Message_Tempfail_Score    float64
+		Milter_Socket             string
+		Whitelist                 []string
+		Add_Header                []string
+		Add_Header_X_Spam_Score   bool
+		Insert_Missing_Message_Id bool
 	}
 	Http struct {
 		Enabled     bool
@@ -89,6 +90,7 @@ func DefaultConfig(cfg *config) {
 	cfg.ClueGetter.Whitelist = []string{} // "127.0.0.0/8", "::1" }
 	cfg.ClueGetter.Add_Header = []string{}
 	cfg.ClueGetter.Add_Header_X_Spam_Score = true
+	cfg.ClueGetter.Insert_Missing_Message_Id = true
 
 	cfg.Http.Enabled = true
 	cfg.Http.Listen_Port = "1937"

@@ -86,6 +86,10 @@ add-header = X-Scanned-By: ClueGetter at %h
 # Add a header named 'X-Spam-Score' indicating the total reject score.
 add-header-x-spam-score = true
 
+# Sometimes an email does not have a message-id header. Because it's a
+# convenient way to track messages across MTAs.
+insert-missing-message-id = true
+
 [http]
 # Cluegetter can provide an HTTP interface that displays some runtime
 # statistics and errors, and allows to search for processed messages.

@@ -204,6 +204,8 @@ type milterMessage struct {
 	Rcpt    []string
 	Headers []*MessageHeader
 	Body    []string
+
+	injectMessageId string
 }
 
 func (m *milterMessage) getHeaders() []*MessageHeader {
@@ -234,6 +236,14 @@ func (m *milterMessage) getRecipients() []string {
 
 func (m *milterMessage) getBody() []string {
 	return m.Body
+}
+
+func (m *milterMessage) setInjectMessageId(id string) {
+	m.injectMessageId = id
+}
+
+func (m *milterMessage) getInjectMessageId() string {
+	return m.injectMessageId
 }
 
 /******** milterMessageHeader ********/

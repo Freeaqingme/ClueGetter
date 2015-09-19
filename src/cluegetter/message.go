@@ -47,6 +47,9 @@ type Message interface {
 	getRcptCount() int
 	getRecipients() []string
 	getBody() []string
+
+	setInjectMessageId(string)
+	getInjectMessageId() string
 }
 
 type MessageHeader interface {
@@ -321,6 +324,12 @@ func messageSave(msg Message) {
 		}
 	}
 
+	if messageIdHdr == "" {
+		messageIdHdr = fmt.Sprintf("<%d.%s.cluegetter@%s>",
+			time.Now().Unix(), msg.getQueueId(), sess.getMtaHostName())
+		msg.setInjectMessageId(messageIdHdr)
+	}
+
 	StatsCounters["RdbmsQueries"].increase(1)
 	_, err := MessageInsertMsgStmt.Exec(
 		msg.getQueueId(),
@@ -415,6 +424,10 @@ func messageGetHeadersToAdd(msg Message, results [3][]*MessageCheckResult) []*mi
 		}
 
 		out = append(out, &milterMessageHeader{"X-Spam-Score", fmt.Sprintf("%.2f", spamscore)})
+	}
+
+	if Config.ClueGetter.Insert_Missing_Message_Id == true && msg.getInjectMessageId() != "" {
+		out = append(out, &milterMessageHeader{"Message-Id", msg.getInjectMessageId()})
 	}
 
 	for k, v := range out {
