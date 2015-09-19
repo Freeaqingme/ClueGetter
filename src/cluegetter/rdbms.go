@@ -5,11 +5,6 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-
-/**
-* See also: http://www.postfix.org/SMTPD_POLICY_README.html
-**/
-
 package main
 
 import (
