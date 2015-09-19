@@ -54,12 +54,12 @@ func saGetResult(msg Message) *MessageCheckResult {
 	factsStr := func() []string {
 		out := make([]string, 0)
 		for _, fact := range report.facts {
-			out = append(out, fmt.Sprintf("%s=%f", fact.Symbol, fact.Score))
+			out = append(out, fmt.Sprintf("%s=%.3f", fact.Symbol, fact.Score))
 		}
 		return out
 	}()
 
-	Log.Debug("Got SA score of %f for %s. Tests: [%s]", report.score, msg.getQueueId(), strings.Join(factsStr, ","))
+	Log.Debug("Got SA score of %.2f for %s. Tests: [%s]", report.score, msg.getQueueId(), strings.Join(factsStr, ","))
 	return &MessageCheckResult{
 		module:          "spamassassin",
 		suggestedAction: messageReject,

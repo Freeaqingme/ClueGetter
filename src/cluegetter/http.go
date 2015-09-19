@@ -92,6 +92,7 @@ type httpMessageCheckResult struct {
 	Module       string
 	Verdict      string
 	Score        float64
+	Duration     float64
 	Determinants string
 }
 
@@ -234,12 +235,12 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	checkResultRows, _ := Rdbms.Query(
-		"SELECT module, verdict, score, determinants FROM message_result WHERE message = ?", queueId)
+		"SELECT module, verdict, score, duration, determinants FROM message_result WHERE message = ?", queueId)
 	defer checkResultRows.Close()
 	for checkResultRows.Next() {
 		checkResult := &httpMessageCheckResult{}
 		checkResultRows.Scan(&checkResult.Module, &checkResult.Verdict,
-			&checkResult.Score, &checkResult.Determinants)
+			&checkResult.Score, &checkResult.Duration, &checkResult.Determinants)
 		msg.CheckResults = append(msg.CheckResults, checkResult)
 	}
 

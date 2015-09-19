@@ -39,12 +39,13 @@
 <h2>Check Results</h2>
 <table class="table">
     <tr>
-    <th>Module</th><th>Verdict</th><th>Score</th><th>Determinants</th>
+    <th>Module</th><th>Verdict</th><th>Duration</th><th>Score</th><th>Determinants</th>
     </tr>
     {{ range $key, $value := .CheckResults }}
         <tr>
             <td>{{ $value.Module }}</td>
             <td>{{ $value.Verdict }}</td>
+            <td>{{ printf "%.3f" $value.Duration }} s</td>
             <td>{{ printf "%.2f" $value.Score }}</td>
             <td class="determinant">{{ $value.Determinants }}</td>
         </tr>

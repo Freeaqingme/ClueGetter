@@ -63,6 +63,7 @@ type MessageCheckResult struct {
 	message         string
 	score           float64
 	determinants    map[string]interface{}
+	duration        time.Duration
 }
 
 var MessageInsertMsgStmt = *new(*sql.Stmt)
@@ -152,7 +153,7 @@ func messageStart() {
 	MessageSetVerdictStmt = stmt
 
 	stmt, err = Rdbms.Prepare(`INSERT INTO message_result (message, module, verdict,
-								score, determinants) VALUES(?, ?, ?, ?, ?)`)
+								score, duration, determinants) VALUES(?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		Log.Fatal(err)
 	}
@@ -274,7 +275,8 @@ func messageGetVerdict(msg Message) (verdict int, msgStr string, results [3][]*M
 			determinants, _ := json.Marshal(result.determinants)
 			StatsCounters["RdbmsQueries"].increase(1)
 			_, err := MessageInsertModuleResultStmt.Exec(
-				msg.getQueueId(), result.module, verdictValue[result.suggestedAction], result.score, determinants)
+				msg.getQueueId(), result.module, verdictValue[result.suggestedAction],
+				result.score, result.duration.Seconds(), determinants)
 			if err != nil {
 				StatsCounters["RdbmsErrors"].increase(1)
 				Log.Error(err.Error())
@@ -343,6 +345,7 @@ func messageGetResults(msg Message) chan *MessageCheckResult {
 		wg.Add(1)
 		go func(moduleName string, moduleCallback func(Message) *MessageCheckResult) {
 			defer wg.Done()
+			t0 := time.Now()
 			defer func() {
 				if Config.ClueGetter.Exit_On_Panic {
 					return
@@ -363,10 +366,13 @@ func messageGetResults(msg Message) chan *MessageCheckResult {
 					message:         "An internal error ocurred",
 					score:           500,
 					determinants:    determinants,
+					duration:        time.Now().Sub(t0),
 				}
 			}()
 
-			out <- moduleCallback(msg)
+			res := moduleCallback(msg)
+			res.duration = time.Now().Sub(t0)
+			out <- res
 		}(moduleName, moduleCallback)
 	}
 

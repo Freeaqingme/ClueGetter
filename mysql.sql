@@ -82,6 +82,7 @@ CREATE TABLE message_result (
   module enum('quotas','spamassassin','greylist','clamav','greylisting') NOT NULL,
   verdict enum('permit','tempfail','reject') NOT NULL,
   score float(6,2) DEFAULT NULL,
+  duration float(6,3) COMMENT 'in seconds',
   determinants text CHARACTER SET ascii COMMENT 'JSON',
   PRIMARY KEY (id),
   UNIQUE KEY message (message,module),

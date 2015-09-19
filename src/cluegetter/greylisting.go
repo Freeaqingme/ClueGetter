@@ -182,7 +182,7 @@ func greylistGetResult(msg Message) *MessageCheckResult {
 		"SpfDomain":              spfDomain,
 	}
 
-	Log.Debug("%d Got %d allow verdicts, %d disallow verdicts in greylist module. First verdict was %f minutes ago",
+	Log.Debug("%d Got %d allow verdicts, %d disallow verdicts in greylist module. First verdict was %.2f minutes ago",
 		(*msg.getSession()).getId(), allowCount, disallowCount, timeDiff)
 
 	if allowCount > 0 || timeDiff > float64(Config.Greylisting.Initial_Period) {
