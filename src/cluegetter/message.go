@@ -417,7 +417,7 @@ func messageGetHeadersToAdd(msg Message, results [3][]*MessageCheckResult) []*mi
 		out = append(out, &milterMessageHeader{"X-Spam-Score", fmt.Sprintf("%.2f", spamscore)})
 	}
 
-	for k,v := range out {
+	for k, v := range out {
 		out[k].Value = strings.Replace(v.Value, "%h", sess.getMtaHostName(), -1)
 	}
 
