@@ -90,6 +90,13 @@ add-header-x-spam-score = true
 # convenient way to track messages across MTAs.
 insert-missing-message-id = true
 
+# The number of weeks to archive these items for before pruning them.
+# If you don't want to archive something, set the retention time to '0'.
+archive-retention-body = 2
+archive-retention-header = 26
+archive-retention-message-result = 2
+archive-retention-message = 52
+
 [http]
 # Cluegetter can provide an HTTP interface that displays some runtime
 # statistics and errors, and allows to search for processed messages.

@@ -73,6 +73,13 @@ var MessageInsertMsgHdrStmt = *new(*sql.Stmt)
 var MessageSetVerdictStmt = *new(*sql.Stmt)
 var MessageInsertModuleResultStmt = *new(*sql.Stmt)
 var MessageInsertHeaders = make([]*milterMessageHeader, 0)
+var MessagePruneBodyStmt = *new(*sql.Stmt)
+var MessagePruneHeaderStmt = *new(*sql.Stmt)
+var MessagePruneMessageResultStmt = *new(*sql.Stmt)
+var MessagePruneMessageQuotaStmt = *new(*sql.Stmt)
+var MessagePruneMessageStmt = *new(*sql.Stmt)
+var MessagePruneMessageRecipient = *new(*sql.Stmt)
+var MessagePruneRecipient = *new(*sql.Stmt)
 
 func messageStart() {
 	for _, hdrString := range Config.ClueGetter.Add_Header {
@@ -85,6 +92,12 @@ func messageStart() {
 			strings.Trim(strings.SplitN(hdrString, ":", 2)[1], " "),
 		}
 		MessageInsertHeaders = append(MessageInsertHeaders, header)
+	}
+
+	if Config.ClueGetter.Archive_Retention_Message < Config.ClueGetter.Archive_Retention_Body ||
+		Config.ClueGetter.Archive_Retention_Message < Config.ClueGetter.Archive_Retention_Header ||
+		Config.ClueGetter.Archive_Retention_Message < Config.ClueGetter.Archive_Retention_Message_Result {
+		Log.Fatal("Config Error: Message retention time should be at least as long as body and header retention time")
 	}
 
 	statsInitCounter("MessagePanics")
@@ -145,6 +158,81 @@ func messageStart() {
 	}
 	MessageInsertModuleResultStmt = stmt
 
+	MessagePruneBodyStmt, err = Rdbms.Prepare(`
+		DELETE FROM message_body WHERE message IN
+			(SELECT m.id FROM message m
+				LEFT JOIN session s ON s.id = m.session
+			 WHERE m.date < (DATE(?) - INTERVAL ? WEEK) AND
+				s.cluegetter_instance = ?)
+		`)
+	if err != nil {
+		Log.Fatal(err)
+	}
+
+	MessagePruneHeaderStmt, err = Rdbms.Prepare(`
+		DELETE FROM message_header WHERE message IN
+			(SELECT m.id FROM message m
+				LEFT JOIN session s ON s.id = m.session
+			 WHERE m.date < (DATE(?) - INTERVAL ? WEEK) AND
+				s.cluegetter_instance = ?)
+		`)
+	if err != nil {
+		Log.Fatal(err)
+	}
+
+	MessagePruneMessageResultStmt, err = Rdbms.Prepare(`
+		DELETE FROM message_result WHERE message IN
+			(SELECT m.id FROM message m
+				LEFT JOIN session s ON s.id = m.session
+			 WHERE m.date < (DATE(?) - INTERVAL ? WEEK) AND
+				s.cluegetter_instance = ?)
+		`)
+	if err != nil {
+		Log.Fatal(err)
+	}
+
+	MessagePruneMessageQuotaStmt, err = Rdbms.Prepare(`
+		DELETE FROM quota_message WHERE message IN
+			(SELECT m.id FROM message m
+				LEFT JOIN session s ON s.id = m.session
+			 WHERE m.date < (DATE(?) - INTERVAL ? WEEK) AND
+				s.cluegetter_instance = ?)
+		`)
+	if err != nil {
+		Log.Fatal(err)
+	}
+
+	MessagePruneMessageStmt, err = Rdbms.Prepare(`
+		DELETE FROM message
+		WHERE date < (DATE(?) - INTERVAL ? WEEK)
+			AND session IN
+				(SELECT id FROM session s WHERE s.cluegetter_instance = ?)
+		`)
+	if err != nil {
+		Log.Fatal(err)
+	}
+
+	MessagePruneMessageRecipient, err = Rdbms.Prepare(`
+		DELETE FROM message_recipient WHERE message IN
+			(SELECT m.id FROM message m
+				LEFT JOIN session s ON s.id = m.session
+			 WHERE m.date < (DATE(?) - INTERVAL ? WEEK) AND
+				s.cluegetter_instance = ?)
+		`)
+	if err != nil {
+		Log.Fatal(err)
+	}
+
+	MessagePruneRecipient, err = Rdbms.Prepare(`
+		DELETE FROM recipient WHERE NOT EXISTS
+			(SELECT ?,?,? FROM message_recipient mr WHERE mr.recipient = recipient.id)
+		`)
+	if err != nil {
+		Log.Fatal(err)
+	}
+
+	go messagePrune()
+
 	Log.Info("Message handler started successfully")
 }
 
@@ -182,13 +270,15 @@ func messageGetVerdict(msg Message) (verdict int, msgStr string, results [3][]*M
 		results[result.suggestedAction] = append(results[result.suggestedAction], result)
 		totalScores[result.suggestedAction] += result.score
 
-		determinants, _ := json.Marshal(result.determinants)
-		StatsCounters["RdbmsQueries"].increase(1)
-		_, err := MessageInsertModuleResultStmt.Exec(
-			msg.getQueueId(), result.module, verdictValue[result.suggestedAction], result.score, determinants)
-		if err != nil {
-			StatsCounters["RdbmsErrors"].increase(1)
-			Log.Error(err.Error())
+		if Config.ClueGetter.Archive_Retention_Message_Result > 0 {
+			determinants, _ := json.Marshal(result.determinants)
+			StatsCounters["RdbmsQueries"].increase(1)
+			_, err := MessageInsertModuleResultStmt.Exec(
+				msg.getQueueId(), result.module, verdictValue[result.suggestedAction], result.score, determinants)
+			if err != nil {
+				StatsCounters["RdbmsErrors"].increase(1)
+				Log.Error(err.Error())
+			}
 		}
 	}
 
@@ -346,6 +436,17 @@ func messageSave(msg Message) {
 		Log.Error(err.Error())
 	}
 
+	if Config.ClueGetter.Archive_Retention_Body > 0 {
+		messageSaveBody(msg)
+	}
+
+	messageSaveRecipients(msg.getRecipients(), msg.getQueueId())
+	if Config.ClueGetter.Archive_Retention_Header > 0 {
+		messageSaveHeaders(msg)
+	}
+}
+
+func messageSaveBody(msg Message) {
 	for key, value := range msg.getBody() {
 		StatsCounters["RdbmsQueries"].increase(1)
 		_, err := MessageInsertMsgBodyStmt.Exec(
@@ -359,9 +460,6 @@ func messageSave(msg Message) {
 			Log.Error(err.Error())
 		}
 	}
-
-	messageSaveRecipients(msg.getRecipients(), msg.getQueueId())
-	messageSaveHeaders(msg)
 }
 
 func messageSaveRecipients(recipients []string, msgId string) {
@@ -435,4 +533,54 @@ func messageGetHeadersToAdd(msg Message, results [3][]*MessageCheckResult) []*mi
 	}
 
 	return out
+}
+
+func messagePrune() {
+	ticker := time.NewTicker(30 * time.Minute)
+
+	var prunables = []struct {
+		stmt      *sql.Stmt
+		descr     string
+		retention float64
+	}{
+		{MessagePruneBodyStmt, "bodies", Config.ClueGetter.Archive_Retention_Body},
+		{MessagePruneHeaderStmt, "headers", Config.ClueGetter.Archive_Retention_Header},
+		{MessagePruneMessageResultStmt, "message results", Config.ClueGetter.Archive_Retention_Message_Result},
+		{MessagePruneMessageQuotaStmt, "message-quota relations", Config.ClueGetter.Archive_Retention_Message},
+		{MessagePruneMessageRecipient, "message-recipient relations", Config.ClueGetter.Archive_Retention_Message},
+		{MessagePruneMessageStmt, "messages", Config.ClueGetter.Archive_Retention_Message},
+		{MessagePruneRecipient, "recipients", Config.ClueGetter.Archive_Retention_Message},
+	}
+
+WaitForNext:
+	for {
+		select {
+		case <-ticker.C:
+			t0 := time.Now()
+			Log.Info("Pruning some old data now")
+
+			for _, prunable := range prunables {
+				if prunable.retention < Config.ClueGetter.Archive_Retention_Safeguard {
+					Log.Info("Not pruning %s because its retention (%.2f weeks) is lower than the safeguard (%.2f)",
+						prunable.descr, prunable.retention, Config.ClueGetter.Archive_Retention_Safeguard)
+					continue
+				}
+
+				tStart := time.Now()
+				res, err := prunable.stmt.Exec(t0, prunable.retention, instance)
+				if err != nil {
+					Log.Error("Could not prune %s: %s", prunable.descr, err.Error())
+					continue WaitForNext
+				}
+
+				rowCnt, err := res.RowsAffected()
+				if err != nil {
+					Log.Error("Error while fetching number of affected rows: ", err)
+					continue WaitForNext
+				}
+
+				Log.Info("Pruned %d %s in %s", rowCnt, prunable.descr, time.Now().Sub(tStart).String())
+			}
+		}
+	}
 }

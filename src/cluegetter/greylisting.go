@@ -102,7 +102,8 @@ func greylistUpdateWhitelist() {
 
 			rowCnt, err := res.RowsAffected()
 			if err != nil {
-				panic(err)
+				Log.Error("Error while fetching number of affected rows: ", err)
+				continue
 			}
 
 			Log.Info("Updated greylist whitelist with %d to %d entries in %s",
