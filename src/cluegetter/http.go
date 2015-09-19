@@ -235,7 +235,7 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	checkResultRows, _ := Rdbms.Query(
-		"SELECT module, verdict, score, duration, determinants FROM message_result WHERE message = ?", queueId)
+		"SELECT module, verdict, score, COALESCE(duration, 0.0), determinants FROM message_result WHERE message = ?", queueId)
 	defer checkResultRows.Close()
 	for checkResultRows.Next() {
 		checkResult := &httpMessageCheckResult{}
