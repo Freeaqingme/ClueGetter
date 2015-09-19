@@ -153,3 +153,6 @@ account-sasl-username = false
 enabled = false
 host    = 127.0.0.1
 port    = 783
+
+# The max message size (in bytes) to send to SpamAssassin.
+max-size = 8388608

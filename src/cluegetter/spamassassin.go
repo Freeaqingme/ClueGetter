@@ -112,7 +112,7 @@ func saGetRawReply(msg Message) (*spamc.SpamDOut, error) {
 
 	host := Config.SpamAssassin.Host + ":" + strconv.Itoa(Config.SpamAssassin.Port)
 	client := spamc.New(host, 10)
-	return client.Report(strings.Join(body, "\r\n"), msg.getRecipients()[0])
+	return client.Report(strings.Join(body, "\r\n")[:Config.SpamAssassin.Max_Size], msg.getRecipients()[0])
 }
 
 /*

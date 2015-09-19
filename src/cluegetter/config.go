@@ -57,9 +57,10 @@ type config struct {
 		Account_Sasl_Username  bool
 	}
 	SpamAssassin struct {
-		Enabled bool
-		Host    string
-		Port    int
+		Enabled  bool
+		Host     string
+		Port     int
+		Max_Size int
 	}
 }
 
@@ -114,4 +115,5 @@ func DefaultConfig(cfg *config) {
 	cfg.SpamAssassin.Enabled = false
 	cfg.SpamAssassin.Host = "127.0.0.1"
 	cfg.SpamAssassin.Port = 783
+	cfg.SpamAssassin.Max_Size = 8388608
 }
