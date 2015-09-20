@@ -1,5 +1,14 @@
 # Change Log
 
+### 2015-09-20 Version 0.3.2
+* New Feature: Allow to add hostname to static headers
+* New Feature: Insert message-id header when it's missing
+* New Feature: Truncate messages as they're sent to SpamAssassin
+* New Feature: Prune data when it's been in the database for too long
+* New Feature: Register and show time taken per module
+* New Feature: Store & Display body size, ciphers, auth method used, MTA, reverse dns, etc
+* Change: Set Mysql isolation level to READ-UNCOMMITTED
+
 ### 2015-09-15 Version 0.3.1
 * New Feature: Allow to log to a file instead of just STDOUT/STDERR
 * Bugfix: SpamAssassin module would not work with Golang 1.5
