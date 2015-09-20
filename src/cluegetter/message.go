@@ -213,7 +213,7 @@ func messageGetBodyTotals(msg Message) (length uint32, md5Sum string) {
 	length = 0
 	h := md5.New()
 	for _, chunk := range msg.getBody() {
-		length = +uint32(len(chunk))
+		length = length + uint32(len(chunk))
 		io.WriteString(h, chunk+"\r\n")
 	}
 
