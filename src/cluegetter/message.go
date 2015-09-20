@@ -112,8 +112,8 @@ func messageStart() {
 	statsInitCounter("MessageVerdictTempfailSpamassassin")
 	statsInitCounter("MessageVerdictTempfailGreylisting")
 
-	stmt, err := Rdbms.Prepare(`INSERT INTO message (id, session, date, messageId, sender_local,
-								sender_domain, rcpt_count) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+	stmt, err := Rdbms.Prepare(`INSERT INTO message (id, session, date, body_size, messageId, sender_local,
+								sender_domain, rcpt_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		Log.Fatal(err)
 	}
@@ -336,6 +336,15 @@ func messageSaveVerdict(msg Message, verdict int, verdictMsg string, rejectScore
 	}
 }
 
+func messageGetBodySize(msg Message) (out uint32) {
+	out = 0
+	for _, chunk := range msg.getBody() {
+		out =+ uint32(len(chunk))
+	}
+
+	return
+}
+
 func messageGetResults(msg Message) chan *MessageCheckResult {
 	var wg sync.WaitGroup
 	out := make(chan *MessageCheckResult)
@@ -431,6 +440,7 @@ func messageSave(msg Message) {
 		msg.getQueueId(),
 		sess.getId(),
 		time.Now(),
+		messageGetBodySize(msg),
 		messageIdHdr,
 		sender_local,
 		sender_domain,

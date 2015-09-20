@@ -68,6 +68,7 @@ type httpMessage struct {
 	Id            string
 	SessionId     int
 	Date          *time.Time
+	BodySize      uint32
 	Sender        string
 	RcptCount     int
 	Verdict       string
@@ -201,13 +202,13 @@ func httpReturnJson(w http.ResponseWriter, obj interface{}) {
 func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 	queueId := r.URL.Path[len("/message/"):]
 	row := Rdbms.QueryRow(
-		"SELECT m.session, m.date, m.sender_local || '@' || m.sender_domain sender, "+
+		"SELECT m.session, m.date, m.body_size, m.sender_local || '@' || m.sender_domain sender, "+
 			"       m.rcpt_count, m.verdict, m.verdict_msg, "+
 			"       m.rejectScore, m.tempfailScore, s.ip, s.sasl_username "+
 			"FROM message m LEFT JOIN session s ON s.id = m.session WHERE m.id = ?", queueId)
 	msg := &httpMessage{Recipients: make([]*httpMessageRecipient, 0)}
-	row.Scan(&msg.SessionId, &msg.Date, &msg.Sender, &msg.RcptCount, &msg.Verdict,
-		&msg.VerdictMsg, &msg.RejectScore, &msg.TempfailScore,
+	row.Scan(&msg.SessionId, &msg.Date, &msg.BodySize, &msg.Sender, &msg.RcptCount,
+		&msg.Verdict, &msg.VerdictMsg, &msg.RejectScore, &msg.TempfailScore,
 		&msg.Ip, &msg.SaslUsername)
 
 	recipientRows, _ := Rdbms.Query(

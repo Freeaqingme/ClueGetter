@@ -35,6 +35,7 @@ CREATE TABLE message (
   id varchar(25) CHARACTER SET ascii NOT NULL,
   session bigint(20) unsigned NOT NULL,
   date datetime NOT NULL,
+  body_size INT UNSIGNED NOT NULL,
   messageId varchar(255) NOT NULL COMMENT 'Value of Message-ID header',
   sender_local varchar(255) NOT NULL,
   sender_domain varchar(253) NOT NULL,
