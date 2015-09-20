@@ -4,10 +4,16 @@
 <dl class="dl-horizontal">
     <dt>Date</dt>
     <dd>{{printf "%s" .Date}}</dd>
+    <dt>MTA</dt>
+    <dd>{{printf "%s" .MtaHostname}} ({{printf "%s" .MtaDaemonName}})</dd>
     <dt>IP</dt>
-    <dd>{{printf "%s" .Ip}}</dd>
+    <dd>{{printf "%s" .Ip}} ({{printf "%s" .ReverseDns}})</dd>
     <dt>Sasl Username</dt>
-    <dd>{{printf "%s" .SaslUsername}}</dd>
+    <dd>{{printf "%s" .SaslUsername}} ({{printf "%s" .SaslMethod}})</dd>
+    <dt>Certificate</dt>
+    <dd title="Issued by: {{printf "%s" .CertIssuer}}">{{printf "%s" .CertSubject}}</dd>
+    <dt>Cipher</dt>
+    <dd>{{printf "%s" .TlsVersion}} {{printf "%s" .CipherBits}} {{printf "%s" .Cipher}}</dd>
     <dt>Sender</dt>
     <dd>{{printf "%s" .Sender}}</dd>
     <dt>Recipient Count</dt>
@@ -21,9 +27,10 @@
     <dt>Verdict Message</dt>
     <dd>{{printf "%s" .VerdictMsg}}</dd>
     <dt>Reject Score</dt>
-    <dd>{{printf "%.2f" .RejectScore}}</dd>
+    <dd>{{printf "%.2f" .RejectScore}} (threshold: {{printf "%.2f" .RejectScoreThreshold}})</dd>
     <dt>Tempfail Score</dt>
-    <dd>{{printf "%.2f" .TempfailScore}}</dd>
+    <dd>{{printf "%.2f" .TempfailScore}} (combined: {{printf "%.2f" .ScoreCombined }},
+        threshold: {{printf "%.2f" .TempfailScoreThreshold}})</dd>
     <dt>Body size</dt>
     <dd title="{{printf "%d" .BodySize}} Bytes">{{printf "%s" .BodySizeStr}}</dd>
     <dt>Headers</dt>

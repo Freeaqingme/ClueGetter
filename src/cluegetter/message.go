@@ -35,9 +35,11 @@ type Session interface {
 	getCipher() string
 	getTlsVersion() string
 	getIp() string
+	getReverseDns() string
 	getHostname() string
 	getHelo() string
 	getMtaHostName() string
+	getMtaDaemonName() string
 }
 
 type Message interface {

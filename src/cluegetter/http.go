@@ -64,19 +64,32 @@ type httpMessage struct {
 	CheckResults []*httpMessageCheckResult
 
 	Ip           string
+	ReverseDns   string
 	SaslUsername string
+	SaslMethod   string
+	CertIssuer   string
+	CertSubject  string
+	CipherBits   string
+	Cipher       string
+	TlsVersion   string
 
-	Id            string
-	SessionId     int
-	Date          *time.Time
-	BodySize      uint32
-	BodySizeStr   string
-	Sender        string
-	RcptCount     int
-	Verdict       string
-	VerdictMsg    string
-	RejectScore   float64
-	TempfailScore float64
+	MtaHostname   string
+	MtaDaemonName string
+
+	Id                     string
+	SessionId              int
+	Date                   *time.Time
+	BodySize               uint32
+	BodySizeStr            string
+	Sender                 string
+	RcptCount              int
+	Verdict                string
+	VerdictMsg             string
+	RejectScore            float64
+	RejectScoreThreshold   float64
+	TempfailScore          float64
+	TempfailScoreThreshold float64
+	ScoreCombined          float64
 }
 
 type httpMessageRecipient struct {
@@ -203,15 +216,25 @@ func httpReturnJson(w http.ResponseWriter, obj interface{}) {
 
 func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 	queueId := r.URL.Path[len("/message/"):]
-	row := Rdbms.QueryRow(
-		"SELECT m.session, m.date, m.body_size, m.sender_local || '@' || m.sender_domain sender, "+
-			"       m.rcpt_count, m.verdict, m.verdict_msg, "+
-			"       m.rejectScore, m.tempfailScore, s.ip, s.sasl_username "+
-			"FROM message m LEFT JOIN session s ON s.id = m.session WHERE m.id = ?", queueId)
+	row := Rdbms.QueryRow(`
+		SELECT m.session, m.date, m.body_size, m.sender_local || '@' || m.sender_domain sender,
+				m.rcpt_count, m.verdict, m.verdict_msg,
+				m.rejectScore, m.rejectScoreThreshold, m.tempfailScore,
+				(m.rejectScore + m.tempfailScore) scoreCombined, m.tempfailScoreThreshold,
+				s.ip, s.reverse_dns, s.sasl_username, s.sasl_method,
+				s.cert_issuer, s.cert_subject, s.cipher_bits, s.cipher, s.tls_version,
+				cc.hostname mtaHostname, cc.daemon_name mtaDaemonName
+			FROM message m
+				LEFT JOIN session s ON s.id = m.session
+				LEFT JOIN cluegetter_client cc on s.cluegetter_client = cc.id
+			WHERE m.id = ?`, queueId)
 	msg := &httpMessage{Recipients: make([]*httpMessageRecipient, 0)}
 	row.Scan(&msg.SessionId, &msg.Date, &msg.BodySize, &msg.Sender, &msg.RcptCount,
-		&msg.Verdict, &msg.VerdictMsg, &msg.RejectScore, &msg.TempfailScore,
-		&msg.Ip, &msg.SaslUsername)
+		&msg.Verdict, &msg.VerdictMsg, &msg.RejectScore, &msg.RejectScoreThreshold,
+		&msg.TempfailScore, &msg.ScoreCombined, &msg.TempfailScoreThreshold,
+		&msg.Ip, &msg.ReverseDns, &msg.SaslUsername, &msg.SaslMethod,
+		&msg.CertIssuer, &msg.CertSubject, &msg.CipherBits, &msg.Cipher, &msg.TlsVersion,
+		&msg.MtaHostname, &msg.MtaDaemonName)
 	msg.BodySizeStr = humanize.Bytes(uint64(msg.BodySize))
 
 	recipientRows, _ := Rdbms.Query(

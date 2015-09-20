@@ -14,6 +14,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -23,18 +24,20 @@ type milterSession struct {
 	timeEnd   time.Time
 	messages  []*milterMessage
 
-	SaslUsername string
-	SaslSender   string
-	SaslMethod   string
-	CertIssuer   string
-	CertSubject  string
-	CipherBits   string
-	Cipher       string
-	TlsVersion   string
-	Ip           string
-	Hostname     string
-	Helo         string
-	MtaHostName  string
+	SaslUsername  string
+	SaslSender    string
+	SaslMethod    string
+	CertIssuer    string
+	CertSubject   string
+	CipherBits    string
+	Cipher        string
+	TlsVersion    string
+	Ip            string
+	ReverseDns    string
+	Hostname      string
+	Helo          string
+	MtaHostName   string
+	MtaDaemonName string
 }
 
 type milterSessionWhitelistRange struct {
@@ -43,14 +46,27 @@ type milterSessionWhitelistRange struct {
 	mask    int
 }
 
+type milterSessionCluegetterClient struct {
+	id         uint64
+	hostname   string
+	daemonName string
+}
+
+type milterSessionCluegetterClients struct {
+	sync.Mutex
+	clients []*milterSessionCluegetterClient
+}
+
 var milterSessionInsertStmt = *new(*sql.Stmt)
 var milterSessionUpdateStmt = *new(*sql.Stmt)
+var milterCluegetterClientInsertStmt = *new(*sql.Stmt)
 var milterSessionWhitelist []*milterSessionWhitelistRange
+var milterSessionClients milterSessionCluegetterClients
 
 func milterSessionPrepStmt() {
 	stmt, err := Rdbms.Prepare(`
-		INSERT INTO session(cluegetter_instance, date_connect, date_disconnect, ip, sasl_username)
-			VALUES(?, ?, NULL, ?, ?)
+		INSERT INTO session(cluegetter_instance, cluegetter_client, date_connect, date_disconnect, ip, reverse_dns, sasl_username)
+			VALUES(?, ?, ?, NULL, ?, ?, ?)
 	`)
 	if err != nil {
 		Log.Fatal(err)
@@ -59,12 +75,23 @@ func milterSessionPrepStmt() {
 	milterSessionInsertStmt = stmt
 
 	stmt, err = Rdbms.Prepare(`
-		UPDATE session SET ip=?, sasl_username=?, date_disconnect=? WHERE id=?`)
+		UPDATE session SET ip=?, reverse_dns=?, sasl_username=?, sasl_method=?, cert_issuer=?,
+		                   cert_subject=?, cipher_bits=?, cipher=?, tls_version=?, date_disconnect=?
+		   WHERE id=?`)
 	if err != nil {
 		Log.Fatal(err)
 	}
 
 	milterSessionUpdateStmt = stmt
+
+	stmt, err = Rdbms.Prepare(`
+		INSERT INTO cluegetter_client (hostname, daemon_name) VALUES(?,?)
+			ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)`)
+	if err != nil {
+		Log.Fatal(err)
+	}
+
+	milterCluegetterClientInsertStmt = stmt
 }
 
 func (s *milterSession) getNewMessage() *milterMessage {
@@ -119,6 +146,10 @@ func (s *milterSession) getIp() string {
 	return s.Ip
 }
 
+func (s *milterSession) getReverseDns() string {
+	return s.ReverseDns
+}
+
 func (s *milterSession) getHostname() string {
 	return s.Hostname
 }
@@ -129,6 +160,10 @@ func (s *milterSession) getHelo() string {
 
 func (s *milterSession) getMtaHostName() string {
 	return s.MtaHostName
+}
+
+func (s *milterSession) getMtaDaemonName() string {
+	return s.MtaDaemonName
 }
 
 func (s *milterSession) isWhitelisted() bool {
@@ -173,9 +208,20 @@ func milterSessionStart() {
 }
 
 func (s *milterSession) persist() {
+	Log.Debug("%s", s.getMtaDaemonName())
+
+	revDns := s.getReverseDns()
+	if revDns == "unknown" {
+		revDns = ""
+	}
+
+	client := milterSessionGetClient(s.getMtaHostName(), s.getMtaDaemonName())
+
 	StatsCounters["RdbmsQueries"].increase(1)
 	if s.id == 0 {
-		res, err := milterSessionInsertStmt.Exec(instance, time.Now(), s.getIp(), s.getSaslUsername())
+		res, err := milterSessionInsertStmt.Exec(
+			instance, client.id, time.Now(), s.getIp(), revDns, s.getSaslUsername(),
+		)
 		if err != nil {
 			panic("Could not execute milterSessionInsertStmt in milterSession.persist(): " + err.Error())
 		}
@@ -188,10 +234,37 @@ func (s *milterSession) persist() {
 		s.id = uint64(id)
 	}
 
-	_, err := milterSessionUpdateStmt.Exec(s.getIp(), s.getSaslUsername(), s.timeEnd, s.getId())
+	_, err := milterSessionUpdateStmt.Exec(
+		s.getIp(), revDns, s.getSaslUsername(), s.getSaslMethod(), s.getCertIssuer(), s.getCertSubject(),
+		s.getCipherBits(), s.getCipher(), s.getTlsVersion(), s.timeEnd, s.getId())
 	if err != nil {
 		panic("Could not execute milterSessionUpdateStmt in milterSession.persist(): " + err.Error())
 	}
+}
+
+func milterSessionGetClient(hostname string, daemonName string) *milterSessionCluegetterClient {
+	milterSessionClients.Lock()
+	defer milterSessionClients.Unlock()
+
+	for _, client := range milterSessionClients.clients {
+		if client.hostname == hostname && client.daemonName == daemonName {
+			return client
+		}
+	}
+
+	res, err := milterCluegetterClientInsertStmt.Exec(hostname, daemonName)
+	if err != nil {
+		panic("Could not insert new Cluegetter Client: " + err.Error())
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		panic("Could not get lastinsertid from milterCluegetterClientInsertStmt: " + err.Error())
+	}
+
+	client := &milterSessionCluegetterClient{uint64(id), hostname, daemonName}
+	milterSessionClients.clients = append(milterSessionClients.clients, client)
+	return client
 }
 
 /******** milterMessage **********/

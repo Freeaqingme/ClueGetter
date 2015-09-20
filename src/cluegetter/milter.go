@@ -25,8 +25,7 @@ type milterDataIndex struct {
 	mu       sync.RWMutex
 }
 
-func (di *milterDataIndex) getNewSession() *milterSession {
-	sess := &milterSession{timeStart: time.Now()}
+func (di *milterDataIndex) getNewSession(sess *milterSession) *milterSession {
 	sess.persist()
 
 	di.mu.Lock()
@@ -115,10 +114,13 @@ func milterPrune() {
 func (milter *milter) Connect(ctx uintptr, hostname string, ip net.IP) (sfsistat int8) {
 	defer milterHandleError(ctx, &sfsistat)
 
-	sess := MilterDataIndex.getNewSession()
+	sess := &milterSession{timeStart: time.Now()}
 	sess.Hostname = hostname
 	sess.Ip = ip.String()
-	sess.persist()
+	sess.ReverseDns = m.GetSymVal(ctx, "{client_ptr}")
+	sess.MtaHostName = m.GetSymVal(ctx, "j")
+	sess.MtaDaemonName = m.GetSymVal(ctx, "{daemon_name}")
+	MilterDataIndex.getNewSession(sess)
 	m.SetPriv(ctx, sess.getId())
 
 	StatsCounters["MilterCallbackConnect"].increase(1)
@@ -152,7 +154,6 @@ func (milter *milter) Helo(ctx uintptr, helo string) (sfsistat int8) {
 	sess.CipherBits = m.GetSymVal(ctx, "{cipher_bits}")
 	sess.Cipher = m.GetSymVal(ctx, "{cipher}")
 	sess.TlsVersion = m.GetSymVal(ctx, "{tls_version}")
-	sess.MtaHostName = m.GetSymVal(ctx, "j")
 	sess.persist()
 
 	return

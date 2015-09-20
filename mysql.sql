@@ -19,16 +19,33 @@ CREATE TABLE greylist_whitelist (
   CONSTRAINT greylist_whitelist_ibfk_1 FOREIGN KEY (cluegetter_instance) REFERENCES instance (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+CREATE TABLE cluegetter_client (
+  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  hostname varchar(127) CHARACTER SET ascii NOT NULL,
+  daemon_name varchar(127) CHARACTER SET ascii NOT NULL,
+  PRIMARY KEY id (id),
+  UNIQUE KEY client (hostname, daemon_name)
+) ENGINE=InnoDB;
+
 CREATE TABLE session (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   cluegetter_instance bigint(20) unsigned NOT NULL,
+  cluegetter_client bigint(20) unsigned NOT NULL,
   date_connect datetime NOT NULL,
   date_disconnect datetime DEFAULT NULL,
   ip varchar(45) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
+  reverse_dns varchar(255) CHARSET utf8 NOT NULL DEFAULT '',
   sasl_username varchar(255) NOT NULL DEFAULT '',
+  sasl_method varchar(32) NOT NULL DEFAULT '',
+  cert_issuer varchar(255) charset ascii NOT NULL DEFAULT '',
+  cert_subject varchar(255) charset ascii NOT NULL DEFAULT '',
+  cipher_bits varchar(255) charset ascii NOT NULL DEFAULT '',
+  cipher varchar(255) charset ascii NOT NULL DEFAULT '',
+  tls_version varchar(31) charset ascii NOT NULL DEFAULT '',
   PRIMARY KEY (id),
   KEY cluegetter_instance (cluegetter_instance),
-  CONSTRAINT session_ibfk_1 FOREIGN KEY (cluegetter_instance) REFERENCES instance (id)
+  CONSTRAINT session_ibfk_1 FOREIGN KEY (cluegetter_instance) REFERENCES instance (id),
+  CONSTRAINT session_ibfk_2 FOREIGN KEY (cluegetter_client) REFERENCES cluegetter_client (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE message (
@@ -44,7 +61,9 @@ CREATE TABLE message (
   verdict enum('permit','tempfail','reject') DEFAULT NULL,
   verdict_msg text,
   rejectScore float(6,2) DEFAULT NULL,
+  rejectScoreThreshold float(6,2) DEFAULT NULL,
   tempfailScore float(6,2) DEFAULT NULL,
+  tempfailScoreThreshold float(6,2) DEFAULT NULL,
   PRIMARY KEY (id),
   KEY session (session),
   KEY messageId (messageId(25)),
