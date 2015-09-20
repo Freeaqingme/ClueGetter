@@ -52,7 +52,7 @@ func (di *milterDataIndex) prune() {
 	defer di.mu.Unlock()
 
 	for k, v := range di.sessions {
-		if now.Sub(v.timeStart).Minutes() > 60 {
+		if now.Sub(v.timeStart).Minutes() > 15 {
 			Log.Debug("Pruning session %d", k)
 			di.delete(v, false)
 		}

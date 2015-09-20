@@ -70,21 +70,7 @@ type MessageCheckResult struct {
 	duration        time.Duration
 }
 
-var MessageInsertMsgStmt = *new(*sql.Stmt)
-var MessageInsertMsgBodyStmt = *new(*sql.Stmt)
-var MessageInsertRcptStmt = *new(*sql.Stmt)
-var MessageInsertMsgRcptStmt = *new(*sql.Stmt)
-var MessageInsertMsgHdrStmt = *new(*sql.Stmt)
-var MessageSetVerdictStmt = *new(*sql.Stmt)
-var MessageInsertModuleResultStmt = *new(*sql.Stmt)
 var MessageInsertHeaders = make([]*milterMessageHeader, 0)
-var MessagePruneBodyStmt = *new(*sql.Stmt)
-var MessagePruneHeaderStmt = *new(*sql.Stmt)
-var MessagePruneMessageResultStmt = *new(*sql.Stmt)
-var MessagePruneMessageQuotaStmt = *new(*sql.Stmt)
-var MessagePruneMessageStmt = *new(*sql.Stmt)
-var MessagePruneMessageRecipient = *new(*sql.Stmt)
-var MessagePruneRecipient = *new(*sql.Stmt)
 
 func messageStart() {
 	for _, hdrString := range Config.ClueGetter.Add_Header {
@@ -116,134 +102,14 @@ func messageStart() {
 	statsInitCounter("MessageVerdictTempfailSpamassassin")
 	statsInitCounter("MessageVerdictTempfailGreylisting")
 
-	stmt, err := Rdbms.Prepare(`
-		INSERT INTO message (id, session, date, body_size, body_hash, messageId,
-			sender_local, sender_domain, rcpt_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-	if err != nil {
-		Log.Fatal(err)
-	}
-	MessageInsertMsgStmt = stmt
-
-	stmt, err = Rdbms.Prepare(`INSERT INTO message_body(message, sequence, body) VALUES(?, ?, ?)
-								ON DUPLICATE KEY UPDATE message=LAST_INSERT_ID(message)`)
-	if err != nil {
-		Log.Fatal(err)
-	}
-	MessageInsertMsgBodyStmt = stmt
-
-	stmt, err = Rdbms.Prepare(`INSERT INTO recipient(local, domain) VALUES(?, ?)
-								ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)`)
-	if err != nil {
-		Log.Fatal(err)
-	}
-	MessageInsertRcptStmt = stmt
-
-	stmt, err = Rdbms.Prepare(`INSERT IGNORE INTO message_recipient(message, recipient, count) VALUES(?, ?,1)
-								ON DUPLICATE KEY UPDATE count=count+1`)
-	if err != nil {
-		Log.Fatal(err)
-	}
-	MessageInsertMsgRcptStmt = stmt
-
-	stmt, err = Rdbms.Prepare(`INSERT INTO message_header(message, name, body) VALUES(?, ?, ?)`)
-	if err != nil {
-		Log.Fatal(err)
-	}
-	MessageInsertMsgHdrStmt = stmt
-
-	stmt, err = Rdbms.Prepare(`UPDATE message SET verdict=?, verdict_msg=?, rejectScore=?, tempfailScore=? WHERE id=?`)
-	if err != nil {
-		Log.Fatal(err)
-	}
-	MessageSetVerdictStmt = stmt
-
-	stmt, err = Rdbms.Prepare(`INSERT INTO message_result (message, module, verdict,
-								score, duration, determinants) VALUES(?, ?, ?, ?, ?, ?)`)
-	if err != nil {
-		Log.Fatal(err)
-	}
-	MessageInsertModuleResultStmt = stmt
-
-	MessagePruneBodyStmt, err = Rdbms.Prepare(`
-		DELETE FROM message_body WHERE message IN
-			(SELECT m.id FROM message m
-				LEFT JOIN session s ON s.id = m.session
-			 WHERE m.date < (DATE(?) - INTERVAL ? WEEK) AND
-				s.cluegetter_instance = ?)
-		`)
-	if err != nil {
-		Log.Fatal(err)
-	}
-
-	MessagePruneHeaderStmt, err = Rdbms.Prepare(`
-		DELETE FROM message_header WHERE message IN
-			(SELECT m.id FROM message m
-				LEFT JOIN session s ON s.id = m.session
-			 WHERE m.date < (DATE(?) - INTERVAL ? WEEK) AND
-				s.cluegetter_instance = ?)
-		`)
-	if err != nil {
-		Log.Fatal(err)
-	}
-
-	MessagePruneMessageResultStmt, err = Rdbms.Prepare(`
-		DELETE FROM message_result WHERE message IN
-			(SELECT m.id FROM message m
-				LEFT JOIN session s ON s.id = m.session
-			 WHERE m.date < (DATE(?) - INTERVAL ? WEEK) AND
-				s.cluegetter_instance = ?)
-		`)
-	if err != nil {
-		Log.Fatal(err)
-	}
-
-	MessagePruneMessageQuotaStmt, err = Rdbms.Prepare(`
-		DELETE FROM quota_message WHERE message IN
-			(SELECT m.id FROM message m
-				LEFT JOIN session s ON s.id = m.session
-			 WHERE m.date < (DATE(?) - INTERVAL ? WEEK) AND
-				s.cluegetter_instance = ?)
-		`)
-	if err != nil {
-		Log.Fatal(err)
-	}
-
-	MessagePruneMessageStmt, err = Rdbms.Prepare(`
-		DELETE FROM message
-		WHERE date < (DATE(?) - INTERVAL ? WEEK)
-			AND session IN
-				(SELECT id FROM session s WHERE s.cluegetter_instance = ?)
-		`)
-	if err != nil {
-		Log.Fatal(err)
-	}
-
-	MessagePruneMessageRecipient, err = Rdbms.Prepare(`
-		DELETE FROM message_recipient WHERE message IN
-			(SELECT m.id FROM message m
-				LEFT JOIN session s ON s.id = m.session
-			 WHERE m.date < (DATE(?) - INTERVAL ? WEEK) AND
-				s.cluegetter_instance = ?)
-		`)
-	if err != nil {
-		Log.Fatal(err)
-	}
-
-	MessagePruneRecipient, err = Rdbms.Prepare(`
-		DELETE FROM recipient WHERE NOT EXISTS
-			(SELECT ?,?,? FROM message_recipient mr WHERE mr.recipient = recipient.id)
-		`)
-	if err != nil {
-		Log.Fatal(err)
-	}
-
+	messageStmtStart()
 	go messagePrune()
 
 	Log.Info("Message handler started successfully")
 }
 
 func messageStop() {
-	MessageInsertMsgStmt.Close()
+	MessageStmtInsertMsg.Close()
 	Log.Info("Message handler stopped successfully")
 }
 
@@ -279,7 +145,7 @@ func messageGetVerdict(msg Message) (verdict int, msgStr string, results [3][]*M
 		if Config.ClueGetter.Archive_Retention_Message_Result > 0 {
 			determinants, _ := json.Marshal(result.determinants)
 			StatsCounters["RdbmsQueries"].increase(1)
-			_, err := MessageInsertModuleResultStmt.Exec(
+			_, err := MessageStmtInsertModuleResult.Exec(
 				msg.getQueueId(), result.module, verdictValue[result.suggestedAction],
 				result.score, result.duration.Seconds(), determinants)
 			if err != nil {
@@ -327,7 +193,7 @@ func messageSaveVerdict(msg Message, verdict int, verdictMsg string, rejectScore
 	verdictValue := [3]string{"permit", "tempfail", "reject"}
 
 	StatsCounters["RdbmsQueries"].increase(1)
-	_, err := MessageSetVerdictStmt.Exec(
+	_, err := MessageStmtSetVerdict.Exec(
 		verdictValue[verdict],
 		verdictMsg,
 		rejectScore,
@@ -444,7 +310,7 @@ func messageSave(msg Message) {
 
 	size, hash := messageGetBodyTotals(msg)
 	StatsCounters["RdbmsQueries"].increase(1)
-	_, err := MessageInsertMsgStmt.Exec(
+	_, err := MessageStmtInsertMsg.Exec(
 		msg.getQueueId(),
 		sess.getId(),
 		time.Now(),
@@ -474,7 +340,7 @@ func messageSave(msg Message) {
 func messageSaveBody(msg Message) {
 	for key, value := range msg.getBody() {
 		StatsCounters["RdbmsQueries"].increase(1)
-		_, err := MessageInsertMsgBodyStmt.Exec(
+		_, err := MessageStmtInsertMsgBody.Exec(
 			msg.getQueueId(),
 			key,
 			value,
@@ -501,23 +367,23 @@ func messageSaveRecipients(recipients []string, msgId string) {
 		}
 
 		StatsCounters["RdbmsQueries"].increase(1)
-		res, err := MessageInsertRcptStmt.Exec(local, domain)
+		res, err := MessageStmtInsertRcpt.Exec(local, domain)
 		if err != nil {
 			StatsCounters["RdbmsErrors"].increase(1)
-			panic("Could not execute MessageInsertRcptStmt in messageSaveRecipients(). Error: " + err.Error())
+			panic("Could not execute MessageStmtInsertRcpt in messageSaveRecipients(). Error: " + err.Error())
 		}
 
 		rcptId, err := res.LastInsertId()
 		if err != nil {
 			StatsCounters["RdbmsErrors"].increase(1)
-			panic("Could not get lastinsertid from MessageInsertRcptStmt in messageSaveRecipients(). Error: " + err.Error())
+			panic("Could not get lastinsertid from MessageStmtInsertRcpt in messageSaveRecipients(). Error: " + err.Error())
 		}
 
 		StatsCounters["RdbmsQueries"].increase(1)
-		_, err = MessageInsertMsgRcptStmt.Exec(msgId, rcptId)
+		_, err = MessageStmtInsertMsgRcpt.Exec(msgId, rcptId)
 		if err != nil {
 			StatsCounters["RdbmsErrors"].increase(1)
-			panic("Could not get execute MessageInsertMsgRcptStmt in messageSaveRecipients(). Error: " + err.Error())
+			panic("Could not get execute MessageStmtInsertMsgRcpt in messageSaveRecipients(). Error: " + err.Error())
 		}
 	}
 }
@@ -525,7 +391,7 @@ func messageSaveRecipients(recipients []string, msgId string) {
 func messageSaveHeaders(msg Message) {
 	for _, headerPair := range msg.getHeaders() {
 		StatsCounters["RdbmsQueries"].increase(1)
-		_, err := MessageInsertMsgHdrStmt.Exec(
+		_, err := MessageStmtInsertMsgHdr.Exec(
 			msg.getQueueId(), (*headerPair).getKey(), (*headerPair).getValue())
 
 		if err != nil {
@@ -568,13 +434,13 @@ func messagePrune() {
 		descr     string
 		retention float64
 	}{
-		{MessagePruneBodyStmt, "bodies", Config.ClueGetter.Archive_Retention_Body},
-		{MessagePruneHeaderStmt, "headers", Config.ClueGetter.Archive_Retention_Header},
-		{MessagePruneMessageResultStmt, "message results", Config.ClueGetter.Archive_Retention_Message_Result},
-		{MessagePruneMessageQuotaStmt, "message-quota relations", Config.ClueGetter.Archive_Retention_Message},
-		{MessagePruneMessageRecipient, "message-recipient relations", Config.ClueGetter.Archive_Retention_Message},
-		{MessagePruneMessageStmt, "messages", Config.ClueGetter.Archive_Retention_Message},
-		{MessagePruneRecipient, "recipients", Config.ClueGetter.Archive_Retention_Message},
+		{MessageStmtPruneBody, "bodies", Config.ClueGetter.Archive_Retention_Body},
+		{MessageStmtPruneHeader, "headers", Config.ClueGetter.Archive_Retention_Header},
+		{MessageStmtPruneMessageResult, "message results", Config.ClueGetter.Archive_Retention_Message_Result},
+		{MessageStmtPruneMessageQuota, "message-quota relations", Config.ClueGetter.Archive_Retention_Message},
+		{MessageStmtPruneMessageRecipient, "message-recipient relations", Config.ClueGetter.Archive_Retention_Message},
+		{MessageStmtPruneMessage, "messages", Config.ClueGetter.Archive_Retention_Message},
+		{MessageStmtPruneRecipient, "recipients", Config.ClueGetter.Archive_Retention_Message},
 	}
 
 WaitForNext:
