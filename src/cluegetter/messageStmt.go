@@ -18,6 +18,7 @@ var MessageStmtPruneMessageQuota = *new(*sql.Stmt)
 var MessageStmtPruneMessage = *new(*sql.Stmt)
 var MessageStmtPruneMessageRecipient = *new(*sql.Stmt)
 var MessageStmtPruneRecipient = *new(*sql.Stmt)
+var MessageStmtPruneSession = *new(*sql.Stmt)
 
 func messageStmtStart() {
 
@@ -132,6 +133,15 @@ func messageStmtStart() {
 	MessageStmtPruneRecipient, err = Rdbms.Prepare(`
 		DELETE FROM recipient WHERE NOT EXISTS
 			(SELECT ?,?,? FROM message_recipient mr WHERE mr.recipient = recipient.id)
+		`)
+	if err != nil {
+		Log.Fatal(err)
+	}
+
+	MessageStmtPruneSession, err = Rdbms.Prepare(`
+		DELETE FROM session WHERE NOT EXISTS
+			(SELECT ?,? FROM message m WHERE m.session = session.id)
+			AND cluegetter_instance = ?
 		`)
 	if err != nil {
 		Log.Fatal(err)

@@ -440,6 +440,7 @@ func messagePrune() {
 		{MessageStmtPruneMessageQuota, "message-quota relations", Config.ClueGetter.Archive_Retention_Message},
 		{MessageStmtPruneMessageRecipient, "message-recipient relations", Config.ClueGetter.Archive_Retention_Message},
 		{MessageStmtPruneMessage, "messages", Config.ClueGetter.Archive_Retention_Message},
+		{MessageStmtPruneSession, "sessions", Config.ClueGetter.Archive_Retention_Message},
 		{MessageStmtPruneRecipient, "recipients", Config.ClueGetter.Archive_Retention_Message},
 	}
 
