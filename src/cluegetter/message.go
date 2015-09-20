@@ -8,9 +8,11 @@
 package main
 
 import (
+	"crypto/md5"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 	"sync"
 	"time"
@@ -112,8 +114,9 @@ func messageStart() {
 	statsInitCounter("MessageVerdictTempfailSpamassassin")
 	statsInitCounter("MessageVerdictTempfailGreylisting")
 
-	stmt, err := Rdbms.Prepare(`INSERT INTO message (id, session, date, body_size, messageId, sender_local,
-								sender_domain, rcpt_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+	stmt, err := Rdbms.Prepare(`
+		INSERT INTO message (id, session, date, body_size, body_hash, messageId,
+			sender_local, sender_domain, rcpt_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		Log.Fatal(err)
 	}
@@ -336,13 +339,15 @@ func messageSaveVerdict(msg Message, verdict int, verdictMsg string, rejectScore
 	}
 }
 
-func messageGetBodySize(msg Message) (out uint32) {
-	out = 0
+func messageGetBodyTotals(msg Message) (length uint32, md5Sum string) {
+	length = 0
+	h := md5.New()
 	for _, chunk := range msg.getBody() {
-		out = +uint32(len(chunk))
+		length = +uint32(len(chunk))
+		io.WriteString(h, chunk+"\r\n")
 	}
 
-	return
+	return length, fmt.Sprintf("%x", h.Sum(nil))
 }
 
 func messageGetResults(msg Message) chan *MessageCheckResult {
@@ -435,12 +440,14 @@ func messageSave(msg Message) {
 		msg.setInjectMessageId(messageIdHdr)
 	}
 
+	size, hash := messageGetBodyTotals(msg)
 	StatsCounters["RdbmsQueries"].increase(1)
 	_, err := MessageInsertMsgStmt.Exec(
 		msg.getQueueId(),
 		sess.getId(),
 		time.Now(),
-		messageGetBodySize(msg),
+		size,
+		hash,
 		messageIdHdr,
 		sender_local,
 		sender_domain,
