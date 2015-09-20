@@ -12,6 +12,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	humanize "github.com/dustin/go-humanize"
 	"html/template"
 	"net"
 	"net/http"
@@ -69,6 +70,7 @@ type httpMessage struct {
 	SessionId     int
 	Date          *time.Time
 	BodySize      uint32
+	BodySizeStr   string
 	Sender        string
 	RcptCount     int
 	Verdict       string
@@ -210,6 +212,7 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 	row.Scan(&msg.SessionId, &msg.Date, &msg.BodySize, &msg.Sender, &msg.RcptCount,
 		&msg.Verdict, &msg.VerdictMsg, &msg.RejectScore, &msg.TempfailScore,
 		&msg.Ip, &msg.SaslUsername)
+	msg.BodySizeStr = humanize.Bytes(uint64(msg.BodySize))
 
 	recipientRows, _ := Rdbms.Query(
 		"SELECT r.id, r.local, r.domain FROM recipient r "+

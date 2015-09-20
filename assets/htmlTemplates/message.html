@@ -24,8 +24,8 @@
     <dd>{{printf "%.2f" .RejectScore}}</dd>
     <dt>Tempfail Score</dt>
     <dd>{{printf "%.2f" .TempfailScore}}</dd>
-    <dt>Body size (bytes)</dt>
-    <dd>{{printf "%d" .BodySize}}</dd>
+    <dt>Body size</dt>
+    <dd title="{{printf "%d" .BodySize}} Bytes">{{printf "%s" .BodySizeStr}}</dd>
     <dt>Headers</dt>
     <dd>
         <dl class="dl-horizontal">

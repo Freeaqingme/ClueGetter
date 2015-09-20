@@ -339,7 +339,7 @@ func messageSaveVerdict(msg Message, verdict int, verdictMsg string, rejectScore
 func messageGetBodySize(msg Message) (out uint32) {
 	out = 0
 	for _, chunk := range msg.getBody() {
-		out =+ uint32(len(chunk))
+		out = +uint32(len(chunk))
 	}
 
 	return
