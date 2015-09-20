@@ -54,7 +54,9 @@ func messageStmtStart() {
 		Log.Fatal(err)
 	}
 
-	MessageStmtSetVerdict, err = Rdbms.Prepare(`UPDATE message SET verdict=?, verdict_msg=?, rejectScore=?, tempfailScore=? WHERE id=?`)
+	MessageStmtSetVerdict, err = Rdbms.Prepare(`
+		UPDATE message SET verdict=?, verdict_msg=?, rejectScore=?, rejectScoreThreshold=?,
+			tempfailScore=?, tempfailScoreThreshold=? WHERE id=?`)
 	if err != nil {
 		Log.Fatal(err)
 	}

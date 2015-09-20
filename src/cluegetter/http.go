@@ -217,11 +217,11 @@ func httpReturnJson(w http.ResponseWriter, obj interface{}) {
 func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 	queueId := r.URL.Path[len("/message/"):]
 	row := Rdbms.QueryRow(`
-		SELECT m.session, m.date, m.body_size, m.sender_local || '@' || m.sender_domain sender,
+		SELECT m.session, m.date, coalesce(m.body_size,0), m.sender_local || '@' || m.sender_domain sender,
 				m.rcpt_count, m.verdict, m.verdict_msg,
-				m.rejectScore, m.rejectScoreThreshold, m.tempfailScore,
-				(m.rejectScore + m.tempfailScore) scoreCombined, m.tempfailScoreThreshold,
-				s.ip, s.reverse_dns, s.sasl_username, s.sasl_method,
+				COALESCE(m.rejectScore,0), COALESCE(m.rejectScoreThreshold,0), COALESCE(m.tempfailScore,0),
+				(COALESCE(m.rejectScore,0) + COALESCE(m.tempfailScore,0)) scoreCombined,
+				COALESCE(m.tempfailScoreThreshold,0), s.ip, s.reverse_dns, s.sasl_username, s.sasl_method,
 				s.cert_issuer, s.cert_subject, s.cipher_bits, s.cipher, s.tls_version,
 				cc.hostname mtaHostname, cc.daemon_name mtaDaemonName
 			FROM message m

@@ -1,3 +1,7 @@
+-- V0.3.3
+ALTER TABLE message change body_size body_size int unsigned DEFAULT NULL ;
+
+
 -- V0.3.2
 
 CREATE TABLE cluegetter_client (

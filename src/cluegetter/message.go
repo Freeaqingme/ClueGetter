@@ -197,7 +197,9 @@ func messageSaveVerdict(msg Message, verdict int, verdictMsg string, rejectScore
 		verdictValue[verdict],
 		verdictMsg,
 		rejectScore,
+		Config.ClueGetter.Message_Reject_Score,
 		tempfailScore,
+		Config.ClueGetter.Message_Tempfail_Score,
 		msg.getQueueId(),
 	)
 

@@ -208,8 +208,6 @@ func milterSessionStart() {
 }
 
 func (s *milterSession) persist() {
-	Log.Debug("%s", s.getMtaDaemonName())
-
 	revDns := s.getReverseDns()
 	if revDns == "unknown" {
 		revDns = ""

@@ -52,7 +52,7 @@ CREATE TABLE message (
   id varchar(25) CHARACTER SET ascii NOT NULL,
   session bigint(20) unsigned NOT NULL,
   date datetime NOT NULL,
-  body_size INT UNSIGNED NOT NULL,
+  body_size int unsigned DEFAULT NULL,
   body_hash char(32) DEFAULT '',
   messageId varchar(255) NOT NULL COMMENT 'Value of Message-ID header',
   sender_local varchar(255) NOT NULL,
