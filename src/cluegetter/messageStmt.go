@@ -140,8 +140,8 @@ func messageStmtStart() {
 
 	MessageStmtPruneSession, err = Rdbms.Prepare(`
 		DELETE FROM session WHERE NOT EXISTS
-			(SELECT ?,? FROM message m WHERE m.session = session.id)
-			AND cluegetter_instance = ?
+			(SELECT * FROM message m WHERE m.session = session.id)
+			AND date_connect < (DATE(?) - INTERVAL ? WEEK) AND cluegetter_instance = ?
 		`)
 	if err != nil {
 		Log.Fatal(err)
