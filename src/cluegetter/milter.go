@@ -133,21 +133,9 @@ func (milter *milter) Helo(ctx uintptr, helo string) (sfsistat int8) {
 	defer milterHandleError(ctx, &sfsistat)
 
 	sess := milterGetSession(ctx, true, true)
-	if sess == nil { // This just doesn't seem to be supported by libmilter :(
-		StatsCounters["MilterProtocolErrors"].increase(1)
-		m.SetReply(ctx, "421", "4.7.0", "HELO/EHLO can only be specified at start of session")
-		Log.Info("Received HELO/EHLO midway conversation. status=Tempfail rcode=421 xcode=4.7.0 ip=%s",
-			m.GetSymVal(ctx, "{client_addr}"))
-		if Config.ClueGetter.Noop {
-			return
-		}
-		return m.Tempfail
-	}
-
 	StatsCounters["MilterCallbackHelo"].increase(1)
 	Log.Debug("%d Milter.Helo() called: helo = %s", sess.getId(), helo)
 
-	// Todo: What if no EHLO/HELO is given at all?
 	sess.Helo = helo
 	sess.CertIssuer = m.GetSymVal(ctx, "{cert_issuer}")
 	sess.CertSubject = m.GetSymVal(ctx, "{cert_subject}")
@@ -279,7 +267,7 @@ func (milter *milter) Abort(ctx uintptr) (sfsistat int8) {
 
 	StatsCounters["MilterCallbackAbort"].increase(1)
 	Log.Debug("milter.Abort() was called")
-	milterGetSession(ctx, false, true)
+	milterGetSession(ctx, true, true)
 
 	return
 }
