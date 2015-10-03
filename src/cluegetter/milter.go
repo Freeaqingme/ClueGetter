@@ -86,7 +86,6 @@ func milterStart() {
 		out := m.Run(milter)
 		Log.Info(fmt.Sprintf("Milter stopped. Exit code: %d", out))
 		if out == -1 {
-			// Todo: May just want to retry?
 			Log.Fatal("libmilter returned an error.")
 		}
 	}()

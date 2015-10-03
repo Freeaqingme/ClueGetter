@@ -112,10 +112,10 @@ func greylistUpdateWhitelist() {
 	}
 }
 
-func greylistGetResult(msg Message) *MessageCheckResult {
+func greylistGetResult(msg Message, done chan bool) *MessageCheckResult {
 	ip := (*msg.getSession()).getIp()
 
-	res, spfDomain, spfWhitelistErr := greylistIsSpfWhitelisted(net.ParseIP(ip))
+	res, spfDomain, spfWhitelistErr := greylistIsSpfWhitelisted(net.ParseIP(ip), done)
 	if res {
 		Log.Debug("Found %s in %s SPF record", ip, spfDomain)
 		return &MessageCheckResult{
@@ -204,7 +204,7 @@ func greylistGetResult(msg Message) *MessageCheckResult {
 	}
 }
 
-func greylistIsSpfWhitelisted(ip net.IP) (bool, string, error) {
+func greylistIsSpfWhitelisted(ip net.IP, done chan bool) (bool, string, error) {
 	var error error
 	for _, whitelistDomain := range Config.Greylisting.Whitelist_Spf {
 		res, err := greylistSpf2.Query(whitelistDomain, ip)
@@ -217,6 +217,11 @@ func greylistIsSpfWhitelisted(ip net.IP) (bool, string, error) {
 		Log.Debug("Got SPF result for %s from %s: %s", ip, whitelistDomain, res)
 		if res == libspf2.SPFResultPASS {
 			return true, whitelistDomain, error
+		}
+
+		_, allowContinuing := <-done
+		if !allowContinuing {
+			break
 		}
 	}
 

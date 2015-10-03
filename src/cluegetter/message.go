@@ -138,7 +138,8 @@ func messageGetVerdict(msg Message) (verdict int, msgStr string, results [3][]*M
 	var totalScores [3]float64
 
 	verdictValue := [3]string{"permit", "tempfail", "reject"}
-	for result := range messageGetResults(msg) {
+	done := make(chan bool)
+	for result := range messageGetResults(msg, done) {
 		results[result.suggestedAction] = append(results[result.suggestedAction], result)
 		totalScores[result.suggestedAction] += result.score
 
@@ -153,7 +154,17 @@ func messageGetVerdict(msg Message) (verdict int, msgStr string, results [3][]*M
 				Log.Error(err.Error())
 			}
 		}
+
+		if totalScores[result.suggestedAction] >= Config.ClueGetter.Breaker_Score {
+			Log.Debug(
+				"Breaker score %.2f/%.2f reached. Aborting all running modules",
+				totalScores[result.suggestedAction],
+				Config.ClueGetter.Breaker_Score,
+			)
+			break
+		}
 	}
+	close(done)
 
 	getDecidingResultWithMessage := func(results []*MessageCheckResult) *MessageCheckResult {
 		out := results[0]
@@ -220,14 +231,14 @@ func messageGetBodyTotals(msg Message) (length uint32, md5Sum string) {
 	return length, fmt.Sprintf("%x", h.Sum(nil))
 }
 
-func messageGetResults(msg Message) chan *MessageCheckResult {
+func messageGetResults(msg Message, done chan bool) chan *MessageCheckResult {
 	var wg sync.WaitGroup
 	out := make(chan *MessageCheckResult)
 
 	modules := messageGetEnabledModules()
 	for moduleName, moduleCallback := range modules {
 		wg.Add(1)
-		go func(moduleName string, moduleCallback func(Message) *MessageCheckResult) {
+		go func(moduleName string, moduleCallback func(Message, chan bool) *MessageCheckResult) {
 			defer wg.Done()
 			t0 := time.Now()
 			defer func() {
@@ -254,7 +265,7 @@ func messageGetResults(msg Message) chan *MessageCheckResult {
 				}
 			}()
 
-			res := moduleCallback(msg)
+			res := moduleCallback(msg, done)
 			res.duration = time.Now().Sub(t0)
 			out <- res
 		}(moduleName, moduleCallback)
@@ -268,8 +279,8 @@ func messageGetResults(msg Message) chan *MessageCheckResult {
 	return out
 }
 
-func messageGetEnabledModules() (out map[string]func(Message) *MessageCheckResult) {
-	out = make(map[string]func(Message) *MessageCheckResult)
+func messageGetEnabledModules() (out map[string]func(Message, chan bool) *MessageCheckResult) {
+	out = make(map[string]func(Message, chan bool) *MessageCheckResult)
 
 	if Config.Quotas.Enabled {
 		out["quotas"] = quotasIsAllowed

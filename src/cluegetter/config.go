@@ -27,6 +27,7 @@ type config struct {
 		Rdbms_Mysql_Strictmode           bool
 		Message_Reject_Score             float64
 		Message_Tempfail_Score           float64
+		Breaker_Score                    float64
 		Milter_Socket                    string
 		Whitelist                        []string
 		Add_Header                       []string
@@ -92,6 +93,7 @@ func DefaultConfig(cfg *config) {
 	cfg.ClueGetter.Rdbms_Mysql_Strictmode = true
 	cfg.ClueGetter.Message_Reject_Score = 5
 	cfg.ClueGetter.Message_Tempfail_Score = 8
+	cfg.ClueGetter.Breaker_Score = 100
 	cfg.ClueGetter.Milter_Socket = "inet:10033@127.0.0.1"
 	cfg.ClueGetter.Whitelist = []string{} // "127.0.0.0/8", "::1" }
 	cfg.ClueGetter.Add_Header = []string{}

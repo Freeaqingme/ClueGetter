@@ -75,7 +75,7 @@ func quotasStop() {
 	Log.Info("Quotas module ended")
 }
 
-func quotasIsAllowed(msg Message) *MessageCheckResult {
+func quotasIsAllowed(msg Message, _ chan bool) *MessageCheckResult {
 	counts, err := quotasGetCounts(msg, true)
 	if err != nil {
 		Log.Error("Error in quotas module: %s", err)
