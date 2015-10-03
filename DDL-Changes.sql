@@ -1,6 +1,6 @@
 -- V0.3.3
-ALTER TABLE message change body_size body_size int unsigned DEFAULT NULL ;
-
+ALTER TABLE message CHANGE body_size body_size int unsigned DEFAULT NULL ;
+ALTER TABLE message_result CHANGE module module enum('quotas','spamassassin','clamav','greylisting') NOT NULL;
 
 -- V0.3.2
 
