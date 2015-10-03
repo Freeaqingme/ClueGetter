@@ -55,7 +55,11 @@
             <td>{{ $value.Module }}</td>
             <td>{{ $value.Verdict }}</td>
             <td>{{ printf "%.3f" $value.Duration }} s</td>
-            <td>{{ printf "%.2f" $value.Score }}</td>
+            <td>{{ printf "%.2f" $value.Score }}
+                {{ if ne $value.WeightedScore $value.Score }}
+                    <span title="Weighted Score">({{ printf "%.2f" $value.WeightedScore }})</span>
+                {{ end }}
+            </td>
             <td class="determinant">{{ $value.Determinants }}</td>
         </tr>
     {{ end }}

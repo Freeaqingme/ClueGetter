@@ -68,7 +68,7 @@ message-tempfail-score = 8
 # Abort all checking modules when the score for a given result (permit,
 # reject, tempfail) exceeds this score. Useful e.g. to stop scanning
 # for SPAM when the quota limit is hit.
-breaker-score = 100
+breaker-score = 25
 
 # Determine what the milter module should listen at so Postfix can
 # communicate with ClueGetter. Beware that Postfix uses a different

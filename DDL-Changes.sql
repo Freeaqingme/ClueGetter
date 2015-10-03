@@ -1,6 +1,9 @@
 -- V0.3.3
 ALTER TABLE message CHANGE body_size body_size int unsigned DEFAULT NULL ;
-ALTER TABLE message_result CHANGE module module enum('quotas','spamassassin','clamav','greylisting') NOT NULL;
+ALTER TABLE message_result CHANGE module module enum('quotas','spamassassin','rspamd','greylisting') NOT NULL;
+ALTER TABLE message_result CHANGE verdict verdict enum('permit', 'tempfail', 'reject', 'error') NOT NULL;
+ALTER TABLE message_result ADD weighted_score float(6,2) DEFAULT NULL AFTER score;
+UPDATE message_result SET weighted_score = score;
 
 -- V0.3.2
 

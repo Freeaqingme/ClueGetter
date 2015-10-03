@@ -43,9 +43,10 @@ func saGetResult(msg Message, abort chan bool) *MessageCheckResult {
 		Log.Error("SpamAssassin returned an error: %s", err)
 		return &MessageCheckResult{
 			module:          "spamassassin",
-			suggestedAction: messageTempFail,
+			suggestedAction: messageError,
 			message:         "An internal error occurred",
-			score:           10,
+			score:           25,
+			determinants:    map[string]interface{}{"error": err.Error()},
 		}
 	}
 

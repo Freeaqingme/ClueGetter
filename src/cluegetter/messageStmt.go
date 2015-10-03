@@ -62,7 +62,7 @@ func messageStmtStart() {
 	}
 
 	MessageStmtInsertModuleResult, err = Rdbms.Prepare(`INSERT INTO message_result (message, module, verdict,
-								score, duration, determinants) VALUES(?, ?, ?, ?, ?, ?)`)
+								score, weighted_score, duration, determinants) VALUES(?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		Log.Fatal(err)
 	}

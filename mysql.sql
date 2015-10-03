@@ -100,9 +100,10 @@ CREATE TABLE message_recipient (
 CREATE TABLE message_result (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   message varchar(25) CHARACTER SET ascii NOT NULL,
-  module enum('quotas','spamassassin','clamav','greylisting') NOT NULL,
-  verdict enum('permit','tempfail','reject') NOT NULL,
+  module enum('quotas','spamassassin','rspamd','greylisting') NOT NULL,
+  verdict enum('permit','tempfail','reject', 'error') NOT NULL,
   score float(6,2) DEFAULT NULL,
+  weighted_score float(6,2) DEFAULT NULL,
   duration float(6,3) COMMENT 'in seconds',
   determinants text CHARACTER SET ascii COMMENT 'JSON',
   PRIMARY KEY (id),

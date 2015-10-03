@@ -39,6 +39,9 @@ type config struct {
 		Archive_Retention_Message        float64
 		Archive_Retention_Safeguard      float64
 	}
+	ModuleGroup map[string]*struct {
+		Module[] string
+	}
 	Http struct {
 		Enabled     bool
 		Listen_Port string

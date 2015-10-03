@@ -16,12 +16,14 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"strconv"
 )
 
 const (
 	messagePermit = iota
 	messageTempFail
 	messageReject
+	messageError
 )
 
 type Session interface {
@@ -68,9 +70,22 @@ type MessageCheckResult struct {
 	score           float64
 	determinants    map[string]interface{}
 	duration        time.Duration
+	weightedScore   float64
+}
+
+type MessageModuleGroup struct {
+	modules     []*MessageModuleGroupMember
+	name        string
+	totalWeight float64
+}
+
+type MessageModuleGroupMember struct {
+	module string
+	weight float64
 }
 
 var MessageInsertHeaders = make([]*milterMessageHeader, 0)
+var MessageModuleGroups = make([]*MessageModuleGroup, 0)
 
 func messageStart() {
 	for _, hdrString := range Config.ClueGetter.Add_Header {
@@ -102,6 +117,7 @@ func messageStart() {
 	statsInitCounter("MessageVerdictTempfailSpamassassin")
 	statsInitCounter("MessageVerdictTempfailGreylisting")
 
+	messageStartModuleGroups()
 	messageStmtStart()
 	go messagePrune()
 
@@ -113,7 +129,52 @@ func messageStop() {
 	Log.Info("Message handler stopped successfully")
 }
 
-func messageGetVerdict(msg Message) (verdict int, msgStr string, results [3][]*MessageCheckResult) {
+func messageStartModuleGroups() {
+	modules := map[string]bool {
+		"quotas": true, "spamassassin": true, "greylisting": true, "rspamd": true,
+	}
+	for groupName,groupConfig := range Config.ModuleGroup {
+		group := &MessageModuleGroup{
+			modules: make([]*MessageModuleGroupMember, len((*groupConfig).Module)),
+			name: groupName,
+			totalWeight: 0,
+		}
+		MessageModuleGroups = append(MessageModuleGroups, group)
+
+		for k, v := range (*groupConfig).Module {
+			split := strings.SplitN(v, " ", 2)
+			if len(split) < 2 {
+				Log.Fatal(fmt.Sprintf("Config Error: Incorrectly formatted module group %s/%s", groupName, v))
+			}
+			if ! modules[split[1]] {
+				Log.Fatal(fmt.Sprintf("Unknown module specified for module group %s: %s", groupName, split[1]))
+			}
+
+			weight, err := strconv.ParseFloat(split[0], 64);
+			if err != nil {
+				Log.Fatal(fmt.Sprintf("Invalid weight specified in module group %s/%s", groupName, split[1]))
+			}
+
+			for _, existingGroup := range MessageModuleGroups {
+				for _, existingModuleGroupModule := range existingGroup.modules {
+					if existingModuleGroupModule != nil && split[1] == existingModuleGroupModule.module {
+						Log.Fatal(fmt.Sprintf("Module %s is already part of module group '%s', cannot add to '%s'",
+							split[1], existingGroup.name, groupName,
+						))
+					}
+				}
+			}
+
+			group.totalWeight = group.totalWeight + weight
+			group.modules[k] = &MessageModuleGroupMember {
+				module: split[1],
+				weight: weight,
+			}
+		}
+	}
+}
+
+func messageGetVerdict(msg Message) (verdict int, msgStr string, results [4][]*MessageCheckResult) {
 	defer func() {
 		if Config.ClueGetter.Exit_On_Panic {
 			return
@@ -131,31 +192,25 @@ func messageGetVerdict(msg Message) (verdict int, msgStr string, results [3][]*M
 
 	messageSave(msg)
 
+	flatResults := make([]*MessageCheckResult, 0)
 	results[messagePermit] = make([]*MessageCheckResult, 0)
 	results[messageTempFail] = make([]*MessageCheckResult, 0)
 	results[messageReject] = make([]*MessageCheckResult, 0)
+	results[messageError] = make([]*MessageCheckResult, 0)
 
-	var totalScores [3]float64
+	var totalScores [4]float64
 
-	verdictValue := [3]string{"permit", "tempfail", "reject"}
+	verdictValue := [4]string{"permit", "tempfail", "reject", "error"}
 	done := make(chan bool)
 	for result := range messageGetResults(msg, done) {
 		results[result.suggestedAction] = append(results[result.suggestedAction], result)
+		flatResults = append(flatResults, result)
 		totalScores[result.suggestedAction] += result.score
+		result.weightedScore = result.score
 
-		if Config.ClueGetter.Archive_Retention_Message_Result > 0 {
-			determinants, _ := json.Marshal(result.determinants)
-			StatsCounters["RdbmsQueries"].increase(1)
-			_, err := MessageStmtInsertModuleResult.Exec(
-				msg.getQueueId(), result.module, verdictValue[result.suggestedAction],
-				result.score, result.duration.Seconds(), determinants)
-			if err != nil {
-				StatsCounters["RdbmsErrors"].increase(1)
-				Log.Error(err.Error())
-			}
-		}
+		if totalScores[result.suggestedAction] >= Config.ClueGetter.Breaker_Score &&
+			result.suggestedAction != messageError {
 
-		if totalScores[result.suggestedAction] >= Config.ClueGetter.Breaker_Score {
 			Log.Debug(
 				"Breaker score %.2f/%.2f reached. Aborting all running modules",
 				totalScores[result.suggestedAction],
@@ -166,13 +221,59 @@ func messageGetVerdict(msg Message) (verdict int, msgStr string, results [3][]*M
 	}
 	close(done)
 
+	// Get weighted results based on the Module Groups
+	for _,moduleGroup := range MessageModuleGroups {
+		totalWeight := 0.0
+		supposedWeight := 0.0
+		moduleGroupResults := make([]*MessageCheckResult, 0)
+
+		for _, module := range moduleGroup.modules {
+			supposedWeight = supposedWeight + module.weight
+
+			for _,result := range flatResults {
+				if result.module != module.module {
+					continue
+				}
+				moduleGroupResults = append(moduleGroupResults, result)
+				if result.suggestedAction != messageError {
+					totalWeight = totalWeight + module.weight
+					result.weightedScore = result.score * module.weight
+				}
+			}
+		}
+
+		// Compensate for any modules that gave an error
+		for _, moduleGroupResult := range moduleGroupResults {
+			if moduleGroupResult.suggestedAction == messageError {
+				totalScores[messageError] = totalScores[moduleGroupResult.suggestedAction] - moduleGroupResult.score
+				continue
+			}
+			moduleGroupResult.weightedScore = moduleGroupResult.score * (supposedWeight / totalWeight)
+			totalScores[moduleGroupResult.suggestedAction] += (moduleGroupResult.weightedScore - moduleGroupResult.score)
+		}
+	}
+
+	if Config.ClueGetter.Archive_Retention_Message_Result > 0 {
+		for _,result := range flatResults {
+			determinants, _ := json.Marshal(result.determinants)
+			StatsCounters["RdbmsQueries"].increase(1)
+			_, err := MessageStmtInsertModuleResult.Exec(
+				msg.getQueueId(), result.module, verdictValue[result.suggestedAction],
+				result.score, result.weightedScore, result.duration.Seconds(), determinants)
+			if err != nil {
+				StatsCounters["RdbmsErrors"].increase(1)
+				Log.Error(err.Error())
+			}
+		}
+	}
+
 	getDecidingResultWithMessage := func(results []*MessageCheckResult) *MessageCheckResult {
 		out := results[0]
 		maxScore := float64(0)
 		for _, result := range results {
-			if result.score > maxScore && result.message != "" {
+			if result.weightedScore > maxScore && result.message != "" {
 				out = result
-				maxScore = result.score
+				maxScore = result.weightedScore
 			}
 		}
 		return out
@@ -184,6 +285,11 @@ func messageGetVerdict(msg Message) (verdict int, msgStr string, results [3][]*M
 		StatsCounters["MessageVerdictReject"+strings.Title(determinant.module)].increase(1)
 		messageSaveVerdict(msg, messageReject, determinant.message, totalScores[messageReject], totalScores[messageTempFail])
 		return messageReject, determinant.message, results
+	}
+	if totalScores[messageError] > 0 {
+		errorMsg := "An internal server error ocurred"
+		messageSaveVerdict(msg, messageTempFail, errorMsg, totalScores[messageReject], totalScores[messageTempFail])
+		return messageTempFail, errorMsg, results
 	}
 	if (totalScores[messageTempFail] + totalScores[messageReject]) >= Config.ClueGetter.Message_Tempfail_Score {
 		determinant := getDecidingResultWithMessage(results[messageTempFail])
@@ -257,9 +363,9 @@ func messageGetResults(msg Message, done chan bool) chan *MessageCheckResult {
 
 				out <- &MessageCheckResult{
 					module:          moduleName,
-					suggestedAction: messageTempFail,
+					suggestedAction: messageError,
 					message:         "An internal error ocurred",
-					score:           500,
+					score:           25,
 					determinants:    determinants,
 					duration:        time.Now().Sub(t0),
 				}
@@ -414,7 +520,7 @@ func messageSaveHeaders(msg Message) {
 	}
 }
 
-func messageGetHeadersToAdd(msg Message, results [3][]*MessageCheckResult) []*milterMessageHeader {
+func messageGetHeadersToAdd(msg Message, results [4][]*MessageCheckResult) []*milterMessageHeader {
 	sess := *msg.getSession()
 	out := make([]*milterMessageHeader, len(MessageInsertHeaders))
 	copy(out, MessageInsertHeaders)
