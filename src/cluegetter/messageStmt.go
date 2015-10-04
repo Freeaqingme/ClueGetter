@@ -68,11 +68,11 @@ func messageStmtStart() {
 	}
 
 	MessageStmtPruneBody, err = Rdbms.Prepare(`
-		DELETE FROM message_body WHERE message IN
-			(SELECT m.id FROM message m
+		DELETE mb FROM message_body mb
+				LEFT JOIN message m ON m.id = mb.message
 				LEFT JOIN session s ON s.id = m.session
-			 WHERE m.date < (DATE(?) - INTERVAL ? WEEK) AND
-				s.cluegetter_instance = ?)
+			WHERE m.date < (? - INTERVAL ? WEEK)
+				AND s.cluegetter_instance = ?;
 		`)
 	if err != nil {
 		Log.Fatal(err)
@@ -82,7 +82,7 @@ func messageStmtStart() {
 		DELETE FROM message_header WHERE message IN
 			(SELECT m.id FROM message m
 				LEFT JOIN session s ON s.id = m.session
-			 WHERE m.date < (DATE(?) - INTERVAL ? WEEK) AND
+			 WHERE m.date < (? - INTERVAL ? WEEK) AND
 				s.cluegetter_instance = ?)
 		`)
 	if err != nil {
@@ -93,7 +93,7 @@ func messageStmtStart() {
 		DELETE FROM message_result WHERE message IN
 			(SELECT m.id FROM message m
 				LEFT JOIN session s ON s.id = m.session
-			 WHERE m.date < (DATE(?) - INTERVAL ? WEEK) AND
+			 WHERE m.date < (? - INTERVAL ? WEEK) AND
 				s.cluegetter_instance = ?)
 		`)
 	if err != nil {
@@ -104,7 +104,7 @@ func messageStmtStart() {
 		DELETE FROM quota_message WHERE message IN
 			(SELECT m.id FROM message m
 				LEFT JOIN session s ON s.id = m.session
-			 WHERE m.date < (DATE(?) - INTERVAL ? WEEK) AND
+			 WHERE m.date < (? - INTERVAL ? WEEK) AND
 				s.cluegetter_instance = ?)
 		`)
 	if err != nil {
@@ -125,7 +125,7 @@ func messageStmtStart() {
 		DELETE FROM message_recipient WHERE message IN
 			(SELECT m.id FROM message m
 				LEFT JOIN session s ON s.id = m.session
-			 WHERE m.date < (DATE(?) - INTERVAL ? WEEK) AND
+			 WHERE m.date < (? - INTERVAL ? WEEK) AND
 				s.cluegetter_instance = ?)
 		`)
 	if err != nil {
@@ -143,7 +143,7 @@ func messageStmtStart() {
 	MessageStmtPruneSession, err = Rdbms.Prepare(`
 		DELETE FROM session WHERE NOT EXISTS
 			(SELECT * FROM message m WHERE m.session = session.id)
-			AND date_connect < (DATE(?) - INTERVAL ? WEEK) AND cluegetter_instance = ?
+			AND date_connect < (? - INTERVAL ? WEEK) AND cluegetter_instance = ?
 		`)
 	if err != nil {
 		Log.Fatal(err)
