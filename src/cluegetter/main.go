@@ -50,6 +50,7 @@ func main() {
 	messageStart()
 	quotasStart()
 	saStart()
+	rspamdStart()
 	greylistStart()
 	milterStart()
 	bounceHandlerStart()

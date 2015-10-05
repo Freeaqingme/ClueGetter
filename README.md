@@ -13,10 +13,10 @@ Available modules:
 * Quotas
 * SpamAssassin
 * Greylisting
+* Rspamd
 * Bounce Handling
 
 Planned modules:
-* Rspamd
 * GeoIP - Detect anomalies in the countries used to send mail from
 * ClamAv/Clamd - Scan the message for viruses
 * Reputation - Incorporate previous verdicts in future verdicts.

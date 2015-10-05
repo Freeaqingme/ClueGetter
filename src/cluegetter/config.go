@@ -65,6 +65,12 @@ type config struct {
 		Account_Client_Address bool
 		Account_Sasl_Username  bool
 	}
+	Rspamd struct {
+		Enabled  bool
+		Host     string
+		Port     int
+		Multiplier float64
+	}
 	SpamAssassin struct {
 		Enabled  bool
 		Host     string
@@ -126,6 +132,11 @@ func DefaultConfig(cfg *config) {
 	cfg.Quotas.Account_Sender = false
 	cfg.Quotas.Account_Recipient = false
 	cfg.Quotas.Account_Sasl_Username = false
+
+	cfg.Rspamd.Enabled = false
+	cfg.Rspamd.Host = "127.0.0.1"
+	cfg.Rspamd.Port = 11333
+	cfg.Rspamd.Multiplier = 0.67
 
 	cfg.SpamAssassin.Enabled = false
 	cfg.SpamAssassin.Host = "127.0.0.1"

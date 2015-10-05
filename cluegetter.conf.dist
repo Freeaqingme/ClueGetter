@@ -102,6 +102,10 @@ archive-retention-header = 26
 archive-retention-message-result = 2
 archive-retention-message = 52
 
+[moduleGroup "spam"]
+module = 0.9 spamassassin
+module = 0.1 rspamd
+
 [http]
 # Cluegetter can provide an HTTP interface that displays some runtime
 # statistics and errors, and allows to search for processed messages.
@@ -157,6 +161,12 @@ account-client-address = true
 account-sender = false
 account-recipient = false
 account-sasl-username = false
+
+[rspamd]
+enabled    = true
+host       = 127.0.0.1
+port       = 11333
+multiplier = 0.67
 
 [spamassassin]
 # Have message be vetted by SpamAssassin. SpamAssassin should be configured

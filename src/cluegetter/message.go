@@ -17,6 +17,8 @@ import (
 	"sync"
 	"time"
 	"strconv"
+	"os"
+	"net"
 )
 
 const (
@@ -56,6 +58,8 @@ type Message interface {
 
 	setInjectMessageId(string)
 	getInjectMessageId() string
+
+	String(bool) []byte
 }
 
 type MessageHeader interface {
@@ -294,7 +298,6 @@ func messageGetVerdict(msg Message) (verdict int, msgStr string, results [4][]*M
 	if (totalScores[messageTempFail] + totalScores[messageReject]) >= Config.ClueGetter.Message_Tempfail_Score {
 		determinant := getDecidingResultWithMessage(results[messageTempFail])
 		StatsCounters["MessageVerdictTempfail"].increase(1)
-		StatsCounters["MessageVerdictTempfail"+strings.Title(determinant.module)].increase(1)
 		messageSaveVerdict(msg, messageTempFail, determinant.message, totalScores[messageReject], totalScores[messageTempFail])
 		return messageTempFail, determinant.message, results
 	}
@@ -394,6 +397,10 @@ func messageGetEnabledModules() (out map[string]func(Message, chan bool) *Messag
 
 	if Config.SpamAssassin.Enabled {
 		out["spamassassin"] = saGetResult
+	}
+
+	if Config.Rspamd.Enabled {
+		out["rspamd"] = rspamdGetResult
 	}
 
 	if Config.Greylisting.Enabled {
@@ -594,4 +601,42 @@ WaitForNext:
 			}
 		}
 	}
+}
+
+func (msg milterMessage) String(includeRcvdByHdr bool) []byte {
+	sess := *msg.getSession()
+	fqdn, err := os.Hostname()
+	if err != nil {
+		Log.Error("Could not determine FQDN")
+		fqdn = sess.getMtaHostName()
+	}
+	revdns, err := net.LookupAddr(sess.getIp())
+	revdnsStr := "unknown"
+	if err == nil {
+		revdnsStr = strings.Join(revdns, "")
+	}
+
+	body := make([]string, 0)
+
+	if includeRcvdByHdr {
+		body = append(body, fmt.Sprintf("Received: from %s (%s [%s])\r\n\tby %s with SMTP id %d@%s; %s",
+				sess.getHelo(),
+				revdnsStr,
+				sess.getIp(),
+				fqdn,
+				sess.getId(),
+				fqdn,
+				time.Now().Format(time.RFC1123Z)))
+	}
+
+	for _, header := range msg.getHeaders() {
+		body = append(body, (*header).getKey()+": "+(*header).getValue())
+	}
+
+	body = append(body, "")
+	for _, bodyChunk := range msg.getBody() {
+		body = append(body, bodyChunk)
+	}
+
+	return []byte(strings.Join(body, "\r\n"))
 }

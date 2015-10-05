@@ -10,11 +10,8 @@ package main
 import (
 	"fmt"
 	spamc "github.com/Freeaqingme/go-spamc"
-	"net"
-	"os"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type saReport struct {
@@ -71,50 +68,13 @@ func saGetResult(msg Message, abort chan bool) *MessageCheckResult {
 	}
 }
 
-func saBuildInputMessage(msg Message) []string {
-	sess := *msg.getSession()
-	fqdn, err := os.Hostname()
-	if err != nil {
-		Log.Error("Could not determine FQDN")
-		fqdn = sess.getMtaHostName()
-	}
-	revdns, err := net.LookupAddr(sess.getIp())
-	revdnsStr := "unknown"
-	if err == nil {
-		revdnsStr = strings.Join(revdns, "")
-	}
-
-	body := make([]string, 0)
-
-	// Let SA know where the email came from.
-	body = append(body, fmt.Sprintf("Received: from %s (%s [%s])\r\n\tby %s with SMTP id %d@%s; %s",
-		sess.getHelo(),
-		revdnsStr,
-		sess.getIp(),
-		fqdn,
-		sess.getId(),
-		fqdn,
-		time.Now().Format(time.RFC1123Z)))
-
-	for _, header := range msg.getHeaders() {
-		body = append(body, (*header).getKey()+": "+(*header).getValue())
-	}
-
-	body = append(body, "")
-	for _, bodyChunk := range msg.getBody() {
-		body = append(body, bodyChunk)
-	}
-
-	return body
-}
 
 func saGetRawReply(msg Message, abort chan bool) (*spamc.SpamDOut, error) {
-	body := saBuildInputMessage(msg)
+	bodyStr := string(msg.String(true))
 
 	host := Config.SpamAssassin.Host + ":" + strconv.Itoa(Config.SpamAssassin.Port)
 	client := spamc.New(host, 10)
 
-	bodyStr := strings.Join(body, "\r\n")
 	if len(bodyStr) > Config.SpamAssassin.Max_Size {
 		bodyStr = bodyStr[:Config.SpamAssassin.Max_Size]
 	}
