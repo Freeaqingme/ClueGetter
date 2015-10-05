@@ -88,15 +88,6 @@ CREATE TABLE message_header (
   CONSTRAINT message_header_ibfk_1 FOREIGN KEY (message) REFERENCES message (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-CREATE TABLE message_recipient (
-  message varchar(25) CHARACTER SET ascii NOT NULL,
-  recipient bigint(20) unsigned NOT NULL,
-  count smallint(5) unsigned NOT NULL DEFAULT 1,
-  PRIMARY KEY (message,recipient),
-  CONSTRAINT message_recipient_ibfk_1 FOREIGN KEY (message) REFERENCES message (id),
-  CONSTRAINT message_recipient_ibfk_2 FOREIGN KEY (recipient) REFERENCES recipient (id)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
 CREATE TABLE message_result (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   message varchar(25) CHARACTER SET ascii NOT NULL,
@@ -170,6 +161,15 @@ CREATE TABLE recipient (
   PRIMARY KEY (id),
   UNIQUE KEY local (local,domain)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE message_recipient (
+  message varchar(25) CHARACTER SET ascii NOT NULL,
+  recipient bigint(20) unsigned NOT NULL,
+  count smallint(5) unsigned NOT NULL DEFAULT 1,
+  PRIMARY KEY (message,recipient),
+  CONSTRAINT message_recipient_ibfk_1 FOREIGN KEY (message) REFERENCES message (id),
+  CONSTRAINT message_recipient_ibfk_2 FOREIGN KEY (recipient) REFERENCES recipient (id)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE bounce (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,

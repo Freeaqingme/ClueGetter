@@ -163,7 +163,7 @@ account-recipient = false
 account-sasl-username = false
 
 [rspamd]
-enabled    = true
+enabled    = false
 host       = 127.0.0.1
 port       = 11333
 multiplier = 0.67
