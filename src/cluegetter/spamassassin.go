@@ -68,7 +68,6 @@ func saGetResult(msg Message, abort chan bool) *MessageCheckResult {
 	}
 }
 
-
 func saGetRawReply(msg Message, abort chan bool) (*spamc.SpamDOut, error) {
 	bodyStr := string(msg.String(true))
 

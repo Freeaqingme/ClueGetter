@@ -8,32 +8,32 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
 	"bytes"
-	"io/ioutil"
 	"encoding/json"
-"strings"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strings"
 )
 
 type rspamdResponseCheckResult struct {
 	Description string
-	Name string
-	Score float64
-	Options []string
+	Name        string
+	Score       float64
+	Options     []string
 }
 
 type rspamdResponse struct {
 	Default struct {
-		IsSpam bool
-		IsSkipped bool
-		Score float64
+		IsSpam        bool
+		IsSkipped     bool
+		Score         float64
 		RequiredScore float64
-		Action string
-		CheckResults []*rspamdResponseCheckResult
+		Action        string
+		CheckResults  []*rspamdResponseCheckResult
 	}
-	Urls []string
-	Emails []string
+	Urls      []string
+	Emails    []string
 	MessageId string
 }
 
@@ -55,11 +55,11 @@ func rspamdGetResult(msg Message, abort chan bool) *MessageCheckResult {
 	return &MessageCheckResult{
 		module:          "rspamd",
 		suggestedAction: messageError,
-		message:         "Our system has detected that this message is likely unsolicited mail (SPAM). " +
-				"To reduce the amount of spam, this message has been blocked.",
-		score:           score,
-		determinants:    map[string]interface{}{
-			"response": parsedResponse,
+		message: "Our system has detected that this message is likely unsolicited mail (SPAM). " +
+			"To reduce the amount of spam, this message has been blocked.",
+		score: score,
+		determinants: map[string]interface{}{
+			"response":   parsedResponse,
 			"multiplier": Config.Rspamd.Multiplier,
 		},
 	}
@@ -68,7 +68,7 @@ func rspamdGetResult(msg Message, abort chan bool) *MessageCheckResult {
 func rspamdParseRawResult(rawResult interface{}) *rspamdResponse {
 	raw := rawResult.(map[string]interface{})
 	res := &rspamdResponse{
-		Urls: make([]string,0),
+		Urls:   make([]string, 0),
 		Emails: make([]string, 0),
 	}
 
@@ -136,14 +136,14 @@ func rspamdGetRawResult(msg Message) interface{} {
 	url := fmt.Sprintf("http://%s:%d/check", Config.Rspamd.Host, Config.Rspamd.Port)
 	client := &http.Client{}
 	req, _ := http.NewRequest("GET", url, bytes.NewBuffer(reqBody))
-	for _,rcpt := range msg.getRecipients() {
+	for _, rcpt := range msg.getRecipients() {
 		req.Header.Add("Rcpt", rcpt)
 	}
-	req.Header.Set("IP",sess.getIp())
-	req.Header.Set("Helo",sess.getHelo())
-	req.Header.Set("From",msg.getFrom())
-	req.Header.Set("Queue-Id",msg.getQueueId())
-	req.Header.Set("User",sess.getSaslUsername())
+	req.Header.Set("IP", sess.getIp())
+	req.Header.Set("Helo", sess.getHelo())
+	req.Header.Set("From", msg.getFrom())
+	req.Header.Set("Queue-Id", msg.getQueueId())
+	req.Header.Set("User", sess.getSaslUsername())
 	res, err := client.Do(req)
 
 	if err != nil {

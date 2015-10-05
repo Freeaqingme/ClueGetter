@@ -13,12 +13,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
+	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
-	"strconv"
-	"os"
-	"net"
 )
 
 const (
@@ -134,13 +134,13 @@ func messageStop() {
 }
 
 func messageStartModuleGroups() {
-	modules := map[string]bool {
+	modules := map[string]bool{
 		"quotas": true, "spamassassin": true, "greylisting": true, "rspamd": true,
 	}
-	for groupName,groupConfig := range Config.ModuleGroup {
+	for groupName, groupConfig := range Config.ModuleGroup {
 		group := &MessageModuleGroup{
-			modules: make([]*MessageModuleGroupMember, len((*groupConfig).Module)),
-			name: groupName,
+			modules:     make([]*MessageModuleGroupMember, len((*groupConfig).Module)),
+			name:        groupName,
 			totalWeight: 0,
 		}
 		MessageModuleGroups = append(MessageModuleGroups, group)
@@ -153,11 +153,11 @@ func messageStartModuleGroups() {
 			if len(split) < 2 {
 				Log.Fatal(fmt.Sprintf("Config Error: Incorrectly formatted module group %s/%s", groupName, v))
 			}
-			if ! modules[split[1]] {
+			if !modules[split[1]] {
 				Log.Fatal(fmt.Sprintf("Unknown module specified for module group %s: %s", groupName, split[1]))
 			}
 
-			weight, err := strconv.ParseFloat(split[0], 64);
+			weight, err := strconv.ParseFloat(split[0], 64)
 			if err != nil {
 				Log.Fatal(fmt.Sprintf("Invalid weight specified in module group %s/%s", groupName, split[1]))
 			}
@@ -173,7 +173,7 @@ func messageStartModuleGroups() {
 			}
 
 			group.totalWeight = group.totalWeight + weight
-			group.modules[k] = &MessageModuleGroupMember {
+			group.modules[k] = &MessageModuleGroupMember{
 				module: split[1],
 				weight: weight,
 			}
@@ -231,7 +231,7 @@ func messageGetVerdict(msg Message) (verdict int, msgStr string, results [4][]*M
 
 	verdictValue := [4]string{"permit", "tempfail", "reject", "error"}
 	if Config.ClueGetter.Archive_Retention_Message_Result > 0 {
-		for _,result := range flatResults {
+		for _, result := range flatResults {
 			determinants, _ := json.Marshal(result.determinants)
 
 			StatsCounters["RdbmsQueries"].increase(1)
@@ -289,18 +289,18 @@ func messageGetVerdict(msg Message) (verdict int, msgStr string, results [4][]*M
 
 func messageWeighResults(results []*MessageCheckResult) (ignoreErrorCount int) {
 	ignoreErrorCount = 0
-	for _,moduleGroup := range MessageModuleGroups {
+	for _, moduleGroup := range MessageModuleGroups {
 		totalWeight := 0.0
 		moduleGroupErrorCount := 0
 
-		for _,moduleResult := range results {
+		for _, moduleResult := range results {
 			for _, moduleGroupModule := range moduleGroup.modules {
 				if moduleResult.module != moduleGroupModule.module {
-				continue
+					continue
 				}
 
 				if moduleResult.suggestedAction == messageError {
-					moduleGroupErrorCount = moduleGroupErrorCount +1
+					moduleGroupErrorCount = moduleGroupErrorCount + 1
 				} else {
 					totalWeight = totalWeight + moduleGroupModule.weight
 				}
@@ -314,7 +314,7 @@ func messageWeighResults(results []*MessageCheckResult) (ignoreErrorCount int) {
 		}
 
 		multiply := 1.0 * (moduleGroup.totalWeight / totalWeight)
-		for _,moduleResult := range results {
+		for _, moduleResult := range results {
 			for _, moduleGroupModule := range moduleGroup.modules {
 				if moduleResult.module != moduleGroupModule.module ||
 					moduleResult.suggestedAction == messageError {
@@ -639,13 +639,13 @@ func (msg milterMessage) String(includeRcvdByHdr bool) []byte {
 
 	if includeRcvdByHdr {
 		body = append(body, fmt.Sprintf("Received: from %s (%s [%s])\r\n\tby %s with SMTP id %d@%s; %s",
-				sess.getHelo(),
-				revdnsStr,
-				sess.getIp(),
-				fqdn,
-				sess.getId(),
-				fqdn,
-				time.Now().Format(time.RFC1123Z)))
+			sess.getHelo(),
+			revdnsStr,
+			sess.getIp(),
+			fqdn,
+			sess.getId(),
+			fqdn,
+			time.Now().Format(time.RFC1123Z)))
 	}
 
 	for _, header := range msg.getHeaders() {

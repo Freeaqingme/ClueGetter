@@ -40,7 +40,7 @@ type config struct {
 		Archive_Retention_Safeguard      float64
 	}
 	ModuleGroup map[string]*struct {
-		Module[] string
+		Module []string
 	}
 	Http struct {
 		Enabled     bool
@@ -66,9 +66,9 @@ type config struct {
 		Account_Sasl_Username  bool
 	}
 	Rspamd struct {
-		Enabled  bool
-		Host     string
-		Port     int
+		Enabled    bool
+		Host       string
+		Port       int
 		Multiplier float64
 	}
 	SpamAssassin struct {
