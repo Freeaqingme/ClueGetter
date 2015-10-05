@@ -144,6 +144,9 @@ func messageStartModuleGroups() {
 			totalWeight: 0,
 		}
 		MessageModuleGroups = append(MessageModuleGroups, group)
+		if len((*groupConfig).Module) == 0 {
+			Log.Fatal(fmt.Sprintf("Config Error: Module Group %s does not have any modules", groupName))
+		}
 
 		for k, v := range (*groupConfig).Module {
 			split := strings.SplitN(v, " ", 2)
@@ -202,22 +205,21 @@ func messageGetVerdict(msg Message) (verdict int, msgStr string, results [4][]*M
 	results[messageReject] = make([]*MessageCheckResult, 0)
 	results[messageError] = make([]*MessageCheckResult, 0)
 
-	var totalScores [4]float64
-
-	verdictValue := [4]string{"permit", "tempfail", "reject", "error"}
+	var breakerScore [4]float64
 	done := make(chan bool)
+	errorCount := 0
 	for result := range messageGetResults(msg, done) {
 		results[result.suggestedAction] = append(results[result.suggestedAction], result)
 		flatResults = append(flatResults, result)
-		totalScores[result.suggestedAction] += result.score
+		breakerScore[result.suggestedAction] += result.score
 		result.weightedScore = result.score
 
-		if totalScores[result.suggestedAction] >= Config.ClueGetter.Breaker_Score &&
-			result.suggestedAction != messageError {
-
+		if result.suggestedAction == messageError {
+			errorCount = errorCount + 1
+		} else if breakerScore[result.suggestedAction] >= Config.ClueGetter.Breaker_Score {
 			Log.Debug(
 				"Breaker score %.2f/%.2f reached. Aborting all running modules",
-				totalScores[result.suggestedAction],
+				breakerScore[result.suggestedAction],
 				Config.ClueGetter.Breaker_Score,
 			)
 			break
@@ -225,41 +227,13 @@ func messageGetVerdict(msg Message) (verdict int, msgStr string, results [4][]*M
 	}
 	close(done)
 
-	// Get weighted results based on the Module Groups
-	for _,moduleGroup := range MessageModuleGroups {
-		totalWeight := 0.0
-		supposedWeight := 0.0
-		moduleGroupResults := make([]*MessageCheckResult, 0)
+	errorCount = errorCount - messageWeighResults(flatResults)
 
-		for _, module := range moduleGroup.modules {
-			supposedWeight = supposedWeight + module.weight
-
-			for _,result := range flatResults {
-				if result.module != module.module {
-					continue
-				}
-				moduleGroupResults = append(moduleGroupResults, result)
-				if result.suggestedAction != messageError {
-					totalWeight = totalWeight + module.weight
-					result.weightedScore = result.score * module.weight
-				}
-			}
-		}
-
-		// Compensate for any modules that gave an error
-		for _, moduleGroupResult := range moduleGroupResults {
-			if moduleGroupResult.suggestedAction == messageError {
-				totalScores[messageError] = totalScores[moduleGroupResult.suggestedAction] - moduleGroupResult.score
-				continue
-			}
-			moduleGroupResult.weightedScore = moduleGroupResult.score * (supposedWeight / totalWeight)
-			totalScores[moduleGroupResult.suggestedAction] += (moduleGroupResult.weightedScore - moduleGroupResult.score)
-		}
-	}
-
+	verdictValue := [4]string{"permit", "tempfail", "reject", "error"}
 	if Config.ClueGetter.Archive_Retention_Message_Result > 0 {
 		for _,result := range flatResults {
 			determinants, _ := json.Marshal(result.determinants)
+
 			StatsCounters["RdbmsQueries"].increase(1)
 			_, err := MessageStmtInsertModuleResult.Exec(
 				msg.getQueueId(), result.module, verdictValue[result.suggestedAction],
@@ -283,14 +257,18 @@ func messageGetVerdict(msg Message) (verdict int, msgStr string, results [4][]*M
 		return out
 	}
 
+	var totalScores [4]float64
+	for _, result := range flatResults {
+		totalScores[result.suggestedAction] += result.weightedScore
+	}
+
 	if totalScores[messageReject] >= Config.ClueGetter.Message_Reject_Score {
 		determinant := getDecidingResultWithMessage(results[messageReject])
 		StatsCounters["MessageVerdictReject"].increase(1)
-		StatsCounters["MessageVerdictReject"+strings.Title(determinant.module)].increase(1)
 		messageSaveVerdict(msg, messageReject, determinant.message, totalScores[messageReject], totalScores[messageTempFail])
 		return messageReject, determinant.message, results
 	}
-	if totalScores[messageError] > 0 {
+	if errorCount > 0 {
 		errorMsg := "An internal server error ocurred"
 		messageSaveVerdict(msg, messageTempFail, errorMsg, totalScores[messageReject], totalScores[messageTempFail])
 		return messageTempFail, errorMsg, results
@@ -306,6 +284,47 @@ func messageGetVerdict(msg Message) (verdict int, msgStr string, results [4][]*M
 	messageSaveVerdict(msg, messagePermit, "", totalScores[messageReject], totalScores[messageTempFail])
 	verdict = messagePermit
 	msgStr = ""
+	return
+}
+
+func messageWeighResults(results []*MessageCheckResult) (ignoreErrorCount int) {
+	ignoreErrorCount = 0
+	for _,moduleGroup := range MessageModuleGroups {
+		totalWeight := 0.0
+		moduleGroupErrorCount := 0
+
+		for _,moduleResult := range results {
+			for _, moduleGroupModule := range moduleGroup.modules {
+				if moduleResult.module != moduleGroupModule.module {
+				continue
+				}
+
+				if moduleResult.suggestedAction == messageError {
+					moduleGroupErrorCount = moduleGroupErrorCount +1
+				} else {
+					totalWeight = totalWeight + moduleGroupModule.weight
+				}
+			}
+		}
+
+		if moduleGroupErrorCount != len(moduleGroup.modules) {
+			ignoreErrorCount = ignoreErrorCount + moduleGroupErrorCount
+		} else {
+			continue
+		}
+
+		multiply := 1.0 * (moduleGroup.totalWeight / totalWeight)
+		for _,moduleResult := range results {
+			for _, moduleGroupModule := range moduleGroup.modules {
+				if moduleResult.module != moduleGroupModule.module ||
+					moduleResult.suggestedAction == messageError {
+					continue
+				}
+
+				moduleResult.weightedScore = moduleResult.weightedScore * moduleGroupModule.weight * multiply
+			}
+		}
+	}
 	return
 }
 
