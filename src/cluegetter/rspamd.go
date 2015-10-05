@@ -54,7 +54,7 @@ func rspamdGetResult(msg Message, abort chan bool) *MessageCheckResult {
 
 	return &MessageCheckResult{
 		module:          "rspamd",
-		suggestedAction: messageError,
+		suggestedAction: messageReject,
 		message: "Our system has detected that this message is likely unsolicited mail (SPAM). " +
 			"To reduce the amount of spam, this message has been blocked.",
 		score: score,
