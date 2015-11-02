@@ -131,7 +131,7 @@ func rspamdParseRawResult(rawResult interface{}) *rspamdResponse {
 
 func rspamdGetRawResult(msg Message) interface{} {
 	sess := *msg.getSession()
-	var reqBody = msg.String(false)
+	var reqBody = msg.String()
 
 	url := fmt.Sprintf("http://%s:%d/check", Config.Rspamd.Host, Config.Rspamd.Port)
 	client := &http.Client{}

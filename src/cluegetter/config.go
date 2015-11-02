@@ -39,6 +39,13 @@ type config struct {
 		Archive_Retention_Message        float64
 		Archive_Retention_Safeguard      float64
 	}
+	Cassandra struct {
+		Enabled     bool
+		Host        []string
+		Keyspace    string
+		Username    string
+		Password    string
+	}
 	ModuleGroup map[string]*struct {
 		Module []string
 	}
@@ -113,6 +120,12 @@ func DefaultConfig(cfg *config) {
 	cfg.ClueGetter.Archive_Retention_Header = 26
 	cfg.ClueGetter.Archive_Retention_Message_Result = 2
 	cfg.ClueGetter.Archive_Retention_Message = 52
+
+	cfg.Cassandra.Enabled = false
+	cfg.Cassandra.Keyspace = "cluegetter"
+	cfg.Cassandra.Host = []string{}
+	cfg.Cassandra.Username = ""
+	cfg.Cassandra.Password = ""
 
 	cfg.Http.Enabled = true
 	cfg.Http.Listen_Port = "1937"

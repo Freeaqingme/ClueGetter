@@ -1,5 +1,15 @@
 # Change Log
 
+### 2015-10-05 Version 0.3.3
+* New Feature: Rspamd Integration
+* New Feature: Module Groups
+* Improvement: Prune message bodies using mysql indexes. Did not work on mysql <5.7 due to a mysql bug.
+* Improvement: Be able to actually handle ELHO/HELO commands mid-session and RSET commands.
+* Schema Change: Add rspamd module, error verdict message_result
+* Bugfix: Body size was displayed incorrectly with bodies >65 KiB
+* Bugfix: Only prune sessions older than X weeks
+* Bugfix: Improve constructing of message to SpamAssassin
+
 ### 2015-09-20 Version 0.3.2
 * New Feature: Allow to add hostname to static headers
 * New Feature: Insert message-id header when it's missing

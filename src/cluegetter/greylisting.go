@@ -219,10 +219,10 @@ func greylistIsSpfWhitelisted(ip net.IP, done chan bool) (bool, string, error) {
 			return true, whitelistDomain, error
 		}
 
-		_, allowContinuing := <-done
-		if !allowContinuing {
-			break
-		}
+		//		_, allowContinuing := <-done
+		//		if !allowContinuing {
+		//			break
+		//		}
 	}
 
 	return false, "", error

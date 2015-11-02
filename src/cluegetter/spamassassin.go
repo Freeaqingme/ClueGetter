@@ -69,7 +69,7 @@ func saGetResult(msg Message, abort chan bool) *MessageCheckResult {
 }
 
 func saGetRawReply(msg Message, abort chan bool) (*spamc.SpamDOut, error) {
-	bodyStr := string(msg.String(true))
+	bodyStr := string(msg.String())
 
 	host := Config.SpamAssassin.Host + ":" + strconv.Itoa(Config.SpamAssassin.Port)
 	client := spamc.New(host, 10)

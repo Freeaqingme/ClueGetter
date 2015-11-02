@@ -117,6 +117,18 @@ enabled = true
 listen-port = 1937
 listen-host = "127.0.0.1"
 
+[cassandra]
+# If you want to archive messages (including their body), but don't want
+# to do so in your RDBMS.
+
+enabled  = false
+keyspace = "cluegetter"
+#host     = "node1"
+#host     = "node2"
+#host     = "node3"
+#username = ""
+#password = ""
+
 [bounceHandler]
 # Enable the Bounce Handler functionality in order to get insights in
 # What emails could not be (immediately) delivered. Please refer to the
@@ -163,7 +175,7 @@ account-recipient = false
 account-sasl-username = false
 
 [rspamd]
-enabled    = true
+enabled    = false
 host       = 127.0.0.1
 port       = 11333
 multiplier = 0.67

@@ -59,7 +59,7 @@ type Message interface {
 	setInjectMessageId(string)
 	getInjectMessageId() string
 
-	String(bool) []byte
+	String() []byte
 }
 
 type MessageHeader interface {
@@ -622,7 +622,7 @@ WaitForNext:
 	}
 }
 
-func (msg milterMessage) String(includeRcvdByHdr bool) []byte {
+func (msg milterMessage) String() []byte {
 	sess := *msg.getSession()
 	fqdn, err := os.Hostname()
 	if err != nil {
@@ -637,25 +637,23 @@ func (msg milterMessage) String(includeRcvdByHdr bool) []byte {
 
 	body := make([]string, 0)
 
-	if includeRcvdByHdr {
-		body = append(body, fmt.Sprintf("Received: from %s (%s [%s])\r\n\tby %s with SMTP id %d@%s; %s",
-			sess.getHelo(),
-			revdnsStr,
-			sess.getIp(),
-			fqdn,
-			sess.getId(),
-			fqdn,
-			time.Now().Format(time.RFC1123Z)))
-	}
+	body = append(body, fmt.Sprintf("Received: from %s (%s [%s])\r\n\tby %s with SMTP id %d@%s; %s\r\n",
+		sess.getHelo(),
+		revdnsStr,
+		sess.getIp(),
+		fqdn,
+		sess.getId(),
+		fqdn,
+		time.Now().Format(time.RFC1123Z)))
 
 	for _, header := range msg.getHeaders() {
-		body = append(body, (*header).getKey()+": "+(*header).getValue())
+		body = append(body, (*header).getKey()+": "+(*header).getValue()+"\r\n")
 	}
 
-	body = append(body, "")
+	body = append(body, "\r\n")
 	for _, bodyChunk := range msg.getBody() {
 		body = append(body, bodyChunk)
 	}
 
-	return []byte(strings.Join(body, "\r\n"))
+	return []byte(strings.Join(body, ""))
 }
