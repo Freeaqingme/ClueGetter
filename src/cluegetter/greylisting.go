@@ -238,12 +238,19 @@ func greylistGetRecentVerdicts(msg Message) *[]greylistVerdict {
 		fromLocal = msg.getFrom()
 	}
 
+	rcptLocal := msg.getRecipients()[0]
+	rcptDomain := ""
+	if strings.Index(msg.getRecipients()[0], "@") != -1 {
+		rcptLocal  = strings.Split(msg.getRecipients()[0], "@")[0]
+		rcptDomain = strings.Split(msg.getRecipients()[0], "@")[1]
+	}
+
 	StatsCounters["RdbmsQueries"].increase(1)
 	verdictRows, err := greylistGetRecentVerdictsStmt.Query(
 		fromLocal,
 		fromDomain,
-		strings.Split(msg.getRecipients()[0], "@")[0],
-		strings.Split(msg.getRecipients()[0], "@")[1],
+		rcptLocal,
+		rcptDomain,
 		(*msg.getSession()).getIp(),
 	)
 
