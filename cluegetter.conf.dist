@@ -102,6 +102,10 @@ archive-retention-header = 26
 archive-retention-message-result = 2
 archive-retention-message = 52
 
+# If Cassandra support is enabled, this is the TTL (in weeks) to use
+# for storing messages in Cassandra.
+archive-retention-cassandra = 4
+
 [moduleGroup "spam"]
 module = 0.9 spamassassin
 module = 0.1 rspamd

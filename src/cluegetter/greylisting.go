@@ -241,7 +241,7 @@ func greylistGetRecentVerdicts(msg Message) *[]greylistVerdict {
 	rcptLocal := msg.getRecipients()[0]
 	rcptDomain := ""
 	if strings.Index(msg.getRecipients()[0], "@") != -1 {
-		rcptLocal  = strings.Split(msg.getRecipients()[0], "@")[0]
+		rcptLocal = strings.Split(msg.getRecipients()[0], "@")[0]
 		rcptDomain = strings.Split(msg.getRecipients()[0], "@")[1]
 	}
 

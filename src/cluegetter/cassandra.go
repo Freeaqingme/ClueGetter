@@ -8,23 +8,23 @@
 package main
 
 import (
-	"time"
-	"math"
 	"github.com/gocql/gocql"
+	"math"
+	"time"
 )
 
 type cqlQuery struct {
-	query string
-	args []interface{}
-	retryCount int
-	callbackSucces string
-	callbackTempFailure string
-	callbackFailure string
+	query               string
+	args                []interface{}
+	retryCount          int
+	callbackSucces      func(*cqlQuery)
+	callbackFailure     func(*cqlQuery)
+	callbackTempFailure func(*cqlQuery)
 }
 
-var cqlSess *gocql.Session;
+var cqlSess *gocql.Session
 
-var cqlQueryQueue chan *cqlQuery;
+var cqlQueryQueue chan *cqlQuery
 
 func cqlStart() {
 	if Config.Cassandra.Enabled != true {
@@ -34,72 +34,80 @@ func cqlStart() {
 
 	cluster := gocql.NewCluster(Config.Cassandra.Host...)
 	cluster.Keyspace = Config.Cassandra.Keyspace
-	cqlSessLocal, err := cluster.CreateSession();
+	cqlSessLocal, err := cluster.CreateSession()
 	if err != nil {
-		Log.Fatal(err);
+		Log.Fatal("Error connecting with Cassandra: ", err)
 	}
 
 	cqlSess = cqlSessLocal
 
-	cqlQueryQueue = make(chan *cqlQuery);
+	cqlQueryQueue = make(chan *cqlQuery)
 
 	go cqlQueryQueueHandler()
 
-/*	var message, instance,body string
-	var date time.Time
+	/*	var message, instance,body string
+		var date time.Time
 
-	iter := session.Query("SELECT message, instance, date,body FROM message").Iter()
-	for iter.Scan(&message, &instance, &date, &body) {
-		fmt.Println(message, instance, date, body)
-	}
-	if err := iter.Close(); err != nil {
-		log.Fatal(err)
-	}
+		iter := session.Query("SELECT message, instance, date,body FROM message").Iter()
+		for iter.Scan(&message, &instance, &date, &body) {
+			fmt.Println(message, instance, date, body)
+		}
+		if err := iter.Close(); err != nil {
+			log.Fatal(err)
+		}
 
-*/
+	*/
 	Log.Info("Successfully connected to Cassandra")
 }
 
 func cqlStop() {
+	if !Config.Cassandra.Enabled {
+		return
+	}
+
 	cqlSess.Close()
 	close(cqlQueryQueue)
 
-	Log.Info("Closed Cassandra session");
+	Log.Info("Closed Cassandra session")
 }
 
 func cqlQueryQueueHandler() {
 	for {
 		query, more := <-cqlQueryQueue
-		if ! more {
+		if !more {
 			return
 		}
 
 		go cqlQueryQueueExecutor(query)
 	}
-
 }
 
-func cqlQueryQueueExecutor(query cqlQuery) {
-	if err := cqlSess.Query(query.query, query.args...); err != nil {
-		if query.retryCount < 5 {
-			query.retryCount = query.retryCount + 1;
-			if query.callbackTempFailure != nil {
-				query.callbackTempFailure()
-			} else {
-				Log.Error("Error while executing Cassandra query '%s', retrying. Error: %s",
-					query.query, err)
-			}
+func cqlQueryQueueExecutor(query *cqlQuery) {
+	var err error
+	if err = cqlSess.Query(query.query, query.args...).Exec(); err == nil {
+		if query.callbackSucces != nil {
+			query.callbackSucces(query)
+		}
+		return
+	}
 
-			time.Sleep(math.Pow(query.retryCount*100, 2) * time.Millisecond)
-			cqlQueryQueueExecutor(query)
-		} else if query.callbackFailure != nil {
-			query.callbackFailure()
+	if query.retryCount > 4 {
+		if query.callbackFailure != nil {
+			query.callbackFailure(query)
 		} else {
 			Log.Error("Error while executing Cassandra query '%s'. Error: %s", query.query, err)
 		}
+		return
 	}
 
-	if query.callbackSucces != nil {
-		query.callbackSucces()
+	if query.callbackTempFailure != nil {
+		query.callbackTempFailure(query)
+	} else {
+		Log.Warning("Error while executing Cassandra query '%s', retrying. Error: %s",
+			query.query, err)
 	}
+
+	time.Sleep(time.Duration(math.Pow(float64(query.retryCount*10), 2.5)) * time.Millisecond)
+	query.retryCount = query.retryCount + 1
+	cqlQueryQueueExecutor(query)
 }

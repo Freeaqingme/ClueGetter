@@ -480,6 +480,18 @@ func messageSave(msg Message) {
 	if Config.ClueGetter.Archive_Retention_Header > 0 {
 		messageSaveHeaders(msg)
 	}
+
+	if Config.Cassandra.Enabled && Config.ClueGetter.Archive_Retention_Cassandra > 0 {
+		cqlQueryQueue <- &cqlQuery{
+			query: `INSERT INTO message (message, body, date, instance)
+						VALUES (?, ?, ?, ?) USING TTL ?`,
+			args: []interface{}{
+				msg.getQueueId(), strings.Join(msg.getBody(), ""),
+				time.Now(), Config.ClueGetter.Instance,
+				int(Config.ClueGetter.Archive_Retention_Cassandra * 86400 * 7),
+			},
+		}
+	}
 }
 
 func messageSaveBody(msg Message) {
