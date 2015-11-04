@@ -95,6 +95,10 @@ add-header-x-spam-score = true
 # convenient way to track messages across MTAs.
 insert-missing-message-id = true
 
+# Interval with which you want to prune items that are beyond their
+# retention period. Set to 0 to disable pruning.
+archive-prune-interval = 21600
+
 # The number of weeks to archive these items for before pruning them.
 # If you don't want to archive something, set the retention time to '0'.
 archive-retention-body = 2

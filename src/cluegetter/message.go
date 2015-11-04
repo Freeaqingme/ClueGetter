@@ -123,7 +123,12 @@ func messageStart() {
 
 	messageStartModuleGroups()
 	messageStmtStart()
-	go messagePrune()
+
+	if Config.ClueGetter.Archive_Prune_Interval != 0 {
+		go messagePrune()
+	} else {
+		Log.Info("archive-prune-interval set to 0. Not pruning anything.")
+	}
 
 	Log.Info("Message handler started successfully")
 }
@@ -572,7 +577,7 @@ func messageGetHeadersToAdd(msg Message, results [4][]*MessageCheckResult) []*mi
 }
 
 func messagePrune() {
-	ticker := time.NewTicker(30 * time.Minute)
+	ticker := time.NewTicker(time.Duration(Config.ClueGetter.Archive_Prune_Interval) * time.Second)
 
 	var prunables = []struct {
 		stmt      *sql.Stmt
