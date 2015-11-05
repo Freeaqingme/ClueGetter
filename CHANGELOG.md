@@ -1,5 +1,8 @@
 # Change Log
 
+### 2015-11-04 Version 0.3.4
+* New Feature: Allow to configure pruning interval, or disable pruning altogether.
+
 ### 2015-10-05 Version 0.3.3
 * New Feature: Rspamd Integration
 * New Feature: Module Groups

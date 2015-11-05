@@ -34,6 +34,7 @@ type config struct {
 		Add_Header_X_Spam_Score          bool
 		Insert_Missing_Message_Id        bool
 		Archive_Retention_Cassandra      float64
+		Archive_Prune_Interval           int
 		Archive_Retention_Body           float64
 		Archive_Retention_Header         float64
 		Archive_Retention_Message_Result float64
@@ -117,6 +118,7 @@ func DefaultConfig(cfg *config) {
 	cfg.ClueGetter.Add_Header_X_Spam_Score = true
 	cfg.ClueGetter.Insert_Missing_Message_Id = true
 	cfg.ClueGetter.Archive_Retention_Cassandra = 4
+	cfg.ClueGetter.Archive_Prune_Interval = 21600
 	cfg.ClueGetter.Archive_Retention_Safeguard = 1.01
 	cfg.ClueGetter.Archive_Retention_Body = 2
 	cfg.ClueGetter.Archive_Retention_Header = 26
