@@ -124,14 +124,26 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rows, err := Rdbms.Query(`
-		SELECT m.id, m.date, m.sender_local || '@' || m.sender_domain sender, m.rcpt_count, m.verdict,
-			GROUP_CONCAT(distinct IF(r.domain = '', r.local, (r.local || '@' || r.domain))) recipients
-			FROM message m
-				LEFT JOIN message_recipient mr on mr.message = m.id
-				LEFT JOIN recipient r ON r.id = mr.recipient
-			WHERE (m.sender_domain = ? AND (m.sender_local = ? OR ? = ''))
-				OR (r.domain = ? AND (r.local = ? OR ? = ''))
-			GROUP BY m.id ORDER BY date DESC LIMIT 0,250
+	SELECT m.id, m.date, CONCAT(m.sender_local, '@', m.sender_domain sender), m.rcpt_count, m.verdict,
+		GROUP_CONCAT(distinct IF(r.domain = '', r.local, (CONCAT(r.local, '@', r.domain)))) recipients
+		FROM message m
+			LEFT JOIN message_recipient mr on mr.message = m.id
+			LEFT JOIN recipient r ON r.id = mr.recipient
+			INNER JOIN (
+				SELECT distinct id FROM (
+						SELECT m.id
+							FROM message m
+							WHERE (m.sender_domain = ? AND (m.sender_local = ? OR ?= ''))
+					UNION
+						SELECT mr.message
+							FROM message_recipient mr
+								LEFT JOIN recipient r ON r.id = mr.recipient
+							WHERE (r.domain = ? AND (r.local = ? OR ? = ''))
+				) t2
+			) t1 ON t1.id = m.id
+		GROUP BY m.id
+		ORDER BY date DESC
+		LIMIT 0,250
 	`, domain, local, local, domain, local, local)
 	if err != nil {
 		panic(err)
