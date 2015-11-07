@@ -65,6 +65,7 @@ type httpMessage struct {
 
 	Ip           string
 	ReverseDns   string
+	Helo         string
 	SaslUsername string
 	SaslMethod   string
 	CertIssuer   string
@@ -234,8 +235,8 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 				m.rcpt_count, m.verdict, m.verdict_msg,
 				COALESCE(m.rejectScore,0), COALESCE(m.rejectScoreThreshold,0), COALESCE(m.tempfailScore,0),
 				(COALESCE(m.rejectScore,0) + COALESCE(m.tempfailScore,0)) scoreCombined,
-				COALESCE(m.tempfailScoreThreshold,0), s.ip, s.reverse_dns, s.sasl_username, s.sasl_method,
-				s.cert_issuer, s.cert_subject, s.cipher_bits, s.cipher, s.tls_version,
+				COALESCE(m.tempfailScoreThreshold,0), s.ip, s.reverse_dns, s.helo, s.sasl_username,
+				s.sasl_method, s.cert_issuer, s.cert_subject, s.cipher_bits, s.cipher, s.tls_version,
 				cc.hostname mtaHostname, cc.daemon_name mtaDaemonName
 			FROM message m
 				LEFT JOIN session s ON s.id = m.session
@@ -245,7 +246,7 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 	row.Scan(&msg.SessionId, &msg.Date, &msg.BodySize, &msg.Sender, &msg.RcptCount,
 		&msg.Verdict, &msg.VerdictMsg, &msg.RejectScore, &msg.RejectScoreThreshold,
 		&msg.TempfailScore, &msg.ScoreCombined, &msg.TempfailScoreThreshold,
-		&msg.Ip, &msg.ReverseDns, &msg.SaslUsername, &msg.SaslMethod,
+		&msg.Ip, &msg.ReverseDns, &msg.Helo, &msg.SaslUsername, &msg.SaslMethod,
 		&msg.CertIssuer, &msg.CertSubject, &msg.CipherBits, &msg.Cipher, &msg.TlsVersion,
 		&msg.MtaHostname, &msg.MtaDaemonName)
 	msg.BodySizeStr = humanize.Bytes(uint64(msg.BodySize))

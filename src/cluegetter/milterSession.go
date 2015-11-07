@@ -65,8 +65,9 @@ var milterSessionClients milterSessionCluegetterClients
 
 func milterSessionPrepStmt() {
 	stmt, err := Rdbms.Prepare(`
-		INSERT INTO session(cluegetter_instance, cluegetter_client, date_connect, date_disconnect, ip, reverse_dns, sasl_username)
-			VALUES(?, ?, ?, NULL, ?, ?, ?)
+		INSERT INTO session(cluegetter_instance, cluegetter_client, date_connect,
+							date_disconnect, ip, reverse_dns, helo, sasl_username)
+			VALUES(?, ?, ?, NULL, ?, ?, ?, ?)
 	`)
 	if err != nil {
 		Log.Fatal(err)
@@ -75,7 +76,7 @@ func milterSessionPrepStmt() {
 	milterSessionInsertStmt = stmt
 
 	stmt, err = Rdbms.Prepare(`
-		UPDATE session SET ip=?, reverse_dns=?, sasl_username=?, sasl_method=?, cert_issuer=?,
+		UPDATE session SET ip=?, reverse_dns=?, helo=?, sasl_username=?, sasl_method=?, cert_issuer=?,
 		                   cert_subject=?, cipher_bits=?, cipher=?, tls_version=?, date_disconnect=?
 		   WHERE id=?`)
 	if err != nil {
@@ -218,7 +219,7 @@ func (s *milterSession) persist() {
 	StatsCounters["RdbmsQueries"].increase(1)
 	if s.id == 0 {
 		res, err := milterSessionInsertStmt.Exec(
-			instance, client.id, time.Now(), s.getIp(), revDns, s.getSaslUsername(),
+			instance, client.id, time.Now(), s.getIp(), revDns, s.getHelo(), s.getSaslUsername(),
 		)
 		if err != nil {
 			panic("Could not execute milterSessionInsertStmt in milterSession.persist(): " + err.Error())
@@ -233,7 +234,7 @@ func (s *milterSession) persist() {
 	}
 
 	_, err := milterSessionUpdateStmt.Exec(
-		s.getIp(), revDns, s.getSaslUsername(), s.getSaslMethod(), s.getCertIssuer(), s.getCertSubject(),
+		s.getIp(), revDns, s.getHelo(), s.getSaslUsername(), s.getSaslMethod(), s.getCertIssuer(), s.getCertSubject(),
 		s.getCipherBits(), s.getCipher(), s.getTlsVersion(), s.timeEnd, s.getId())
 	if err != nil {
 		panic("Could not execute milterSessionUpdateStmt in milterSession.persist(): " + err.Error())

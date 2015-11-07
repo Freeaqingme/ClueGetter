@@ -35,6 +35,7 @@ CREATE TABLE session (
   date_disconnect datetime DEFAULT NULL,
   ip varchar(45) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
   reverse_dns varchar(255) CHARSET utf8 NOT NULL DEFAULT '',
+  helo varchar(255) charset utf8 NOT NULL DEFAULT '',
   sasl_username varchar(255) NOT NULL DEFAULT '',
   sasl_method varchar(32) NOT NULL DEFAULT '',
   cert_issuer varchar(255) charset ascii NOT NULL DEFAULT '',
