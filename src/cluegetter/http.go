@@ -125,15 +125,15 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := Rdbms.Query(`
 	SELECT m.id, m.date, CONCAT(m.sender_local, '@', m.sender_domain sender), m.rcpt_count, m.verdict,
-		GROUP_CONCAT(distinct IF(r.domain = '', r.local, (CONCAT(r.local, '@', r.domain)))) recipients
+		GROUP_CONCAT(DISTINCT IF(r.domain = '', r.local, (CONCAT(r.local, '@', r.domain)))) recipients
 		FROM message m
 			LEFT JOIN message_recipient mr on mr.message = m.id
 			LEFT JOIN recipient r ON r.id = mr.recipient
 			INNER JOIN (
-				SELECT distinct id FROM (
+				SELECT DISTINCT id FROM (
 						SELECT m.id
 							FROM message m
-							WHERE (m.sender_domain = ? AND (m.sender_local = ? OR ?= ''))
+							WHERE (m.sender_domain = ? AND (m.sender_local = ? OR ? = ''))
 					UNION
 						SELECT mr.message
 							FROM message_recipient mr

@@ -112,10 +112,10 @@ func messageStmtStart() {
 	}
 
 	MessageStmtPruneMessage, err = Rdbms.Prepare(`
-		DELETE FROM message
-		WHERE date < (DATE(?) - INTERVAL ? WEEK)
-			AND session IN
-				(SELECT id FROM session s WHERE s.cluegetter_instance = ?)
+		DELETE m FROM message m
+			INNER JOIN session s ON s.id = m.session
+			WHERE m.date < (? - INTERVAL ? WEEK)
+				AND s.cluegetter_instance = ?
 		`)
 	if err != nil {
 		Log.Fatal(err)
@@ -133,17 +133,20 @@ func messageStmtStart() {
 	}
 
 	MessageStmtPruneRecipient, err = Rdbms.Prepare(`
-		DELETE FROM recipient WHERE NOT EXISTS
-			(SELECT ?,?,? FROM message_recipient mr WHERE mr.recipient = recipient.id)
+		DELETE r FROM recipient r
+			LEFT JOIN message_recipient mr ON mr.recipient = r.id
+			WHERE mr.recipient IS NULL AND (1 OR ? OR ? OR ?)
 		`)
 	if err != nil {
 		Log.Fatal(err)
 	}
 
 	MessageStmtPruneSession, err = Rdbms.Prepare(`
-		DELETE FROM session WHERE NOT EXISTS
-			(SELECT * FROM message m WHERE m.session = session.id)
-			AND date_connect < (? - INTERVAL ? WEEK) AND cluegetter_instance = ?
+		DELETE s FROM session s
+			LEFT JOIN message m ON m.session = s.id
+			WHERE s.date_connect < (? - INTERVAL ? WEEK)
+				AND s.cluegetter_instance = ?
+				AND m.id IS NULL
 		`)
 	if err != nil {
 		Log.Fatal(err)

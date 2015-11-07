@@ -1,3 +1,8 @@
+-- v0.3.5
+ALTER TABLE session ADD KEY session_date (cluegetter_instance, date_connect);
+ALTER TABLE message ADD KEY message_date_session (date,session);
+ALTER TABLE message add key message_sender_domain (sender_domain);
+
 -- V0.3.3
 ALTER TABLE message CHANGE body_size body_size int unsigned DEFAULT NULL ;
 ALTER TABLE message_result CHANGE module module enum('quotas','spamassassin','rspamd','greylisting') NOT NULL;

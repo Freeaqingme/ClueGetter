@@ -44,6 +44,8 @@ CREATE TABLE session (
   tls_version varchar(31) charset ascii NOT NULL DEFAULT '',
   PRIMARY KEY (id),
   KEY cluegetter_instance (cluegetter_instance),
+  KEY session_date (cluegetter_instance,date_connect),
+  KEY message_sender_domain (sender_domain),
   CONSTRAINT session_ibfk_1 FOREIGN KEY (cluegetter_instance) REFERENCES instance (id),
   CONSTRAINT session_ibfk_2 FOREIGN KEY (cluegetter_client) REFERENCES cluegetter_client (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -67,6 +69,7 @@ CREATE TABLE message (
   PRIMARY KEY (id),
   KEY session (session),
   KEY messageId (messageId(25)),
+  KEY message_date_session (date,session),
   CONSTRAINT message_ibfk_1 FOREIGN KEY (session) REFERENCES session (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
