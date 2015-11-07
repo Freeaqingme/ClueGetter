@@ -116,14 +116,18 @@ func (milter *milter) Connect(ctx uintptr, hostname string, ip net.IP) (sfsistat
 	sess := &milterSession{timeStart: time.Now()}
 	sess.Hostname = hostname
 	sess.Ip = ip.String()
-	sess.ReverseDns = m.GetSymVal(ctx, "{client_ptr}")
 	sess.MtaHostName = m.GetSymVal(ctx, "j")
 	sess.MtaDaemonName = m.GetSymVal(ctx, "{daemon_name}")
+
+	if reverse, _ := net.LookupAddr(ip.String()); len(reverse) != 0 {
+		sess.ReverseDns = reverse[0]
+	}
+
 	MilterDataIndex.getNewSession(sess)
 	m.SetPriv(ctx, sess.getId())
 
 	StatsCounters["MilterCallbackConnect"].increase(1)
-	Log.Debug("%d Milter.Connect() called: ip = %s, hostname = %s", sess.getId(), ip, hostname)
+	Log.Debug("%d Milter.Connect() called: ip = %s, hostname = %s", sess.getId(), ip, sess.ReverseDns)
 
 	return m.Continue
 }
