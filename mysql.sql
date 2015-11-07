@@ -28,11 +28,10 @@ CREATE TABLE cluegetter_client (
 ) ENGINE=InnoDB;
 
 CREATE TABLE session (
-  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  id binary(16) NOT NULL
   cluegetter_instance bigint(20) unsigned NOT NULL,
   cluegetter_client bigint(20) unsigned NOT NULL,
   date_connect datetime NOT NULL,
-  date_disconnect datetime DEFAULT NULL,
   ip varchar(45) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
   reverse_dns varchar(255) CHARSET utf8 NOT NULL DEFAULT '',
   helo varchar(255) charset utf8 NOT NULL DEFAULT '',
@@ -53,7 +52,7 @@ CREATE TABLE session (
 
 CREATE TABLE message (
   id varchar(25) CHARACTER SET ascii NOT NULL,
-  session bigint(20) unsigned NOT NULL,
+  session binary(16) NOT NULL,
   date datetime NOT NULL,
   body_size int unsigned DEFAULT NULL,
   body_hash char(32) DEFAULT '',

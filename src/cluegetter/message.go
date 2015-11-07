@@ -29,7 +29,7 @@ const (
 )
 
 type Session interface {
-	getId() uint64
+	getId() [16]byte
 	getSaslUsername() string
 	getSaslSender() string
 	getSaslMethod() string
@@ -460,9 +460,10 @@ func messageSave(msg Message) {
 
 	size, hash := messageGetBodyTotals(msg)
 	StatsCounters["RdbmsQueries"].increase(1)
+	sessId := sess.getId()
 	_, err := MessageStmtInsertMsg.Exec(
 		msg.getQueueId(),
-		sess.getId(),
+		string(sessId[:]),
 		time.Now(),
 		size,
 		hash,

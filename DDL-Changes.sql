@@ -3,6 +3,14 @@ ALTER TABLE session ADD KEY session_date (cluegetter_instance, date_connect);
 ALTER TABLE message ADD KEY message_date_session (date,session);
 ALTER TABLE message ADD key message_sender_domain (sender_domain);
 ALTER TABLE session ADD helo VARCHAR(255) CHARACTER SET utf8 not null default '' after reverse_dns;
+LOCK TABLES session WRITE, message WRITE;
+ALTER TABLE message DROP FOREIGN KEY message_ibfk_1;
+ALTER TABLE session CHANGE id id binary(16) Not NULL;
+ALTER TABLE message CHANGE session session binary(16) NOT NULL;
+ALTER TABLE message ADD CONSTRAINT message_ibfk_1 FOREIGN KEY (session) REFERENCES session (id);
+UNLOCK TABLES;
+
+ALTER TABLE session DROP date_disconnect;
 
 
 -- V0.3.3
