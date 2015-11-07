@@ -10,9 +10,6 @@ ALTER TABLE message CHANGE session session binary(16) NOT NULL;
 ALTER TABLE message ADD CONSTRAINT message_ibfk_1 FOREIGN KEY (session) REFERENCES session (id);
 UNLOCK TABLES;
 
-ALTER TABLE session DROP date_disconnect;
-
-
 -- V0.3.3
 ALTER TABLE message CHANGE body_size body_size int unsigned DEFAULT NULL ;
 ALTER TABLE message_result CHANGE module module enum('quotas','spamassassin','rspamd','greylisting') NOT NULL;

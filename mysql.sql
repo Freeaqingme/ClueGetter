@@ -32,6 +32,7 @@ CREATE TABLE session (
   cluegetter_instance bigint(20) unsigned NOT NULL,
   cluegetter_client bigint(20) unsigned NOT NULL,
   date_connect datetime NOT NULL,
+  date_disconnect datetime NOT NULL,
   ip varchar(45) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
   reverse_dns varchar(255) CHARSET utf8 NOT NULL DEFAULT '',
   helo varchar(255) charset utf8 NOT NULL DEFAULT '',

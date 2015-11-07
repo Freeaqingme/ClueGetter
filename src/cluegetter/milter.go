@@ -36,6 +36,11 @@ func (di *milterDataIndex) getNewSession(sess *milterSession) *milterSession {
 }
 
 func (di *milterDataIndex) delete(s *milterSession, lock bool) {
+	s.timeEnd = time.Now()
+	if !s.persisted {
+		s.persist()
+	}
+
 	if lock {
 		di.mu.Lock()
 		defer di.mu.Unlock()
@@ -51,9 +56,6 @@ func (di *milterDataIndex) prune() {
 	for k, v := range di.sessions {
 		if now.Sub(v.timeStart).Minutes() > 15 {
 			Log.Debug("Pruning session %d", k)
-			if !v.persisted {
-				v.persist()
-			}
 			di.delete(v, false)
 		}
 	}

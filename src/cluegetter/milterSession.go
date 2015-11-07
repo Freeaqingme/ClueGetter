@@ -67,9 +67,9 @@ var milterSessionClients milterSessionCluegetterClients
 func milterSessionPrepStmt() {
 	stmt, err := Rdbms.Prepare(`
 		INSERT INTO session(id, cluegetter_instance, cluegetter_client, date_connect,
-							ip, reverse_dns, helo, sasl_username,
+							date_disconnect, ip, reverse_dns, helo, sasl_username,
 							sasl_method, cert_issuer, cert_subject, cipher_bits, cipher, tls_version)
-			VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`)
 	if err != nil {
 		Log.Fatal(err)
@@ -213,7 +213,7 @@ func (s *milterSession) persist() {
 
 	StatsCounters["RdbmsQueries"].increase(1)
 	_, err := milterSessionInsertStmt.Exec(
-		string(id[:]), instance, client.id, time.Now(), s.getIp(), revDns, s.getHelo(),
+		string(id[:]), instance, client.id, s.timeStart, s.timeEnd, s.getIp(), revDns, s.getHelo(),
 		s.getSaslUsername(), s.getSaslMethod(), s.getCertIssuer(), s.getCertSubject(),
 		s.getCipherBits(), s.getCipher(), s.getTlsVersion(),
 	)
