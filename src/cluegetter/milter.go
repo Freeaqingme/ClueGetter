@@ -201,12 +201,12 @@ func (milter *milter) EnvRcpt(ctx uintptr, rcpt []string) (sfsistat int8) {
 func (milter *milter) Header(ctx uintptr, headerf, headerv string) (sfsistat int8) {
 	defer milterHandleError(ctx, &sfsistat)
 
-	var header MessageHeader
-	header = &milterMessageHeader{headerf, headerv}
+	var header *MessageHeader
+	header = &MessageHeader{headerf, headerv}
 
 	sess := milterGetSession(ctx, true, false)
 	msg := sess.getLastMessage()
-	msg.Headers = append(msg.Headers, &header)
+	msg.Headers = append(msg.Headers, header)
 
 	StatsCounters["MilterCallbackHeader"].increase(1)
 	Log.Debug("%s Milter.Header() called: header %s = %s", sess.milterGetDisplayId(), headerf, headerv)
@@ -232,14 +232,12 @@ func (milter *milter) Eoh(ctx uintptr) (sfsistat int8) {
 func (milter *milter) Body(ctx uintptr, body []byte) (sfsistat int8) {
 	defer milterHandleError(ctx, &sfsistat)
 
-	bodyStr := string(body)
-
 	s := milterGetSession(ctx, true, false)
 	msg := s.getLastMessage()
-	msg.Body = append(msg.Body, bodyStr)
+	msg.Body = append(msg.Body, body...)
 
 	StatsCounters["MilterCallbackBody"].increase(1)
-	Log.Debug("%s milter.Body() was called. Length of body: %d", s.milterGetDisplayId(), len(bodyStr))
+	Log.Debug("%s milter.Body() was called. Length of body: %d", s.milterGetDisplayId(), len(body))
 	return
 }
 
@@ -262,18 +260,18 @@ func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
 
 	switch {
 	case verdict == messagePermit:
-		Log.Info("Message Permit: sess=%s message=%s %s", s.milterGetDisplayId(), s.getLastMessage().getQueueId(), msg)
+		Log.Info("Message Permit: sess=%s message=%s %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msg)
 		return
 	case verdict == messageTempFail:
 		m.SetReply(ctx, "421", "4.7.0", msg)
-		Log.Info("Message TempFail: sess=%s message=%s msg: %s", s.milterGetDisplayId(), s.getLastMessage().getQueueId(), msg)
+		Log.Info("Message TempFail: sess=%s message=%s msg: %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msg)
 		if Config.ClueGetter.Noop {
 			return
 		}
 		return m.Tempfail
 	case verdict == messageReject:
 		m.SetReply(ctx, "550", "5.7.1", msg)
-		Log.Info("Message Reject: sess=%s message=%s msg: %s", s.milterGetDisplayId(), s.getLastMessage().getQueueId(), msg)
+		Log.Info("Message Reject: sess=%s message=%s msg: %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msg)
 		if Config.ClueGetter.Noop {
 			return
 		}

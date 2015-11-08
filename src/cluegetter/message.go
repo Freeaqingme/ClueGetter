@@ -12,7 +12,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net"
 	"os"
 	"strconv"
@@ -27,45 +26,6 @@ const (
 	messageReject
 	messageError
 )
-
-type Session interface {
-	getId() [16]byte
-	getSaslUsername() string
-	getSaslSender() string
-	getSaslMethod() string
-	getCertIssuer() string
-	getCertSubject() string
-	getCipherBits() string
-	getCipher() string
-	getTlsVersion() string
-	getIp() string
-	getReverseDns() string
-	getHostname() string
-	getHelo() string
-	getMtaHostName() string
-	getMtaDaemonName() string
-}
-
-type Message interface {
-	getSession() *Session
-	getHeaders() []*MessageHeader
-
-	getQueueId() string
-	getFrom() string
-	getRcptCount() int
-	getRecipients() []string
-	getBody() []string
-
-	setInjectMessageId(string)
-	getInjectMessageId() string
-
-	String() []byte
-}
-
-type MessageHeader interface {
-	getKey() string
-	getValue() string
-}
 
 type MessageCheckResult struct {
 	module          string
@@ -88,7 +48,7 @@ type MessageModuleGroupMember struct {
 	weight float64
 }
 
-var MessageInsertHeaders = make([]*milterMessageHeader, 0)
+var MessageInsertHeaders = make([]*MessageHeader, 0)
 var MessageModuleGroups = make([]*MessageModuleGroup, 0)
 
 func messageStart() {
@@ -97,7 +57,7 @@ func messageStart() {
 			Log.Fatal("Invalid header specified: ", hdrString)
 		}
 
-		header := &milterMessageHeader{
+		header := &MessageHeader{
 			strings.SplitN(hdrString, ":", 2)[0],
 			strings.Trim(strings.SplitN(hdrString, ":", 2)[1], " "),
 		}
@@ -186,7 +146,7 @@ func messageStartModuleGroups() {
 	}
 }
 
-func messageGetVerdict(msg Message) (verdict int, msgStr string, results [4][]*MessageCheckResult) {
+func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*MessageCheckResult) {
 	defer func() {
 		if Config.ClueGetter.Exit_On_Panic {
 			return
@@ -201,6 +161,20 @@ func messageGetVerdict(msg Message) (verdict int, msgStr string, results [4][]*M
 		msgStr = "An internal error occurred."
 		return
 	}()
+/*
+
+	test := &Proto_MessageV1{
+		Id:   &msg.QueueId,
+		Body: msg.Body,
+	}
+
+	data, err := proto.Marshal(test)
+	if err != nil {
+		Log.Fatal("marshaling error: ", err)
+	}
+
+	fmt.Println(data)
+*/
 
 	messageSave(msg)
 
@@ -241,7 +215,7 @@ func messageGetVerdict(msg Message) (verdict int, msgStr string, results [4][]*M
 
 			StatsCounters["RdbmsQueries"].increase(1)
 			_, err := MessageStmtInsertModuleResult.Exec(
-				msg.getQueueId(), result.module, verdictValue[result.suggestedAction],
+				msg.QueueId, result.module, verdictValue[result.suggestedAction],
 				result.score, result.weightedScore, result.duration.Seconds(), determinants)
 			if err != nil {
 				StatsCounters["RdbmsErrors"].increase(1)
@@ -333,7 +307,7 @@ func messageWeighResults(results []*MessageCheckResult) (ignoreErrorCount int) {
 	return
 }
 
-func messageSaveVerdict(msg Message, verdict int, verdictMsg string, rejectScore float64, tempfailScore float64) {
+func messageSaveVerdict(msg *Message, verdict int, verdictMsg string, rejectScore float64, tempfailScore float64) {
 	verdictValue := [3]string{"permit", "tempfail", "reject"}
 
 	StatsCounters["RdbmsQueries"].increase(1)
@@ -344,7 +318,7 @@ func messageSaveVerdict(msg Message, verdict int, verdictMsg string, rejectScore
 		Config.ClueGetter.Message_Reject_Score,
 		tempfailScore,
 		Config.ClueGetter.Message_Tempfail_Score,
-		msg.getQueueId(),
+		msg.QueueId,
 	)
 
 	if err != nil {
@@ -353,25 +327,14 @@ func messageSaveVerdict(msg Message, verdict int, verdictMsg string, rejectScore
 	}
 }
 
-func messageGetBodyTotals(msg Message) (length uint32, md5Sum string) {
-	length = 0
-	h := md5.New()
-	for _, chunk := range msg.getBody() {
-		length = length + uint32(len(chunk))
-		io.WriteString(h, chunk+"\r\n")
-	}
-
-	return length, fmt.Sprintf("%x", h.Sum(nil))
-}
-
-func messageGetResults(msg Message, done chan bool) chan *MessageCheckResult {
+func messageGetResults(msg *Message, done chan bool) chan *MessageCheckResult {
 	var wg sync.WaitGroup
 	out := make(chan *MessageCheckResult)
 
 	modules := messageGetEnabledModules()
 	for moduleName, moduleCallback := range modules {
 		wg.Add(1)
-		go func(moduleName string, moduleCallback func(Message, chan bool) *MessageCheckResult) {
+		go func(moduleName string, moduleCallback func(*Message, chan bool) *MessageCheckResult) {
 			defer wg.Done()
 			t0 := time.Now()
 			defer func() {
@@ -412,8 +375,8 @@ func messageGetResults(msg Message, done chan bool) chan *MessageCheckResult {
 	return out
 }
 
-func messageGetEnabledModules() (out map[string]func(Message, chan bool) *MessageCheckResult) {
-	out = make(map[string]func(Message, chan bool) *MessageCheckResult)
+func messageGetEnabledModules() (out map[string]func(*Message, chan bool) *MessageCheckResult) {
+	out = make(map[string]func(*Message, chan bool) *MessageCheckResult)
 
 	if Config.Quotas.Enabled {
 		out["quotas"] = quotasIsAllowed
@@ -434,19 +397,19 @@ func messageGetEnabledModules() (out map[string]func(Message, chan bool) *Messag
 	return
 }
 
-func messageSave(msg Message) {
-	sess := *msg.getSession()
+func messageSave(msg *Message) {
+	sess := *msg.session
 
 	var sender_local, sender_domain string
-	if strings.Index(msg.getFrom(), "@") != -1 {
-		sender_local = strings.Split(msg.getFrom(), "@")[0]
-		sender_domain = strings.Split(msg.getFrom(), "@")[1]
+	if strings.Index(msg.From, "@") != -1 {
+		sender_local = strings.Split(msg.From, "@")[0]
+		sender_domain = strings.Split(msg.From, "@")[1]
 	} else {
-		sender_local = msg.getFrom()
+		sender_local = msg.From
 	}
 
 	messageIdHdr := ""
-	for _, v := range msg.getHeaders() {
+	for _, v := range msg.Headers {
 		if strings.EqualFold((*v).getKey(), "Message-Id") {
 			messageIdHdr = (*v).getValue()
 		}
@@ -454,23 +417,22 @@ func messageSave(msg Message) {
 
 	if messageIdHdr == "" {
 		messageIdHdr = fmt.Sprintf("<%d.%s.cluegetter@%s>",
-			time.Now().Unix(), msg.getQueueId(), sess.getMtaHostName())
-		msg.setInjectMessageId(messageIdHdr)
+			time.Now().Unix(), msg.QueueId, sess.getMtaHostName())
+		msg.injectMessageId = messageIdHdr
 	}
 
-	size, hash := messageGetBodyTotals(msg)
 	StatsCounters["RdbmsQueries"].increase(1)
 	sessId := sess.getId()
 	_, err := MessageStmtInsertMsg.Exec(
-		msg.getQueueId(),
+		msg.QueueId,
 		string(sessId[:]),
 		time.Now(),
-		size,
-		hash,
+		len(msg.Body),
+		fmt.Sprintf("%x", md5.Sum(msg.Body)),
 		messageIdHdr,
 		sender_local,
 		sender_domain,
-		msg.getRcptCount(),
+		len(msg.Rcpt),
 	)
 
 	if err != nil {
@@ -482,7 +444,7 @@ func messageSave(msg Message) {
 		messageSaveBody(msg)
 	}
 
-	messageSaveRecipients(msg.getRecipients(), msg.getQueueId())
+	messageSaveRecipients(msg.Rcpt, msg.QueueId)
 	if Config.ClueGetter.Archive_Retention_Header > 0 {
 		messageSaveHeaders(msg)
 	}
@@ -492,11 +454,11 @@ func messageSave(msg Message) {
 	}
 }
 
-func messageSaveBody(msg Message) {
-	for key, value := range msg.getBody() {
+func messageSaveBody(msg *Message) {
+	for key, value := range msg.Body {
 		StatsCounters["RdbmsQueries"].increase(1)
 		_, err := MessageStmtInsertMsgBody.Exec(
-			msg.getQueueId(),
+			msg.QueueId,
 			key,
 			value,
 		)
@@ -543,11 +505,11 @@ func messageSaveRecipients(recipients []string, msgId string) {
 	}
 }
 
-func messageSaveHeaders(msg Message) {
-	for _, headerPair := range msg.getHeaders() {
+func messageSaveHeaders(msg *Message) {
+	for _, headerPair := range msg.Headers {
 		StatsCounters["RdbmsQueries"].increase(1)
 		_, err := MessageStmtInsertMsgHdr.Exec(
-			msg.getQueueId(), (*headerPair).getKey(), (*headerPair).getValue())
+			msg.QueueId, (*headerPair).getKey(), (*headerPair).getValue())
 
 		if err != nil {
 			StatsCounters["RdbmsErrors"].increase(1)
@@ -556,9 +518,9 @@ func messageSaveHeaders(msg Message) {
 	}
 }
 
-func messageGetHeadersToAdd(msg Message, results [4][]*MessageCheckResult) []*milterMessageHeader {
-	sess := *msg.getSession()
-	out := make([]*milterMessageHeader, len(MessageInsertHeaders))
+func messageGetHeadersToAdd(msg *Message, results [4][]*MessageCheckResult) []*MessageHeader {
+	sess := *msg.session
+	out := make([]*MessageHeader, len(MessageInsertHeaders))
 	copy(out, MessageInsertHeaders)
 
 	if Config.ClueGetter.Add_Header_X_Spam_Score {
@@ -567,11 +529,11 @@ func messageGetHeadersToAdd(msg Message, results [4][]*MessageCheckResult) []*mi
 			spamscore += result.score
 		}
 
-		out = append(out, &milterMessageHeader{"X-Spam-Score", fmt.Sprintf("%.2f", spamscore)})
+		out = append(out, &MessageHeader{"X-Spam-Score", fmt.Sprintf("%.2f", spamscore)})
 	}
 
-	if Config.ClueGetter.Insert_Missing_Message_Id == true && msg.getInjectMessageId() != "" {
-		out = append(out, &milterMessageHeader{"Message-Id", msg.getInjectMessageId()})
+	if Config.ClueGetter.Insert_Missing_Message_Id == true && msg.injectMessageId != "" {
+		out = append(out, &MessageHeader{"Message-Id", msg.injectMessageId})
 	}
 
 	for k, v := range out {
@@ -581,7 +543,7 @@ func messageGetHeadersToAdd(msg Message, results [4][]*MessageCheckResult) []*mi
 	return out
 }
 
-func messageSaveCassandra(msg Message) {
+func messageSaveCassandra(msg *Message) {
 	if Config.ClueGetter.Archive_Retention_Cassandra == 0 {
 		return
 	}
@@ -589,7 +551,7 @@ func messageSaveCassandra(msg Message) {
 		query: `INSERT INTO message (message, body, date, instance)
 					VALUES (?, ?, ?, ?) USING TTL ?`,
 		args: []interface{}{
-			msg.getQueueId(), strings.Join(msg.getBody(), ""),
+			msg.QueueId, string(msg.Body),
 			time.Now(), Config.ClueGetter.Instance,
 			int(Config.ClueGetter.Archive_Retention_Cassandra * 86400 * 7),
 		},
@@ -647,8 +609,8 @@ WaitForNext:
 	}
 }
 
-func (msg milterMessage) String() []byte {
-	sess := *msg.getSession()
+func (msg Message) String() []byte {
+	sess := *msg.session
 	fqdn, err := os.Hostname()
 	if err != nil {
 		Log.Error("Could not determine FQDN")
@@ -671,14 +633,12 @@ func (msg milterMessage) String() []byte {
 		fqdn,
 		time.Now().Format(time.RFC1123Z)))
 
-	for _, header := range msg.getHeaders() {
+	for _, header := range msg.Headers {
 		body = append(body, (*header).getKey()+": "+(*header).getValue()+"\r\n")
 	}
 
 	body = append(body, "\r\n")
-	for _, bodyChunk := range msg.getBody() {
-		body = append(body, bodyChunk)
-	}
+	body = append(body, string(msg.Body))
 
 	return []byte(strings.Join(body, ""))
 }

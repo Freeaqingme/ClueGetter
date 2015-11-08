@@ -22,7 +22,7 @@ type milterSession struct {
 	id        [16]byte
 	timeStart time.Time
 	timeEnd   time.Time
-	messages  []*milterMessage
+	messages  []*Message
 
 	SaslUsername  string
 	SaslSender    string
@@ -87,15 +87,15 @@ func milterSessionPrepStmt() {
 	milterCluegetterClientInsertStmt = stmt
 }
 
-func (s *milterSession) getNewMessage() *milterMessage {
-	msg := &milterMessage{}
+func (s *milterSession) getNewMessage() *Message {
+	msg := &Message{}
 	msg.session = s
 
 	s.messages = append(s.messages, msg)
 	return msg
 }
 
-func (s *milterSession) getLastMessage() *milterMessage {
+func (s *milterSession) getLastMessage() *Message {
 	return s.messages[len(s.messages)-1]
 }
 
@@ -249,67 +249,29 @@ func milterSessionGetClient(hostname string, daemonName string) *milterSessionCl
 
 /******** milterMessage **********/
 
-type milterMessage struct {
+type Message struct {
 	session *milterSession
 
 	QueueId string
 	From    string
 	Rcpt    []string
 	Headers []*MessageHeader
-	Body    []string
+	Body    []byte
 
 	injectMessageId string
 }
 
-func (m *milterMessage) getHeaders() []*MessageHeader {
-	return m.Headers
-}
-
-func (m *milterMessage) getSession() *Session {
-	var session Session
-	session = m.session
-	return &session
-}
-
-func (m *milterMessage) getQueueId() string {
-	return m.QueueId
-}
-
-func (m *milterMessage) getFrom() string {
-	return m.From
-}
-
-func (m *milterMessage) getRcptCount() int {
-	return len(m.Rcpt)
-}
-
-func (m *milterMessage) getRecipients() []string {
-	return m.Rcpt
-}
-
-func (m *milterMessage) getBody() []string {
-	return m.Body
-}
-
-func (m *milterMessage) setInjectMessageId(id string) {
-	m.injectMessageId = id
-}
-
-func (m *milterMessage) getInjectMessageId() string {
-	return m.injectMessageId
-}
-
 /******** milterMessageHeader ********/
 
-type milterMessageHeader struct {
+type MessageHeader struct {
 	Key   string
 	Value string
 }
 
-func (h *milterMessageHeader) getKey() string {
+func (h *MessageHeader) getKey() string {
 	return h.Key
 }
 
-func (h *milterMessageHeader) getValue() string {
+func (h *MessageHeader) getValue() string {
 	return h.Value
 }

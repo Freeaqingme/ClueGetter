@@ -112,8 +112,8 @@ func greylistUpdateWhitelist() {
 	}
 }
 
-func greylistGetResult(msg Message, done chan bool) *MessageCheckResult {
-	ip := (*msg.getSession()).getIp()
+func greylistGetResult(msg *Message, done chan bool) *MessageCheckResult {
+	ip := (*msg.session).getIp()
 
 	res, spfDomain, spfWhitelistErr := greylistIsSpfWhitelisted(net.ParseIP(ip), done)
 	if res {
@@ -183,7 +183,7 @@ func greylistGetResult(msg Message, done chan bool) *MessageCheckResult {
 	}
 
 	Log.Debug("%d Got %d allow verdicts, %d disallow verdicts in greylist module. First verdict was %.2f minutes ago",
-		(*msg.getSession()).getId(), allowCount, disallowCount, timeDiff)
+		(*msg.session).getId(), allowCount, disallowCount, timeDiff)
 
 	if allowCount > 0 || timeDiff > float64(Config.Greylisting.Initial_Period) {
 		return &MessageCheckResult{
@@ -228,21 +228,21 @@ func greylistIsSpfWhitelisted(ip net.IP, done chan bool) (bool, string, error) {
 	return false, "", error
 }
 
-func greylistGetRecentVerdicts(msg Message) *[]greylistVerdict {
+func greylistGetRecentVerdicts(msg *Message) *[]greylistVerdict {
 	fromLocal := ""
 	fromDomain := ""
-	if strings.Index(msg.getFrom(), "@") != -1 {
-		fromLocal = strings.Split(msg.getFrom(), "@")[0]
-		fromDomain = strings.Split(msg.getFrom(), "@")[1]
+	if strings.Index(msg.From, "@") != -1 {
+		fromLocal = strings.Split(msg.From, "@")[0]
+		fromDomain = strings.Split(msg.From, "@")[1]
 	} else {
-		fromLocal = msg.getFrom()
+		fromLocal = msg.From
 	}
 
-	rcptLocal := msg.getRecipients()[0]
+	rcptLocal := msg.Rcpt[0]
 	rcptDomain := ""
-	if strings.Index(msg.getRecipients()[0], "@") != -1 {
-		rcptLocal = strings.Split(msg.getRecipients()[0], "@")[0]
-		rcptDomain = strings.Split(msg.getRecipients()[0], "@")[1]
+	if strings.Index(msg.Rcpt[0], "@") != -1 {
+		rcptLocal = strings.Split(msg.Rcpt[0], "@")[0]
+		rcptDomain = strings.Split(msg.Rcpt[0], "@")[1]
 	}
 
 	StatsCounters["RdbmsQueries"].increase(1)
@@ -251,7 +251,7 @@ func greylistGetRecentVerdicts(msg Message) *[]greylistVerdict {
 		fromDomain,
 		rcptLocal,
 		rcptDomain,
-		(*msg.getSession()).getIp(),
+		(*msg.session).getIp(),
 	)
 
 	if err != nil {

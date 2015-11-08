@@ -28,7 +28,7 @@ CREATE TABLE cluegetter_client (
 ) ENGINE=InnoDB;
 
 CREATE TABLE session (
-  id binary(16) NOT NULL
+  id binary(16) NOT NULL,
   cluegetter_instance bigint(20) unsigned NOT NULL,
   cluegetter_client bigint(20) unsigned NOT NULL,
   date_connect datetime NOT NULL,

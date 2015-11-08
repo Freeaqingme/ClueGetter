@@ -75,7 +75,7 @@ func quotasStop() {
 	Log.Info("Quotas module ended")
 }
 
-func quotasIsAllowed(msg Message, _ chan bool) *MessageCheckResult {
+func quotasIsAllowed(msg *Message, _ chan bool) *MessageCheckResult {
 	counts, err := quotasGetCounts(msg, true)
 	if err != nil {
 		Log.Error("Error in quotas module: %s", err)
@@ -88,7 +88,7 @@ func quotasIsAllowed(msg Message, _ chan bool) *MessageCheckResult {
 	}
 	quotas := make(map[uint64]struct{})
 
-	rcpt_count := msg.getRcptCount()
+	rcpt_count := len(msg.Rcpt)
 	rejectMsg := ""
 	determinants := make(map[string]interface{})
 	determinants["quotas"] = make([]interface{}, 0)
@@ -138,7 +138,7 @@ func quotasIsAllowed(msg Message, _ chan bool) *MessageCheckResult {
 
 	for quota_id := range quotas {
 		StatsCounters["RdbmsQueries"].increase(1)
-		_, err := QuotaInsertQuotaMessageStmt.Exec(quota_id, msg.getQueueId())
+		_, err := QuotaInsertQuotaMessageStmt.Exec(quota_id, msg.QueueId)
 		if err != nil {
 			panic("Could not execute QuotaInsertQuotaMessageStmt in quotasIsAllowed(). Error: " + err.Error())
 		}
@@ -153,7 +153,7 @@ func quotasIsAllowed(msg Message, _ chan bool) *MessageCheckResult {
 	}
 }
 
-func quotasGetCounts(msg Message, applyRegexes bool) ([]*quotasSelectResultSet, error) {
+func quotasGetCounts(msg *Message, applyRegexes bool) ([]*quotasSelectResultSet, error) {
 	rows, err := quotasGetCountsRaw(msg)
 	defer rows.Close()
 
@@ -203,33 +203,33 @@ func quotasGetCounts(msg Message, applyRegexes bool) ([]*quotasSelectResultSet, 
 	return results, nil
 }
 
-func quotasGetCountsRaw(msg Message) (*sql.Rows, error) {
-	sess := *msg.getSession()
+func quotasGetCountsRaw(msg *Message) (*sql.Rows, error) {
+	sess := *msg.session
 	factors := quotasGetMsgFactors(msg)
 
 	StatsCounters["RdbmsQueries"].increase(1)
 	_, hasFactorRecipient := factors["recipient"]
-	if msg.getRcptCount() == 1 || !hasFactorRecipient {
+	if len(msg.Rcpt) == 1 || !hasFactorRecipient {
 		return QuotasSelectStmt.Query(
-			msg.getQueueId(),
-			msg.getFrom(),
-			msg.getRecipients()[0],
+			msg.QueueId,
+			msg.From,
+			msg.Rcpt[0],
 			sess.getIp(),
 			sess.getSaslUsername(),
 		)
 	}
 
 	factorValueCounts := map[string]int{
-		"recipient": msg.getRcptCount(),
+		"recipient": len(msg.Rcpt),
 	}
 
 	query := quotasGetSelectQuery(factorValueCounts)
-	queryArgs := make([]interface{}, 4+msg.getRcptCount())
-	queryArgs[0] = interface{}(msg.getQueueId())
-	queryArgs[1] = interface{}(msg.getFrom())
+	queryArgs := make([]interface{}, 4+len(msg.Rcpt))
+	queryArgs[0] = interface{}(msg.QueueId)
+	queryArgs[1] = interface{}(msg.From)
 	i := 2
-	for i = i; i < msg.getRcptCount()+2; i++ {
-		queryArgs[i] = interface{}(msg.getRecipients()[i-2])
+	for i = i; i < len(msg.Rcpt)+2; i++ {
+		queryArgs[i] = interface{}(msg.Rcpt[i-2])
 	}
 	queryArgs[i] = interface{}(sess.getIp())
 	queryArgs[i+1] = interface{}(sess.getSaslUsername())
@@ -237,7 +237,7 @@ func quotasGetCountsRaw(msg Message) (*sql.Rows, error) {
 	return Rdbms.Query(query, queryArgs...)
 }
 
-func quotasGetRegexCounts(msg Message, factor string, factorValues []string) []*quotasSelectResultSet {
+func quotasGetRegexCounts(msg *Message, factor string, factorValues []string) []*quotasSelectResultSet {
 
 	totalRowCount := int64(0)
 	for _, factorValue := range factorValues {
@@ -327,16 +327,16 @@ func quotasGetFactors() map[string]struct{} {
 	return factors
 }
 
-func quotasGetMsgFactors(msg Message) map[string][]string {
-	sess := *msg.getSession()
+func quotasGetMsgFactors(msg *Message) map[string][]string {
+	sess := *msg.session
 	factors := make(map[string][]string)
 
 	if Config.Quotas.Account_Sender {
-		factors["sender"] = []string{msg.getFrom()}
+		factors["sender"] = []string{msg.From}
 	}
 	if Config.Quotas.Account_Recipient {
-		rcpts := make([]string, len(msg.getRecipients()))
-		copy(rcpts, msg.getRecipients())
+		rcpts := make([]string, len(msg.Rcpt))
+		copy(rcpts, msg.Rcpt)
 		factors["recipient"] = rcpts
 	}
 	if Config.Quotas.Account_Client_Address {
