@@ -8,6 +8,9 @@ ALTER TABLE message DROP FOREIGN KEY message_ibfk_1;
 ALTER TABLE session CHANGE id id binary(16) Not NULL;
 ALTER TABLE message CHANGE session session binary(16) NOT NULL;
 ALTER TABLE message ADD CONSTRAINT message_ibfk_1 FOREIGN KEY (session) REFERENCES session (id);
+ALTER TABLE session CHANGE cipher_bits cipher_bits varchar(255) CHARACTER SET ascii default null;
+UPDATE session SET cipher_bits = NULL WHERE cipher_bits = '';
+ALTER TABLE session CHANGE cipher_bits cipher_bits SMALLINT UNSIGNED DEFAULT NULL;
 UNLOCK TABLES;
 
 -- V0.3.3

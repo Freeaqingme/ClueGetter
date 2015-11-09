@@ -13,6 +13,7 @@ import (
 	m "github.com/Freeaqingme/gomilter"
 	"github.com/bmatsuo/uuid"
 	"net"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -27,7 +28,7 @@ type milterDataIndex struct {
 	mu       sync.RWMutex
 }
 
-func (di *milterDataIndex) getNewSession(sess *milterSession) *milterSession {
+func (di *milterDataIndex) addNewSession(sess *milterSession) *milterSession {
 	di.mu.Lock()
 	defer di.mu.Unlock()
 
@@ -102,7 +103,7 @@ func milterStop() {
 }
 
 func milterPrune() {
-	ticker := time.NewTicker(900 * time.Second)
+	ticker := time.NewTicker(60 * time.Second)
 
 	for {
 		select {
@@ -142,7 +143,7 @@ func (milter *milter) Connect(ctx uintptr, hostname string, ip net.IP) (sfsistat
 		sess.ReverseDns = reverse[0]
 	}
 
-	MilterDataIndex.getNewSession(sess)
+	MilterDataIndex.addNewSession(sess)
 	m.SetPriv(ctx, sess.getId())
 
 	StatsCounters["MilterCallbackConnect"].increase(1)
@@ -161,9 +162,11 @@ func (milter *milter) Helo(ctx uintptr, helo string) (sfsistat int8) {
 	sess.Helo = helo
 	sess.CertIssuer = m.GetSymVal(ctx, "{cert_issuer}")
 	sess.CertSubject = m.GetSymVal(ctx, "{cert_subject}")
-	sess.CipherBits = m.GetSymVal(ctx, "{cipher_bits}")
-	sess.Cipher = m.GetSymVal(ctx, "{cipher}")
 	sess.TlsVersion = m.GetSymVal(ctx, "{tls_version}")
+
+	cipherBits, _ := strconv.Atoi(m.GetSymVal(ctx, "{cipher_bits}"))
+	sess.CipherBits = uint32(cipherBits)
+	sess.Cipher = m.GetSymVal(ctx, "{cipher}")
 
 	return
 }

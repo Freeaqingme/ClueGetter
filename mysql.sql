@@ -40,7 +40,7 @@ CREATE TABLE session (
   sasl_method varchar(32) NOT NULL DEFAULT '',
   cert_issuer varchar(255) charset ascii NOT NULL DEFAULT '',
   cert_subject varchar(255) charset ascii NOT NULL DEFAULT '',
-  cipher_bits varchar(255) charset ascii NOT NULL DEFAULT '',
+  cipher_bits smallint(5) unsigned DEFAULT NULL,
   cipher varchar(255) charset ascii NOT NULL DEFAULT '',
   tls_version varchar(31) charset ascii NOT NULL DEFAULT '',
   PRIMARY KEY (id),

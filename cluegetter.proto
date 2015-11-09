@@ -1,0 +1,66 @@
+package main;
+
+message Proto_Message_v1 {
+
+    required Session session = 1;
+
+    required string id      = 2;
+    required string from    = 3;
+    repeated string rcpt    = 4;
+    repeated Header headers = 5;
+    required bytes  body    = 6;
+
+    required Verdict verdict               = 7;
+    required string verdictMsg             = 8;
+    required double rejectScore            = 9;
+    required double rejectScoreThreshold   = 10;
+    required double tempfailScore          = 11;
+    required double tempfailScoreThreshold = 12;
+
+    repeated CheckResult checkResults  = 13;
+
+    message Session {
+        required bytes  id              = 1;
+        required uint64 timeStart       = 2;
+        optional uint64 timeEnd         = 3;
+
+        optional string saslUsername    = 4;
+        optional string saslSender      = 5;
+        optional string saslMethod      = 6;
+        optional string certIssuer      = 7;
+        optional string certSubject     = 8;
+        optional uint32 cipherBits      = 9;
+        optional string cipher          = 10;
+        optional string tlsVersion      = 11;
+
+        required string ip              = 12;
+        optional string reverseDns      = 13;
+        optional string hostname        = 14;
+        optional string helo            = 15;
+        optional string mtaHostName     = 16;
+        optional string mtaDaemonName   = 17;
+    }
+
+    message Header {
+        required string key     = 1;
+        required string value   = 2;
+    }
+
+    message CheckResult {
+        required string message_id    = 1;
+        required string module        = 2;
+        required Verdict verdict      = 3;
+        required double score         = 4;
+        required double weightedScore = 5;
+        required double duration      = 6;
+        optional bytes  determinants  = 7;
+    }
+
+    enum Verdict {
+        PERMIT   = 0;
+        TEMPFAIL = 1;
+        REJECT   = 2;
+        ERROR    = 4;
+    }
+
+}

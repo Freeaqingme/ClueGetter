@@ -8,10 +8,9 @@
 package main
 
 import (
-	"crypto/md5"
-	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/golang/protobuf/proto"
 	"net"
 	"os"
 	"strconv"
@@ -26,6 +25,31 @@ const (
 	messageReject
 	messageError
 )
+
+type Message struct {
+	session *milterSession
+
+	QueueId string
+	From    string
+	Rcpt    []string
+	Headers []*MessageHeader
+	Body    []byte
+
+	injectMessageId string
+}
+
+type MessageHeader struct {
+	Key   string
+	Value string
+}
+
+func (h *MessageHeader) getKey() string {
+	return h.Key
+}
+
+func (h *MessageHeader) getValue() string {
+	return h.Value
+}
 
 type MessageCheckResult struct {
 	module          string
@@ -82,13 +106,7 @@ func messageStart() {
 	statsInitCounter("MessageVerdictTempfailGreylisting")
 
 	messageStartModuleGroups()
-	messageStmtStart()
-
-	if Config.ClueGetter.Archive_Prune_Interval != 0 {
-		go messagePrune()
-	} else {
-		Log.Info("archive-prune-interval set to 0. Not pruning anything.")
-	}
+	messagePersistStart()
 
 	Log.Info("Message handler started successfully")
 }
@@ -161,22 +179,6 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 		msgStr = "An internal error occurred."
 		return
 	}()
-/*
-
-	test := &Proto_MessageV1{
-		Id:   &msg.QueueId,
-		Body: msg.Body,
-	}
-
-	data, err := proto.Marshal(test)
-	if err != nil {
-		Log.Fatal("marshaling error: ", err)
-	}
-
-	fmt.Println(data)
-*/
-
-	messageSave(msg)
 
 	flatResults := make([]*MessageCheckResult, 0)
 	results[messagePermit] = make([]*MessageCheckResult, 0)
@@ -208,21 +210,28 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 
 	errorCount = errorCount - messageWeighResults(flatResults)
 
-	verdictValue := [4]string{"permit", "tempfail", "reject", "error"}
+	checkResults := make([]*Proto_MessageV1_CheckResult, 0)
 	if Config.ClueGetter.Archive_Retention_Message_Result > 0 {
 		for _, result := range flatResults {
 			determinants, _ := json.Marshal(result.determinants)
 
-			StatsCounters["RdbmsQueries"].increase(1)
-			_, err := MessageStmtInsertModuleResult.Exec(
-				msg.QueueId, result.module, verdictValue[result.suggestedAction],
-				result.score, result.weightedScore, result.duration.Seconds(), determinants)
-			if err != nil {
-				StatsCounters["RdbmsErrors"].increase(1)
-				Log.Error(err.Error())
+			duration := result.duration.Seconds()
+			verdict := Proto_MessageV1_Verdict(result.suggestedAction)
+			protoStruct := &Proto_MessageV1_CheckResult{
+				MessageId:     &msg.QueueId,
+				Module:        &result.module,
+				Verdict:       &verdict,
+				Score:         &result.score,
+				WeightedScore: &result.weightedScore,
+				Duration:      &duration,
+				Determinants:  determinants,
 			}
+
+			checkResults = append(checkResults, protoStruct)
 		}
 	}
+
+	messageEnsureHasMessageId(msg)
 
 	getDecidingResultWithMessage := func(results []*MessageCheckResult) *MessageCheckResult {
 		out := results[0]
@@ -244,23 +253,23 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 	if totalScores[messageReject] >= Config.ClueGetter.Message_Reject_Score {
 		determinant := getDecidingResultWithMessage(results[messageReject])
 		StatsCounters["MessageVerdictReject"].increase(1)
-		messageSaveVerdict(msg, messageReject, determinant.message, totalScores[messageReject], totalScores[messageTempFail])
+		messageSave(msg, checkResults, messageReject, determinant.message, totalScores[messageReject], totalScores[messageTempFail])
 		return messageReject, determinant.message, results
 	}
 	if errorCount > 0 {
 		errorMsg := "An internal server error ocurred"
-		messageSaveVerdict(msg, messageTempFail, errorMsg, totalScores[messageReject], totalScores[messageTempFail])
+		messageSave(msg, checkResults, messageTempFail, errorMsg, totalScores[messageReject], totalScores[messageTempFail])
 		return messageTempFail, errorMsg, results
 	}
 	if (totalScores[messageTempFail] + totalScores[messageReject]) >= Config.ClueGetter.Message_Tempfail_Score {
 		determinant := getDecidingResultWithMessage(results[messageTempFail])
 		StatsCounters["MessageVerdictTempfail"].increase(1)
-		messageSaveVerdict(msg, messageTempFail, determinant.message, totalScores[messageReject], totalScores[messageTempFail])
+		messageSave(msg, checkResults, messageTempFail, determinant.message, totalScores[messageReject], totalScores[messageTempFail])
 		return messageTempFail, determinant.message, results
 	}
 
 	StatsCounters["MessageVerdictPermit"].increase(1)
-	messageSaveVerdict(msg, messagePermit, "", totalScores[messageReject], totalScores[messageTempFail])
+	messageSave(msg, checkResults, messagePermit, "", totalScores[messageReject], totalScores[messageTempFail])
 	verdict = messagePermit
 	msgStr = ""
 	return
@@ -305,26 +314,6 @@ func messageWeighResults(results []*MessageCheckResult) (ignoreErrorCount int) {
 		}
 	}
 	return
-}
-
-func messageSaveVerdict(msg *Message, verdict int, verdictMsg string, rejectScore float64, tempfailScore float64) {
-	verdictValue := [3]string{"permit", "tempfail", "reject"}
-
-	StatsCounters["RdbmsQueries"].increase(1)
-	_, err := MessageStmtSetVerdict.Exec(
-		verdictValue[verdict],
-		verdictMsg,
-		rejectScore,
-		Config.ClueGetter.Message_Reject_Score,
-		tempfailScore,
-		Config.ClueGetter.Message_Tempfail_Score,
-		msg.QueueId,
-	)
-
-	if err != nil {
-		StatsCounters["RdbmsErrors"].increase(1)
-		Log.Error(err.Error())
-	}
 }
 
 func messageGetResults(msg *Message, done chan bool) chan *MessageCheckResult {
@@ -397,125 +386,64 @@ func messageGetEnabledModules() (out map[string]func(*Message, chan bool) *Messa
 	return
 }
 
-func messageSave(msg *Message) {
-	sess := *msg.session
+func messageSave(msg *Message, checkResults []*Proto_MessageV1_CheckResult, verdict int,
+	verdictMsg string, rejectScore float64, tempfailScore float64) {
 
-	var sender_local, sender_domain string
-	if strings.Index(msg.From, "@") != -1 {
-		sender_local = strings.Split(msg.From, "@")[0]
-		sender_domain = strings.Split(msg.From, "@")[1]
-	} else {
-		sender_local = msg.From
+	headers := make([]*Proto_MessageV1_Header, len(msg.Headers))
+	for k, v := range msg.Headers {
+		headerKey := v.getKey()
+		headerValue := v.getValue()
+		headers[k] = &Proto_MessageV1_Header{Key: &headerKey, Value: &headerValue}
 	}
 
-	messageIdHdr := ""
-	for _, v := range msg.Headers {
-		if strings.EqualFold((*v).getKey(), "Message-Id") {
-			messageIdHdr = (*v).getValue()
-		}
+	sess := msg.session
+	timeStart := uint64(sess.timeStart.Unix())
+	var timeEnd uint64
+	if &sess.timeEnd != nil {
+		timeEnd = uint64(sess.timeEnd.Unix())
 	}
 
-	if messageIdHdr == "" {
-		messageIdHdr = fmt.Sprintf("<%d.%s.cluegetter@%s>",
-			time.Now().Unix(), msg.QueueId, sess.getMtaHostName())
-		msg.injectMessageId = messageIdHdr
+	verdictEnum := Proto_MessageV1_Verdict(verdict)
+	protoStruct := &Proto_MessageV1{
+		Id:                     &msg.QueueId,
+		From:                   &msg.From,
+		Rcpt:                   msg.Rcpt,
+		Headers:                headers,
+		Body:                   msg.Body,
+		Verdict:                &verdictEnum,
+		VerdictMsg:             &verdictMsg,
+		RejectScore:            &rejectScore,
+		RejectScoreThreshold:   &Config.ClueGetter.Message_Reject_Score,
+		TempfailScore:          &tempfailScore,
+		TempfailScoreThreshold: &Config.ClueGetter.Message_Tempfail_Score,
+		CheckResults:           checkResults,
+		Session: &Proto_MessageV1_Session{
+			Id:            sess.id[:],
+			TimeStart:     &timeStart,
+			TimeEnd:       &timeEnd,
+			SaslUsername:  &sess.SaslUsername,
+			SaslSender:    &sess.SaslSender,
+			SaslMethod:    &sess.SaslMethod,
+			CertIssuer:    &sess.CertIssuer,
+			CertSubject:   &sess.CertSubject,
+			CipherBits:    &sess.CipherBits,
+			Cipher:        &sess.Cipher,
+			TlsVersion:    &sess.TlsVersion,
+			Ip:            &sess.Ip,
+			ReverseDns:    &sess.ReverseDns,
+			Hostname:      &sess.Hostname,
+			Helo:          &sess.Helo,
+			MtaHostName:   &sess.Hostname,
+			MtaDaemonName: &sess.MtaDaemonName,
+		},
 	}
 
-	StatsCounters["RdbmsQueries"].increase(1)
-	sessId := sess.getId()
-	_, err := MessageStmtInsertMsg.Exec(
-		msg.QueueId,
-		string(sessId[:]),
-		time.Now(),
-		len(msg.Body),
-		fmt.Sprintf("%x", md5.Sum(msg.Body)),
-		messageIdHdr,
-		sender_local,
-		sender_domain,
-		len(msg.Rcpt),
-	)
-
+	protoMsg, err := proto.Marshal(protoStruct)
 	if err != nil {
-		StatsCounters["RdbmsErrors"].increase(1)
-		Log.Error(err.Error())
+		panic("marshaling error: " + err.Error())
 	}
 
-	if Config.ClueGetter.Archive_Retention_Body > 0 {
-		messageSaveBody(msg)
-	}
-
-	messageSaveRecipients(msg.Rcpt, msg.QueueId)
-	if Config.ClueGetter.Archive_Retention_Header > 0 {
-		messageSaveHeaders(msg)
-	}
-
-	if Config.Cassandra.Enabled {
-		messageSaveCassandra(msg)
-	}
-}
-
-func messageSaveBody(msg *Message) {
-	for key, value := range msg.Body {
-		StatsCounters["RdbmsQueries"].increase(1)
-		_, err := MessageStmtInsertMsgBody.Exec(
-			msg.QueueId,
-			key,
-			value,
-		)
-
-		if err != nil {
-			StatsCounters["RdbmsErrors"].increase(1)
-			Log.Error(err.Error())
-		}
-	}
-}
-
-func messageSaveRecipients(recipients []string, msgId string) {
-	for _, rcpt := range recipients {
-		var local string
-		var domain string
-
-		if strings.Index(rcpt, "@") != -1 {
-			local = strings.SplitN(rcpt, "@", 2)[0]
-			domain = strings.SplitN(rcpt, "@", 2)[1]
-		} else {
-			local = rcpt
-			domain = ""
-		}
-
-		StatsCounters["RdbmsQueries"].increase(1)
-		res, err := MessageStmtInsertRcpt.Exec(local, domain)
-		if err != nil {
-			StatsCounters["RdbmsErrors"].increase(1)
-			panic("Could not execute MessageStmtInsertRcpt in messageSaveRecipients(). Error: " + err.Error())
-		}
-
-		rcptId, err := res.LastInsertId()
-		if err != nil {
-			StatsCounters["RdbmsErrors"].increase(1)
-			panic("Could not get lastinsertid from MessageStmtInsertRcpt in messageSaveRecipients(). Error: " + err.Error())
-		}
-
-		StatsCounters["RdbmsQueries"].increase(1)
-		_, err = MessageStmtInsertMsgRcpt.Exec(msgId, rcptId)
-		if err != nil {
-			StatsCounters["RdbmsErrors"].increase(1)
-			panic("Could not get execute MessageStmtInsertMsgRcpt in messageSaveRecipients(). Error: " + err.Error())
-		}
-	}
-}
-
-func messageSaveHeaders(msg *Message) {
-	for _, headerPair := range msg.Headers {
-		StatsCounters["RdbmsQueries"].increase(1)
-		_, err := MessageStmtInsertMsgHdr.Exec(
-			msg.QueueId, (*headerPair).getKey(), (*headerPair).getValue())
-
-		if err != nil {
-			StatsCounters["RdbmsErrors"].increase(1)
-			Log.Error(err.Error())
-		}
-	}
+	messagePersistQueue <- protoMsg
 }
 
 func messageGetHeadersToAdd(msg *Message, results [4][]*MessageCheckResult) []*MessageHeader {
@@ -541,72 +469,6 @@ func messageGetHeadersToAdd(msg *Message, results [4][]*MessageCheckResult) []*M
 	}
 
 	return out
-}
-
-func messageSaveCassandra(msg *Message) {
-	if Config.ClueGetter.Archive_Retention_Cassandra == 0 {
-		return
-	}
-	cqlQueryQueue <- &cqlQuery{
-		query: `INSERT INTO message (message, body, date, instance)
-					VALUES (?, ?, ?, ?) USING TTL ?`,
-		args: []interface{}{
-			msg.QueueId, string(msg.Body),
-			time.Now(), Config.ClueGetter.Instance,
-			int(Config.ClueGetter.Archive_Retention_Cassandra * 86400 * 7),
-		},
-	}
-}
-
-func messagePrune() {
-	ticker := time.NewTicker(time.Duration(Config.ClueGetter.Archive_Prune_Interval) * time.Second)
-
-	var prunables = []struct {
-		stmt      *sql.Stmt
-		descr     string
-		retention float64
-	}{
-		{MessageStmtPruneBody, "bodies", Config.ClueGetter.Archive_Retention_Body},
-		{MessageStmtPruneHeader, "headers", Config.ClueGetter.Archive_Retention_Header},
-		{MessageStmtPruneMessageResult, "message results", Config.ClueGetter.Archive_Retention_Message_Result},
-		{MessageStmtPruneMessageQuota, "message-quota relations", Config.ClueGetter.Archive_Retention_Message},
-		{MessageStmtPruneMessageRecipient, "message-recipient relations", Config.ClueGetter.Archive_Retention_Message},
-		{MessageStmtPruneMessage, "messages", Config.ClueGetter.Archive_Retention_Message},
-		{MessageStmtPruneSession, "sessions", Config.ClueGetter.Archive_Retention_Message},
-		{MessageStmtPruneRecipient, "recipients", Config.ClueGetter.Archive_Retention_Message},
-	}
-
-WaitForNext:
-	for {
-		select {
-		case <-ticker.C:
-			t0 := time.Now()
-			Log.Info("Pruning some old data now")
-
-			for _, prunable := range prunables {
-				if prunable.retention < Config.ClueGetter.Archive_Retention_Safeguard {
-					Log.Info("Not pruning %s because its retention (%.2f weeks) is lower than the safeguard (%.2f)",
-						prunable.descr, prunable.retention, Config.ClueGetter.Archive_Retention_Safeguard)
-					continue
-				}
-
-				tStart := time.Now()
-				res, err := prunable.stmt.Exec(t0, prunable.retention, instance)
-				if err != nil {
-					Log.Error("Could not prune %s: %s", prunable.descr, err.Error())
-					continue WaitForNext
-				}
-
-				rowCnt, err := res.RowsAffected()
-				if err != nil {
-					Log.Error("Error while fetching number of affected rows: ", err)
-					continue WaitForNext
-				}
-
-				Log.Info("Pruned %d %s in %s", rowCnt, prunable.descr, time.Now().Sub(tStart).String())
-			}
-		}
-	}
 }
 
 func (msg Message) String() []byte {
@@ -641,4 +503,25 @@ func (msg Message) String() []byte {
 	body = append(body, string(msg.Body))
 
 	return []byte(strings.Join(body, ""))
+}
+
+func messageEnsureHasMessageId(msg *Message) {
+	sess := msg.session
+
+	messageIdHdr := ""
+	for _, v := range msg.Headers {
+		if strings.EqualFold((*v).getKey(), "Message-Id") {
+			messageIdHdr = (*v).getValue()
+			break
+		}
+	}
+
+	if messageIdHdr == "" {
+		messageIdHdr = fmt.Sprintf("<%d.%s.cluegetter@%s>",
+			time.Now().Unix(), msg.QueueId, sess.getMtaHostName())
+		msg.injectMessageId = messageIdHdr
+		msg.Headers = append(msg.Headers, &MessageHeader{
+			"Message-Id", messageIdHdr,
+		})
+	}
 }

@@ -29,7 +29,7 @@ type milterSession struct {
 	SaslMethod    string
 	CertIssuer    string
 	CertSubject   string
-	CipherBits    string
+	CipherBits    uint32
 	Cipher        string
 	TlsVersion    string
 	Ip            string
@@ -123,7 +123,7 @@ func (s *milterSession) getCertSubject() string {
 	return s.CertSubject
 }
 
-func (s *milterSession) getCipherBits() string {
+func (s *milterSession) getCipherBits() uint32 {
 	return s.CipherBits
 }
 
@@ -245,33 +245,4 @@ func milterSessionGetClient(hostname string, daemonName string) *milterSessionCl
 	client := &milterSessionCluegetterClient{uint64(id), hostname, daemonName}
 	milterSessionClients.clients = append(milterSessionClients.clients, client)
 	return client
-}
-
-/******** milterMessage **********/
-
-type Message struct {
-	session *milterSession
-
-	QueueId string
-	From    string
-	Rcpt    []string
-	Headers []*MessageHeader
-	Body    []byte
-
-	injectMessageId string
-}
-
-/******** milterMessageHeader ********/
-
-type MessageHeader struct {
-	Key   string
-	Value string
-}
-
-func (h *MessageHeader) getKey() string {
-	return h.Key
-}
-
-func (h *MessageHeader) getValue() string {
-	return h.Value
 }

@@ -48,6 +48,11 @@ type config struct {
 		Username string
 		Password string
 	}
+	Redis struct {
+		Enabled bool
+		Host    []string
+		Method  string
+	}
 	ModuleGroup map[string]*struct {
 		Module []string
 	}
@@ -130,6 +135,10 @@ func DefaultConfig(cfg *config) {
 	cfg.Cassandra.Host = []string{}
 	cfg.Cassandra.Username = ""
 	cfg.Cassandra.Password = ""
+
+	cfg.Redis.Enabled = false
+	cfg.Redis.Host = []string{}
+	cfg.Redis.Method = "standalone"
 
 	cfg.Http.Enabled = true
 	cfg.Http.Listen_Port = "1937"

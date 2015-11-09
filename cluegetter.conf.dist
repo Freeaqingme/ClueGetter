@@ -137,6 +137,13 @@ keyspace = "cluegetter"
 #username = ""
 #password = ""
 
+[redis]
+# Hostnet can be used as a cache so that ClueGetter will continue functioning
+# even when the RDBMS becomes unavailable. The '''host''' directive can be
+# repeated multiple times if you're running a redis cluster.
+enabled = false
+host = "localhost:6379"
+
 [bounceHandler]
 # Enable the Bounce Handler functionality in order to get insights in
 # What emails could not be (immediately) delivered. Please refer to the

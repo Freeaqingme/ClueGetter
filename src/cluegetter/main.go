@@ -44,6 +44,7 @@ func main() {
 	done := make(chan struct{})
 	statsStart()
 	rdbmsStart()
+	persistStart()
 	cqlStart()
 	setInstance()
 
