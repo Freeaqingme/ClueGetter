@@ -11,6 +11,7 @@ import (
 	"bytes"
 	"database/sql"
 	"fmt"
+	"github.com/golang/protobuf/proto"
 	"net"
 	"strconv"
 	"strings"
@@ -64,12 +65,15 @@ var milterCluegetterClientInsertStmt = *new(*sql.Stmt)
 var milterSessionWhitelist []*milterSessionWhitelistRange
 var milterSessionClients milterSessionCluegetterClients
 
+var milterSessionPersistQueue = make(chan []byte, 100)
+
 func milterSessionPrepStmt() {
 	stmt, err := Rdbms.Prepare(`
 		INSERT INTO session(id, cluegetter_instance, cluegetter_client, date_connect,
 							date_disconnect, ip, reverse_dns, helo, sasl_username,
 							sasl_method, cert_issuer, cert_subject, cipher_bits, cipher, tls_version)
 			VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		ON DUPLICATE KEY UPDATE date_disconnect=?
 	`)
 	if err != nil {
 		Log.Fatal(err)
@@ -197,29 +201,65 @@ func milterSessionStart() {
 		milterSessionWhitelist[idx] = &milterSessionWhitelistRange{ip.IP.To16(), net.IP(ipEnd).To16(), mask}
 	}
 
+	messagePersistQueue = make(chan []byte)
+	in := make(chan []byte)
+	redisListSubscribe("cluegetter-session-persist", milterSessionPersistQueue, in)
+	go milterSessionPersistHandleQueue(in)
+
 	Log.Info("Milter Session module started successfully")
 }
 
-func (s *milterSession) persist() {
-	revDns := s.getReverseDns()
-	if revDns == "unknown" {
-		revDns = ""
+func milterSessionPersistHandleQueue(queue chan []byte) {
+	for {
+		data := <-queue
+		go messagePersistProtoBuf(data)
+	}
+}
+
+func milterSessionPersistProtoBuf(protoBuf []byte) {
+	defer func() {
+		if Config.ClueGetter.Exit_On_Panic {
+			return
+		}
+		r := recover()
+		if r == nil {
+			return
+		}
+		Log.Error("Panic caught in milterSessionPersistProtoBuf(). Recovering. Error: %s", r)
+		return
+	}()
+
+	msg := &Proto_MessageV1_Session{}
+	err := proto.Unmarshal(protoBuf, msg)
+	if err != nil {
+		panic("unmarshaling error: " + err.Error())
 	}
 
-	client := milterSessionGetClient(s.getMtaHostName(), s.getMtaDaemonName())
+	milterSessionPersist(msg)
+	return
+}
 
-	s.persisted = true
-	id := s.getId()
+func milterSessionPersist(sess *Proto_MessageV1_Session) {
+	client := milterSessionGetClient(sess.GetMtaHostName(), sess.GetMtaDaemonName())
+
+	var date_disconnect time.Time
+	if sess.GetTimeEnd() != 0 {
+		date_disconnect = time.Unix(int64(*sess.TimeEnd), 0)
+	}
 
 	StatsCounters["RdbmsQueries"].increase(1)
 	_, err := milterSessionInsertStmt.Exec(
-		string(id[:]), instance, client.id, s.timeStart, s.timeEnd, s.getIp(), revDns, s.getHelo(),
-		s.getSaslUsername(), s.getSaslMethod(), s.getCertIssuer(), s.getCertSubject(),
-		s.getCipherBits(), s.getCipher(), s.getTlsVersion(),
+		string(sess.Id[:]), sess.InstanceId, client.id, time.Unix(int64(*sess.TimeStart), 0), date_disconnect, sess.GetIp(),
+		sess.ReverseDns, sess.GetHelo(), sess.GetSaslUsername(), sess.GetSaslMethod(), sess.GetCertIssuer(),
+		sess.GetCertSubject(), sess.GetCipherBits(), sess.GetCipher(), sess.GetTlsVersion(), date_disconnect,
 	)
 	if err != nil {
 		panic("Could not execute milterSessionInsertStmt in milterSession.persist(): " + err.Error())
 	}
+}
+
+func (s *milterSession) persist() {
+
 }
 
 func milterSessionGetClient(hostname string, daemonName string) *milterSessionCluegetterClient {

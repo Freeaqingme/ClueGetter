@@ -174,29 +174,37 @@ func (m *Proto_MessageV1) GetCheckResults() []*Proto_MessageV1_CheckResult {
 }
 
 type Proto_MessageV1_Session struct {
-	Id               []byte  `protobuf:"bytes,1,req,name=id" json:"id,omitempty"`
-	TimeStart        *uint64 `protobuf:"varint,2,req,name=timeStart" json:"timeStart,omitempty"`
-	TimeEnd          *uint64 `protobuf:"varint,3,opt,name=timeEnd" json:"timeEnd,omitempty"`
-	SaslUsername     *string `protobuf:"bytes,4,opt,name=saslUsername" json:"saslUsername,omitempty"`
-	SaslSender       *string `protobuf:"bytes,5,opt,name=saslSender" json:"saslSender,omitempty"`
-	SaslMethod       *string `protobuf:"bytes,6,opt,name=saslMethod" json:"saslMethod,omitempty"`
-	CertIssuer       *string `protobuf:"bytes,7,opt,name=certIssuer" json:"certIssuer,omitempty"`
-	CertSubject      *string `protobuf:"bytes,8,opt,name=certSubject" json:"certSubject,omitempty"`
-	CipherBits       *uint32 `protobuf:"varint,9,opt,name=cipherBits" json:"cipherBits,omitempty"`
-	Cipher           *string `protobuf:"bytes,10,opt,name=cipher" json:"cipher,omitempty"`
-	TlsVersion       *string `protobuf:"bytes,11,opt,name=tlsVersion" json:"tlsVersion,omitempty"`
-	Ip               *string `protobuf:"bytes,12,req,name=ip" json:"ip,omitempty"`
-	ReverseDns       *string `protobuf:"bytes,13,opt,name=reverseDns" json:"reverseDns,omitempty"`
-	Hostname         *string `protobuf:"bytes,14,opt,name=hostname" json:"hostname,omitempty"`
-	Helo             *string `protobuf:"bytes,15,opt,name=helo" json:"helo,omitempty"`
-	MtaHostName      *string `protobuf:"bytes,16,opt,name=mtaHostName" json:"mtaHostName,omitempty"`
-	MtaDaemonName    *string `protobuf:"bytes,17,opt,name=mtaDaemonName" json:"mtaDaemonName,omitempty"`
+	InstanceId       *uint64 `protobuf:"varint,1,req,name=instanceId" json:"instanceId,omitempty"`
+	Id               []byte  `protobuf:"bytes,2,req,name=id" json:"id,omitempty"`
+	TimeStart        *uint64 `protobuf:"varint,3,req,name=timeStart" json:"timeStart,omitempty"`
+	TimeEnd          *uint64 `protobuf:"varint,4,opt,name=timeEnd" json:"timeEnd,omitempty"`
+	SaslUsername     *string `protobuf:"bytes,5,opt,name=saslUsername" json:"saslUsername,omitempty"`
+	SaslSender       *string `protobuf:"bytes,6,opt,name=saslSender" json:"saslSender,omitempty"`
+	SaslMethod       *string `protobuf:"bytes,7,opt,name=saslMethod" json:"saslMethod,omitempty"`
+	CertIssuer       *string `protobuf:"bytes,8,opt,name=certIssuer" json:"certIssuer,omitempty"`
+	CertSubject      *string `protobuf:"bytes,9,opt,name=certSubject" json:"certSubject,omitempty"`
+	CipherBits       *uint32 `protobuf:"varint,10,opt,name=cipherBits" json:"cipherBits,omitempty"`
+	Cipher           *string `protobuf:"bytes,11,opt,name=cipher" json:"cipher,omitempty"`
+	TlsVersion       *string `protobuf:"bytes,12,opt,name=tlsVersion" json:"tlsVersion,omitempty"`
+	Ip               *string `protobuf:"bytes,13,req,name=ip" json:"ip,omitempty"`
+	ReverseDns       *string `protobuf:"bytes,14,opt,name=reverseDns" json:"reverseDns,omitempty"`
+	Hostname         *string `protobuf:"bytes,15,opt,name=hostname" json:"hostname,omitempty"`
+	Helo             *string `protobuf:"bytes,16,opt,name=helo" json:"helo,omitempty"`
+	MtaHostName      *string `protobuf:"bytes,17,opt,name=mtaHostName" json:"mtaHostName,omitempty"`
+	MtaDaemonName    *string `protobuf:"bytes,18,opt,name=mtaDaemonName" json:"mtaDaemonName,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
 func (m *Proto_MessageV1_Session) Reset()         { *m = Proto_MessageV1_Session{} }
 func (m *Proto_MessageV1_Session) String() string { return proto.CompactTextString(m) }
 func (*Proto_MessageV1_Session) ProtoMessage()    {}
+
+func (m *Proto_MessageV1_Session) GetInstanceId() uint64 {
+	if m != nil && m.InstanceId != nil {
+		return *m.InstanceId
+	}
+	return 0
+}
 
 func (m *Proto_MessageV1_Session) GetId() []byte {
 	if m != nil {

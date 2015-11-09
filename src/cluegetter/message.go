@@ -403,6 +403,7 @@ func messageSave(msg *Message, checkResults []*Proto_MessageV1_CheckResult, verd
 		timeEnd = uint64(sess.timeEnd.Unix())
 	}
 
+	instanceId := uint64(instance)
 	verdictEnum := Proto_MessageV1_Verdict(verdict)
 	protoStruct := &Proto_MessageV1{
 		Id:                     &msg.QueueId,
@@ -418,6 +419,7 @@ func messageSave(msg *Message, checkResults []*Proto_MessageV1_CheckResult, verd
 		TempfailScoreThreshold: &Config.ClueGetter.Message_Tempfail_Score,
 		CheckResults:           checkResults,
 		Session: &Proto_MessageV1_Session{
+			InstanceId:    &instanceId,
 			Id:            sess.id[:],
 			TimeStart:     &timeStart,
 			TimeEnd:       &timeEnd,

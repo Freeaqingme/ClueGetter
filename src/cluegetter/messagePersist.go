@@ -261,6 +261,7 @@ WaitForNext:
 
 func messagePersist(msg *Proto_MessageV1) {
 	sess := *msg.Session
+	milterSessionPersist(&sess)
 
 	var sender_local, sender_domain string
 	if strings.Index(*msg.From, "@") != -1 {
