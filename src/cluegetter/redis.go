@@ -27,13 +27,11 @@ var redisClient RedisClient
 var RedisLPushChan chan *RedisKeyValue
 
 func persistStart() {
-
 	if !Config.Redis.Enabled {
 		return
 	}
 
 	RedisLPushChan = make(chan *RedisKeyValue, 255)
-
 	var client RedisClient
 
 	switch Config.Redis.Method {

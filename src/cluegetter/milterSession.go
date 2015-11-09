@@ -212,7 +212,7 @@ func milterSessionStart() {
 func milterSessionPersistHandleQueue(queue chan []byte) {
 	for {
 		data := <-queue
-		go messagePersistProtoBuf(data)
+		go milterSessionPersistProtoBuf(data)
 	}
 }
 
@@ -260,6 +260,41 @@ func milterSessionPersist(sess *Proto_MessageV1_Session) {
 
 func (s *milterSession) persist() {
 
+	protoMsg, err := proto.Marshal(s.getProtoBufStruct())
+	if err != nil {
+		panic("marshaling error: " + err.Error())
+	}
+
+	milterSessionPersistQueue <- protoMsg
+}
+
+func (sess *milterSession) getProtoBufStruct() *Proto_MessageV1_Session {
+	timeStart := uint64(sess.timeStart.Unix())
+	var timeEnd uint64
+	if &sess.timeEnd != nil {
+		timeEnd = uint64(sess.timeEnd.Unix())
+	}
+	instanceId := uint64(instance)
+	return &Proto_MessageV1_Session{
+		InstanceId:    &instanceId,
+		Id:            sess.id[:],
+		TimeStart:     &timeStart,
+		TimeEnd:       &timeEnd,
+		SaslUsername:  &sess.SaslUsername,
+		SaslSender:    &sess.SaslSender,
+		SaslMethod:    &sess.SaslMethod,
+		CertIssuer:    &sess.CertIssuer,
+		CertSubject:   &sess.CertSubject,
+		CipherBits:    &sess.CipherBits,
+		Cipher:        &sess.Cipher,
+		TlsVersion:    &sess.TlsVersion,
+		Ip:            &sess.Ip,
+		ReverseDns:    &sess.ReverseDns,
+		Hostname:      &sess.Hostname,
+		Helo:          &sess.Helo,
+		MtaHostName:   &sess.Hostname,
+		MtaDaemonName: &sess.MtaDaemonName,
+	}
 }
 
 func milterSessionGetClient(hostname string, daemonName string) *milterSessionCluegetterClient {

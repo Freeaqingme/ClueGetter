@@ -396,14 +396,6 @@ func messageSave(msg *Message, checkResults []*Proto_MessageV1_CheckResult, verd
 		headers[k] = &Proto_MessageV1_Header{Key: &headerKey, Value: &headerValue}
 	}
 
-	sess := msg.session
-	timeStart := uint64(sess.timeStart.Unix())
-	var timeEnd uint64
-	if &sess.timeEnd != nil {
-		timeEnd = uint64(sess.timeEnd.Unix())
-	}
-
-	instanceId := uint64(instance)
 	verdictEnum := Proto_MessageV1_Verdict(verdict)
 	protoStruct := &Proto_MessageV1{
 		Id:                     &msg.QueueId,
@@ -418,26 +410,7 @@ func messageSave(msg *Message, checkResults []*Proto_MessageV1_CheckResult, verd
 		TempfailScore:          &tempfailScore,
 		TempfailScoreThreshold: &Config.ClueGetter.Message_Tempfail_Score,
 		CheckResults:           checkResults,
-		Session: &Proto_MessageV1_Session{
-			InstanceId:    &instanceId,
-			Id:            sess.id[:],
-			TimeStart:     &timeStart,
-			TimeEnd:       &timeEnd,
-			SaslUsername:  &sess.SaslUsername,
-			SaslSender:    &sess.SaslSender,
-			SaslMethod:    &sess.SaslMethod,
-			CertIssuer:    &sess.CertIssuer,
-			CertSubject:   &sess.CertSubject,
-			CipherBits:    &sess.CipherBits,
-			Cipher:        &sess.Cipher,
-			TlsVersion:    &sess.TlsVersion,
-			Ip:            &sess.Ip,
-			ReverseDns:    &sess.ReverseDns,
-			Hostname:      &sess.Hostname,
-			Helo:          &sess.Helo,
-			MtaHostName:   &sess.Hostname,
-			MtaDaemonName: &sess.MtaDaemonName,
-		},
+		Session:                msg.session.getProtoBufStruct(),
 	}
 
 	protoMsg, err := proto.Marshal(protoStruct)

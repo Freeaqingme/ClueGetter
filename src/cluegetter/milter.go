@@ -225,7 +225,6 @@ func (milter *milter) Eoh(ctx uintptr) (sfsistat int8) {
 	sess.SaslUsername = m.GetSymVal(ctx, "{auth_authen}")
 	msg := sess.getLastMessage()
 	msg.QueueId = m.GetSymVal(ctx, "i")
-	sess.persist()
 
 	StatsCounters["MilterCallbackEoh"].increase(1)
 	Log.Debug("%s milter.Eoh() was called", sess.milterGetDisplayId())

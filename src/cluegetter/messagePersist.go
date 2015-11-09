@@ -74,7 +74,6 @@ func messagePersistProtoBuf(protoBuf []byte) {
 }
 
 func messagePersistStmtPrepare() {
-
 	stmt, err := Rdbms.Prepare(`
 		INSERT INTO message (id, session, date, body_size, body_hash, messageId,
 			sender_local, sender_domain, rcpt_count, verdict, verdict_msg,
