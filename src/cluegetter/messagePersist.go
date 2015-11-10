@@ -304,6 +304,10 @@ func messagePersist(msg *Proto_MessageV1) {
 		Log.Error(err.Error())
 	}
 
+	if Config.ClueGetter.Archive_Retention_Message_Result > 0 {
+		messageSaveCheckResults(msg)
+	}
+
 	if Config.ClueGetter.Archive_Retention_Body > 0 {
 		messageSaveBody(msg)
 	}
@@ -315,6 +319,20 @@ func messagePersist(msg *Proto_MessageV1) {
 
 	if Config.Cassandra.Enabled {
 		messageSaveCassandra(msg)
+	}
+}
+
+func messageSaveCheckResults(msg *Proto_MessageV1) {
+	for _, result := range msg.CheckResults {
+
+		StatsCounters["RdbmsQueries"].increase(1)
+		_, err := MessageStmtInsertModuleResult.Exec(
+			msg.Id, result.Module, result.Verdict.String(),
+			result.Score, result.WeightedScore, result.Duration, result.Determinants)
+		if err != nil {
+			StatsCounters["RdbmsErrors"].increase(1)
+			Log.Error(err.Error())
+		}
 	}
 }
 

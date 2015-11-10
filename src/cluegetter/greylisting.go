@@ -7,10 +7,6 @@
 //
 package main
 
-/**
-@TODO Restructure a little, fix determinants
-*/
-
 import (
 	"database/sql"
 	"fmt"
@@ -48,19 +44,11 @@ func greylistStart() {
 			select {
 			case <-ticker.C:
 				go greylistUpdateWhitelist()
-				if Config.Redis.Enabled {
-					time.Sleep(1 * time.Minute)
-					go greylistPopulateRedis()
-				}
 			}
 		}
 	}()
 
 	greylistUpdateWhitelist()
-	if Config.Redis.Enabled {
-		go greylistPopulateRedis()
-	}
-
 	Log.Info("Greylist module started")
 }
 
@@ -149,8 +137,12 @@ func greylistUpdateWhitelist() {
 		return
 	}
 
-	Log.Info("Updated greylist whitelist with %d to %d entries in %s",
+	Log.Info("Updated RDBMS greylist whitelist with %d to %d entries in %s",
 		int(rowCnt/2), rowCnt, time.Now().Sub(t0).String())
+
+	if Config.Redis.Enabled {
+		greylistPopulateRedis()
+	}
 }
 
 func greylistGetResult(msg *Message, done chan bool) *MessageCheckResult {
@@ -196,18 +188,27 @@ func greylistGetResult(msg *Message, done chan bool) *MessageCheckResult {
 }
 
 func greylistGetVerdictRedis(msg *Message, spfWhitelistErr error, spfDomain string) *MessageCheckResult {
+
+	determinants := map[string]interface{}{
+		"Found in whitelist":     "false",
+		"Found in SPF whitelist": "false",
+		"SpfError":               spfWhitelistErr,
+		"SpfDomain":              spfDomain,
+		"Store":                  "redis",
+	}
+
 	sess := msg.session
 	key := fmt.Sprintf("cluegetter-%d-greylisting-msg-%s_%s_%s", instance, sess.Ip, msg.From, msg.Rcpt)
 	res, err := redisClient.Get(key).Int64()
 	if err == nil {
-		fmt.Println(res, (int64(Config.Greylisting.Initial_Period)*60), time.Now().Unix())
+		determinants["time_diff"] = time.Now().Unix() - res
 		if (res + (int64(Config.Greylisting.Initial_Period)*60)) < time.Now().Unix() {
 			return &MessageCheckResult{
 				module:          "greylisting",
 				suggestedAction: messagePermit,
 				message:         "",
 				score:           1,
-				determinants:    make(map[string]interface{}),
+				determinants:    determinants,
 			}
 		}
 	} else {
@@ -219,9 +220,8 @@ func greylistGetVerdictRedis(msg *Message, spfWhitelistErr error, spfDomain stri
 		suggestedAction: messageTempFail,
 		message:         "Greylisting in effect, please come back later",
 		score:           Config.Greylisting.Initial_Score,
-		determinants:    make(map[string]interface{}),
+		determinants:    determinants,
 	}
-
 }
 
 func greylistGetVerdictRdbms(msg *Message, spfWhitelistErr error, spfDomain string) *MessageCheckResult {

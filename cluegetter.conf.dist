@@ -138,7 +138,7 @@ keyspace = "cluegetter"
 #password = ""
 
 [redis]
-# Hostnet can be used as a cache so that ClueGetter will continue functioning
+# Redis can be used as a cache so that ClueGetter will continue functioning
 # even when the RDBMS becomes unavailable. The '''host''' directive can be
 # repeated multiple times if you're running a redis cluster.
 enabled = false

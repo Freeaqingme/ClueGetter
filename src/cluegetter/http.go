@@ -78,7 +78,7 @@ type httpMessage struct {
 	MtaDaemonName string
 
 	Id                     string
-	SessionId              int
+	SessionId              string
 	Date                   *time.Time
 	BodySize               uint32
 	BodySizeStr            string
@@ -125,7 +125,7 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rows, err := Rdbms.Query(`
-	SELECT m.id, m.date, CONCAT(m.sender_local, '@', m.sender_domain sender), m.rcpt_count, m.verdict,
+	SELECT m.id, m.date, CONCAT(m.sender_local, '@', m.sender_domain) sender, m.rcpt_count, m.verdict,
 		GROUP_CONCAT(DISTINCT IF(r.domain = '', r.local, (CONCAT(r.local, '@', r.domain)))) recipients
 		FROM message m
 			LEFT JOIN message_recipient mr on mr.message = m.id
@@ -243,12 +243,15 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 				LEFT JOIN cluegetter_client cc on s.cluegetter_client = cc.id
 			WHERE m.id = ?`, queueId)
 	msg := &httpMessage{Recipients: make([]*httpMessageRecipient, 0)}
-	row.Scan(&msg.SessionId, &msg.Date, &msg.BodySize, &msg.Sender, &msg.RcptCount,
+	err := row.Scan(&msg.SessionId, &msg.Date, &msg.BodySize, &msg.Sender, &msg.RcptCount,
 		&msg.Verdict, &msg.VerdictMsg, &msg.RejectScore, &msg.RejectScoreThreshold,
 		&msg.TempfailScore, &msg.ScoreCombined, &msg.TempfailScoreThreshold,
 		&msg.Ip, &msg.ReverseDns, &msg.Helo, &msg.SaslUsername, &msg.SaslMethod,
 		&msg.CertIssuer, &msg.CertSubject, &msg.CipherBits, &msg.Cipher, &msg.TlsVersion,
 		&msg.MtaHostname, &msg.MtaDaemonName)
+	if err != nil {
+		panic("Could not execute main query in httpHandlerMessage(): " + err.Error())
+	}
 	msg.BodySizeStr = humanize.Bytes(uint64(msg.BodySize))
 
 	recipientRows, _ := Rdbms.Query(
@@ -275,9 +278,12 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 		msg.Headers = append(msg.Headers, header)
 	}
 
-	checkResultRows, _ := Rdbms.Query(
+	checkResultRows, err := Rdbms.Query(
 		`SELECT module, verdict, score, weighted_score, COALESCE(duration, 0.0),
 			determinants FROM message_result WHERE message = ?`, queueId)
+	if err != nil {
+		panic("Error while retrieving check results in httpHandlerMessage(): " + err.Error())
+	}
 	defer checkResultRows.Close()
 	for checkResultRows.Next() {
 		checkResult := &httpMessageCheckResult{}

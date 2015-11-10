@@ -211,7 +211,6 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 	errorCount = errorCount - messageWeighResults(flatResults)
 
 	checkResults := make([]*Proto_MessageV1_CheckResult, 0)
-	if Config.ClueGetter.Archive_Retention_Message_Result > 0 {
 		for _, result := range flatResults {
 			determinants, _ := json.Marshal(result.determinants)
 
@@ -228,7 +227,6 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 			}
 
 			checkResults = append(checkResults, protoStruct)
-		}
 	}
 
 	messageEnsureHasMessageId(msg)
