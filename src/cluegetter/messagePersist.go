@@ -46,7 +46,7 @@ func messagePersistStart() {
 func messagePersistHandleQueue(queue chan []byte) {
 	for {
 		data := <-queue
-		go messagePersistProtoBuf(data)
+		messagePersistProtoBuf(data)
 	}
 }
 
@@ -71,7 +71,6 @@ func messagePersistProtoBuf(protoBuf []byte) {
 	}
 
 	messagePersist(msg)
-	return
 }
 
 func messagePersistStmtPrepare() {

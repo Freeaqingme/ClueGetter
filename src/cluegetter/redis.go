@@ -10,6 +10,7 @@ package main
 import (
 	redis "gopkg.in/redis.v3"
 	"time"
+	"fmt"
 )
 
 type RedisClient interface {
@@ -104,6 +105,15 @@ func redisListSubscriptionPoller(list string, output chan []byte) {
 					time.Sleep(5 * time.Second)
 					break
 				}
+				for {
+					rdbmsErr := Rdbms.Ping()
+					if rdbmsErr == nil {
+						break
+					}
+					Log.Error("Mysql seems down: %s", rdbmsErr.Error())
+					time.Sleep(2500 * time.Millisecond)
+				}
+
 				output <- res
 			}
 		}

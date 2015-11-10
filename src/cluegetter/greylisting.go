@@ -281,7 +281,7 @@ func greylistIsWhitelisted(ip *string) bool {
 }
 
 func greylistIsWhitelistedRedis(ip *string) bool {
-	key := fmt.Sprintf("cluegetter-%d-greylisting-whitelist-%s", instance, ip)
+	key := fmt.Sprintf("cluegetter-%d-greylisting-ip-%s", instance, *ip)
 	return redisClient.Exists(key).Val()
 }
 
