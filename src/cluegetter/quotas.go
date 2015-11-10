@@ -7,6 +7,10 @@
 //
 package main
 
+/**
+@TODO REDIS ME
+*/
+
 import (
 	"database/sql"
 	"fmt"

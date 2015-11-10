@@ -203,7 +203,7 @@ func milterSessionStart() {
 
 	messagePersistQueue = make(chan []byte)
 	in := make(chan []byte)
-	redisListSubscribe("cluegetter-session-persist", milterSessionPersistQueue, in)
+	redisListSubscribe("cluegetter-"+strconv.Itoa(int(instance))+"-session-persist", milterSessionPersistQueue, in)
 	go milterSessionPersistHandleQueue(in)
 
 	Log.Info("Milter Session module started successfully")

@@ -13,9 +13,12 @@ import (
 )
 
 type RedisClient interface {
-	Ping() *redis.StatusCmd
+	Exists(key string) *redis.BoolCmd
+	Get(key string) *redis.StringCmd
 	LPush(key string, values ...string) *redis.IntCmd
+	Ping() *redis.StatusCmd
 	RPop(key string) *redis.StringCmd
+	Set(key string, value interface{}, expiration time.Duration) *redis.StatusCmd
 }
 
 type RedisKeyValue struct {

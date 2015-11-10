@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/golang/protobuf/proto"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -32,7 +33,7 @@ func messagePersistStart() {
 
 	messagePersistQueue = make(chan []byte)
 	in := make(chan []byte)
-	redisListSubscribe("cluegetter-message-persist", messagePersistQueue, in)
+	redisListSubscribe("cluegetter-"+strconv.Itoa(int(instance))+"-message-persist", messagePersistQueue, in)
 	go messagePersistHandleQueue(in)
 
 	if Config.ClueGetter.Archive_Prune_Interval != 0 {
