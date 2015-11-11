@@ -10,13 +10,16 @@ package main
 import (
 	redis "gopkg.in/redis.v3"
 	"time"
-	"fmt"
 )
 
 type RedisClient interface {
+	Del(keys ...string) *redis.IntCmd
 	Exists(key string) *redis.BoolCmd
+	Expire(key string, expiration time.Duration) *redis.BoolCmd
 	Get(key string) *redis.StringCmd
 	LPush(key string, values ...string) *redis.IntCmd
+	LPushX(key, value string) *redis.IntCmd
+	LSet(key string, index int64, value string) *redis.StatusCmd
 	Ping() *redis.StatusCmd
 	RPop(key string) *redis.StringCmd
 	Set(key string, value interface{}, expiration time.Duration) *redis.StatusCmd

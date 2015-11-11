@@ -211,22 +211,22 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 	errorCount = errorCount - messageWeighResults(flatResults)
 
 	checkResults := make([]*Proto_MessageV1_CheckResult, 0)
-		for _, result := range flatResults {
-			determinants, _ := json.Marshal(result.determinants)
+	for _, result := range flatResults {
+		determinants, _ := json.Marshal(result.determinants)
 
-			duration := result.duration.Seconds()
-			verdict := Proto_MessageV1_Verdict(result.suggestedAction)
-			protoStruct := &Proto_MessageV1_CheckResult{
-				MessageId:     &msg.QueueId,
-				Module:        &result.module,
-				Verdict:       &verdict,
-				Score:         &result.score,
-				WeightedScore: &result.weightedScore,
-				Duration:      &duration,
-				Determinants:  determinants,
-			}
+		duration := result.duration.Seconds()
+		verdict := Proto_MessageV1_Verdict(result.suggestedAction)
+		protoStruct := &Proto_MessageV1_CheckResult{
+			MessageId:     &msg.QueueId,
+			Module:        &result.module,
+			Verdict:       &verdict,
+			Score:         &result.score,
+			WeightedScore: &result.weightedScore,
+			Duration:      &duration,
+			Determinants:  determinants,
+		}
 
-			checkResults = append(checkResults, protoStruct)
+		checkResults = append(checkResults, protoStruct)
 	}
 
 	messageEnsureHasMessageId(msg)

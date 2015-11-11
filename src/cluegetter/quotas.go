@@ -7,10 +7,6 @@
 //
 package main
 
-/**
-@TODO REDIS ME
-*/
-
 import (
 	"database/sql"
 	"fmt"
@@ -31,6 +27,7 @@ type quotasSelectResultSet struct {
 var QuotasSelectStmt = *new(*sql.Stmt)
 var QuotaInsertQuotaMessageStmt = *new(*sql.Stmt)
 var QuotaInsertDeducedQuotaStmt = *new(*sql.Stmt)
+var QuotaGetAllQuotas = *new(*sql.Stmt)
 
 func quotasStart() {
 	if Config.Quotas.Enabled != true {
@@ -38,6 +35,82 @@ func quotasStart() {
 		return
 	}
 
+	quotasPrepStmt()
+	if Config.Redis.Enabled {
+		quotasRedisStart()
+	}
+
+	Log.Info("Quotas module started successfully")
+}
+
+func quotasRedisStart() {
+	go func() {
+		ticker := time.NewTicker(time.Duration(5) * time.Minute)
+		for {
+			select {
+			case <-ticker.C:
+				quotasRedisUpdateFromRdbms()
+			}
+		}
+	}()
+
+	quotasRedisUpdateFromRdbms()
+
+}
+
+func quotasRedisUpdateFromRdbms() {
+	defer func() {
+		if Config.ClueGetter.Exit_On_Panic {
+			return
+		}
+		r := recover()
+		if r == nil {
+			return
+		}
+		Log.Error("Panic caught in quotasRedisUpdateFromRdbms(). Recovering. Error: %s", r)
+	}()
+
+	Log.Info("Importing quotas into Redis")
+	t0 := time.Now()
+
+	quotas, err := QuotaGetAllQuotas.Query()
+	if err != nil {
+		StatsCounters["RdbmsErrors"].increase(1)
+		panic("Error occurred while retrieving quotas")
+	}
+
+	groupedQuotas := make(map[string][]string, 0)
+	i := 0
+	defer quotas.Close()
+	for quotas.Next() {
+		var selector string // sasl_username
+		var value string    // foobar@example.com
+		var period int      // 86400
+		var curb int        // 5000
+		quotas.Scan(&selector, &value, &period, &curb)
+
+		lval := fmt.Sprintf("%d_%d", period, curb)
+		if groupedQuota, ok := groupedQuotas[selector+"_"+value]; ok {
+			groupedQuota = append(groupedQuota, lval)
+		} else {
+			groupedQuotas[selector+"_"+value] = []string{lval}
+		}
+
+		i++g
+	}
+
+	// Todo: Use some sort of scripting or pipelining here?
+	for k, v := range groupedQuotas {
+		key := fmt.Sprintf("cluegetter-%d-quotas-definitions-%s", instance, k)
+		redisClient.Del(key)
+		redisClient.LPush(key, v...)
+		redisClient.Expire(key, time.Duration(24)*time.Hour)
+	}
+
+	Log.Info("Imported %d quota tuples into Redis in %.2f seconds", i, time.Now().Sub(t0).Seconds())
+}
+
+func quotasPrepStmt() {
 	stmt, err := Rdbms.Prepare(quotasGetSelectQuery(nil))
 	if err != nil {
 		Log.Fatal(err)
@@ -64,7 +137,19 @@ func quotasStart() {
 	}
 	QuotaInsertDeducedQuotaStmt = stmt
 
-	Log.Info("Quotas module started successfully")
+	stmt, err = Rdbms.Prepare(fmt.Sprintf(`
+		SELECT q.selector, q.value factorValue, pp.period, pp.curb
+			FROM quota q
+				LEFT JOIN quota_profile p         ON p.id = q.profile
+				LEFT JOIN quota_class c           ON c.id = p.class
+				LEFT JOIN quota_profile_period pp ON p.id = pp.profile
+			WHERE q.is_regex = 0 AND c.cluegetter_instance = %d
+			GROUP BY pp.id, q.id`, instance))
+	if err != nil {
+		Log.Fatal(err)
+	}
+	QuotaGetAllQuotas = stmt
+
 }
 
 func quotasStop() {

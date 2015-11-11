@@ -43,7 +43,7 @@ func greylistStart() {
 		for {
 			select {
 			case <-ticker.C:
-				go greylistUpdateWhitelist()
+				greylistUpdateWhitelist()
 			}
 		}
 	}()
@@ -202,7 +202,7 @@ func greylistGetVerdictRedis(msg *Message, spfWhitelistErr error, spfDomain stri
 	res, err := redisClient.Get(key).Int64()
 	if err == nil {
 		determinants["time_diff"] = time.Now().Unix() - res
-		if (res + (int64(Config.Greylisting.Initial_Period)*60)) < time.Now().Unix() {
+		if (res + (int64(Config.Greylisting.Initial_Period) * 60)) < time.Now().Unix() {
 			return &MessageCheckResult{
 				module:          "greylisting",
 				suggestedAction: messagePermit,
