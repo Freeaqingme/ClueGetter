@@ -167,7 +167,6 @@ func quotasStop() {
 }
 
 func quotasIsAllowed(msg *Message, _ chan bool) *MessageCheckResult {
-
 	if Config.Redis.Enabled {
 		return quotasRedisIsAllowed(msg)
 	}
@@ -177,9 +176,10 @@ func quotasIsAllowed(msg *Message, _ chan bool) *MessageCheckResult {
 
 // TODO: Regexes
 // https://github.com/cognusion/go-cache-lru
+// TODO: Recipient count
 func quotasRedisIsAllowed(msg *Message) *MessageCheckResult {
 	now := time.Now().Unix()
-
+	callbacks := make([]*func(*Message, int), 0)
 	for selector, selectorValues := range quotasGetMsgFactors(msg) {
 
 		// Todo: Do this in parallel
@@ -197,6 +197,9 @@ func quotasRedisIsAllowed(msg *Message) *MessageCheckResult {
 					count = redisClient.ZCount(quotaKey, startPeriod, fmt.Sprintf("%d", now)).Val()
 				}
 
+				callback := quotasRedisAddMsg(&quotaKey)
+				callbacks = append(callbacks, &callback)
+
 				if count >= int64(curb) {
 					return &MessageCheckResult{
 						module:          "quotas",
@@ -206,18 +209,36 @@ func quotasRedisIsAllowed(msg *Message) *MessageCheckResult {
 					}
 				}
 
-				// TODO: TTL?
-				// TODO: Only add value if message was OK
-				redisClient.ZAdd(quotaKey, redis.Z{ float64(now), msg.QueueId })
 			}
 		}
 	}
+
 
 	return &MessageCheckResult{
 		module:          "quotas",
 		suggestedAction: messagePermit,
 		message:         "",
 		score:           1,
+		callbacks:       callbacks,
+	}
+}
+
+func quotasRedisAddMsg(quotasKey *string) func(*Message, int) {
+	redisKey := quotasKey
+
+	return func(msg *Message, verdict int) {
+		if ! Config.Redis.Enabled {
+			return
+		}
+
+		if verdict != 0 {
+			return
+		}
+
+		now := time.Now().Unix()
+		redisClient.ZAdd(*redisKey, redis.Z{ float64(now), msg.QueueId })
+
+		// TODO: TTL?
 	}
 }
 

@@ -59,6 +59,7 @@ type MessageCheckResult struct {
 	determinants    map[string]interface{}
 	duration        time.Duration
 	weightedScore   float64
+	callbacks       []*func(*Message, int)
 }
 
 type MessageModuleGroup struct {
@@ -248,29 +249,31 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 		totalScores[result.suggestedAction] += result.weightedScore
 	}
 
+
+	verdict = messagePermit
+	statusMsg := ""
+
 	if totalScores[messageReject] >= Config.ClueGetter.Message_Reject_Score {
-		determinant := getDecidingResultWithMessage(results[messageReject])
 		StatsCounters["MessageVerdictReject"].increase(1)
-		messageSave(msg, checkResults, messageReject, determinant.message, totalScores[messageReject], totalScores[messageTempFail])
-		return messageReject, determinant.message, results
-	}
-	if errorCount > 0 {
-		errorMsg := "An internal server error ocurred"
-		messageSave(msg, checkResults, messageTempFail, errorMsg, totalScores[messageReject], totalScores[messageTempFail])
-		return messageTempFail, errorMsg, results
-	}
-	if (totalScores[messageTempFail] + totalScores[messageReject]) >= Config.ClueGetter.Message_Tempfail_Score {
-		determinant := getDecidingResultWithMessage(results[messageTempFail])
+		verdict = messageReject
+		statusMsg = getDecidingResultWithMessage(results[messageReject]).message
+	} else if errorCount > 0 {
+		statusMsg = "An internal server error ocurred"
+		verdict = messageTempFail
+	} else if (totalScores[messageTempFail] + totalScores[messageReject]) >= Config.ClueGetter.Message_Tempfail_Score {
 		StatsCounters["MessageVerdictTempfail"].increase(1)
-		messageSave(msg, checkResults, messageTempFail, determinant.message, totalScores[messageReject], totalScores[messageTempFail])
-		return messageTempFail, determinant.message, results
+		verdict = messageTempFail
+		statusMsg = getDecidingResultWithMessage(results[messageTempFail]).message
 	}
 
-	StatsCounters["MessageVerdictPermit"].increase(1)
-	messageSave(msg, checkResults, messagePermit, "", totalScores[messageReject], totalScores[messageTempFail])
-	verdict = messagePermit
-	msgStr = ""
-	return
+	for _, result := range flatResults {
+		for _, callback := range result.callbacks {
+			go (*callback)(msg, verdict)
+		}
+	}
+
+	messageSave(msg, checkResults, verdict, statusMsg, totalScores[messageReject], totalScores[messageTempFail])
+	return verdict, statusMsg, results
 }
 
 func messageWeighResults(results []*MessageCheckResult) (ignoreErrorCount int) {
