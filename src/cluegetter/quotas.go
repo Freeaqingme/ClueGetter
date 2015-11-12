@@ -10,11 +10,10 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"strings"
-	"strconv"
-	"time"
 	redis "gopkg.in/redis.v3"
-
+	"strconv"
+	"strings"
+	"time"
 )
 
 type quotasSelectResultSet struct {
@@ -176,31 +175,39 @@ func quotasIsAllowed(msg *Message, _ chan bool) *MessageCheckResult {
 
 // TODO: Regexes
 // https://github.com/cognusion/go-cache-lru
-// TODO: Recipient count
 func quotasRedisIsAllowed(msg *Message) *MessageCheckResult {
 	now := time.Now().Unix()
 	callbacks := make([]*func(*Message, int), 0)
 	for selector, selectorValues := range quotasGetMsgFactors(msg) {
+		var extra_count int
+
+		if selector != "recipient" {
+			extra_count = len(msg.Rcpt)
+		} else {
+			extra_count = int(1)
+		}
 
 		// Todo: Do this in parallel
 		for _, selectorValue := range selectorValues {
 			key := fmt.Sprintf("cluegetter-%d-quotas-definitions-%s_%s", instance, selector, selectorValue)
-			for _,quota := range redisClient.LRange(key, 0, -1).Val() {
-				period,_ := strconv.Atoi(strings.Split(quota, "_")[0])
-				curb,_ := strconv.Atoi(strings.Split(quota, "_")[1])
+			for _, quota := range redisClient.LRange(key, 0, -1).Val() {
+				period, _ := strconv.Atoi(strings.Split(quota, "_")[0])
+				curb, _ := strconv.Atoi(strings.Split(quota, "_")[1])
 				startPeriod := fmt.Sprintf("%d", now-int64(period))
 
 				quotaKey := fmt.Sprintf("cluegetter-%d-quotas-counts-%s_%s_%d", instance, selector, selectorValue, period)
 				count := redisClient.ZCount(quotaKey, startPeriod, fmt.Sprintf("%d", now)).Val()
-				if count >= int64(curb) {
+				if (int(count) + extra_count) > curb {
 					redisClient.ZRemRangeByScore(quotaKey, "-inf", startPeriod)
 					count = redisClient.ZCount(quotaKey, startPeriod, fmt.Sprintf("%d", now)).Val()
 				}
 
-				callback := quotasRedisAddMsg(&quotaKey)
-				callbacks = append(callbacks, &callback)
+				for i := 1; i <= extra_count; i++ {
+					callback := quotasRedisAddMsg(&quotaKey, i)
+					callbacks = append(callbacks, &callback)
+				}
 
-				if count >= int64(curb) {
+				if (int(count) + extra_count) > curb {
 					return &MessageCheckResult{
 						module:          "quotas",
 						suggestedAction: messageTempFail,
@@ -213,7 +220,6 @@ func quotasRedisIsAllowed(msg *Message) *MessageCheckResult {
 		}
 	}
 
-
 	return &MessageCheckResult{
 		module:          "quotas",
 		suggestedAction: messagePermit,
@@ -223,11 +229,12 @@ func quotasRedisIsAllowed(msg *Message) *MessageCheckResult {
 	}
 }
 
-func quotasRedisAddMsg(quotasKey *string) func(*Message, int) {
+func quotasRedisAddMsg(quotasKey *string, count int) func(*Message, int) {
 	redisKey := quotasKey
+	localCount := count
 
 	return func(msg *Message, verdict int) {
-		if ! Config.Redis.Enabled {
+		if !Config.Redis.Enabled {
 			return
 		}
 
@@ -236,9 +243,8 @@ func quotasRedisAddMsg(quotasKey *string) func(*Message, int) {
 		}
 
 		now := time.Now().Unix()
-		redisClient.ZAdd(*redisKey, redis.Z{ float64(now), msg.QueueId })
-
-		// TODO: TTL?
+		redisClient.ZAdd(*redisKey, redis.Z{float64(now), msg.QueueId + "-" + strconv.Itoa(localCount)})
+		redisClient.Expire(*redisKey, 24*time.Hour)
 	}
 }
 

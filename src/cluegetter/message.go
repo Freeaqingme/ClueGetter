@@ -249,7 +249,6 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 		totalScores[result.suggestedAction] += result.weightedScore
 	}
 
-
 	verdict = messagePermit
 	statusMsg := ""
 
