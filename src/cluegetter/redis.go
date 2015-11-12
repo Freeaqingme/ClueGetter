@@ -19,10 +19,14 @@ type RedisClient interface {
 	Get(key string) *redis.StringCmd
 	LPush(key string, values ...string) *redis.IntCmd
 	LPushX(key, value string) *redis.IntCmd
+	LRange(key string, start, stop int64) *redis.StringSliceCmd
 	LSet(key string, index int64, value string) *redis.StatusCmd
 	Ping() *redis.StatusCmd
 	RPop(key string) *redis.StringCmd
 	Set(key string, value interface{}, expiration time.Duration) *redis.StatusCmd
+	ZAdd(key string, members ...redis.Z) *redis.IntCmd
+	ZCount(key, min, max string) *redis.IntCmd
+	ZRemRangeByScore(key, min, max string) *redis.IntCmd
 }
 
 type RedisKeyValue struct {

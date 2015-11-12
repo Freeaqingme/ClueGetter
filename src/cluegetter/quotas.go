@@ -11,7 +11,10 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"strconv"
 	"time"
+	redis "gopkg.in/redis.v3"
+
 )
 
 type quotasSelectResultSet struct {
@@ -55,7 +58,6 @@ func quotasRedisStart() {
 	}()
 
 	quotasRedisUpdateFromRdbms()
-
 }
 
 func quotasRedisUpdateFromRdbms() {
@@ -96,7 +98,7 @@ func quotasRedisUpdateFromRdbms() {
 			groupedQuotas[selector+"_"+value] = []string{lval}
 		}
 
-		i++g
+		i++
 	}
 
 	// Todo: Use some sort of scripting or pipelining here?
@@ -165,6 +167,61 @@ func quotasStop() {
 }
 
 func quotasIsAllowed(msg *Message, _ chan bool) *MessageCheckResult {
+
+	if Config.Redis.Enabled {
+		return quotasRedisIsAllowed(msg)
+	}
+
+	return quotasRdbmsIsAllowed(msg)
+}
+
+// TODO: Regexes
+// https://github.com/cognusion/go-cache-lru
+func quotasRedisIsAllowed(msg *Message) *MessageCheckResult {
+	now := time.Now().Unix()
+
+	for selector, selectorValues := range quotasGetMsgFactors(msg) {
+
+		// Todo: Do this in parallel
+		for _, selectorValue := range selectorValues {
+			key := fmt.Sprintf("cluegetter-%d-quotas-definitions-%s_%s", instance, selector, selectorValue)
+			for _,quota := range redisClient.LRange(key, 0, -1).Val() {
+				period,_ := strconv.Atoi(strings.Split(quota, "_")[0])
+				curb,_ := strconv.Atoi(strings.Split(quota, "_")[1])
+				startPeriod := fmt.Sprintf("%d", now-int64(period))
+
+				quotaKey := fmt.Sprintf("cluegetter-%d-quotas-counts-%s_%s_%d", instance, selector, selectorValue, period)
+				count := redisClient.ZCount(quotaKey, startPeriod, fmt.Sprintf("%d", now)).Val()
+				if count >= int64(curb) {
+					redisClient.ZRemRangeByScore(quotaKey, "-inf", startPeriod)
+					count = redisClient.ZCount(quotaKey, startPeriod, fmt.Sprintf("%d", now)).Val()
+				}
+
+				if count >= int64(curb) {
+					return &MessageCheckResult{
+						module:          "quotas",
+						suggestedAction: messageTempFail,
+						message:         "Qutoa Reached", //TODO Add some key numbers here
+						score:           100,
+					}
+				}
+
+				// TODO: TTL?
+				// TODO: Only add value if message was OK
+				redisClient.ZAdd(quotaKey, redis.Z{ float64(now), msg.QueueId })
+			}
+		}
+	}
+
+	return &MessageCheckResult{
+		module:          "quotas",
+		suggestedAction: messagePermit,
+		message:         "",
+		score:           1,
+	}
+}
+
+func quotasRdbmsIsAllowed(msg *Message) *MessageCheckResult {
 	counts, err := quotasGetCounts(msg, true)
 	if err != nil {
 		Log.Error("Error in quotas module: %s", err)
