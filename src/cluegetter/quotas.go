@@ -13,6 +13,7 @@ import (
 	redis "gopkg.in/redis.v3"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -24,6 +25,16 @@ type quotasSelectResultSet struct {
 	curb        uint32
 	count       uint32
 	msg_count   uint32
+}
+
+type quotasResult struct {
+	Curb             uint64
+	ExtraCount       uint64
+	FactorValue      *string
+	FutureTotalCount uint64
+	Period           uint64
+	Selector         *string
+	QuotaKey         *string
 }
 
 var QuotasSelectStmt = *new(*sql.Stmt)
@@ -174,9 +185,10 @@ func quotasIsAllowed(msg *Message, _ chan bool) *MessageCheckResult {
 }
 
 // TODO: Regexes
-// https://github.com/cognusion/go-cache-lru
 func quotasRedisIsAllowed(msg *Message) *MessageCheckResult {
-	now := time.Now().Unix()
+	c := make(chan *quotasResult)
+	var wg sync.WaitGroup
+
 	callbacks := make([]*func(*Message, int), 0)
 	for selector, selectorValues := range quotasGetMsgFactors(msg) {
 		var extra_count int
@@ -187,36 +199,53 @@ func quotasRedisIsAllowed(msg *Message) *MessageCheckResult {
 			extra_count = int(1)
 		}
 
-		// Todo: Do this in parallel
 		for _, selectorValue := range selectorValues {
-			key := fmt.Sprintf("cluegetter-%d-quotas-definitions-%s_%s", instance, selector, selectorValue)
-			for _, quota := range redisClient.LRange(key, 0, -1).Val() {
-				period, _ := strconv.Atoi(strings.Split(quota, "_")[0])
-				curb, _ := strconv.Atoi(strings.Split(quota, "_")[1])
-				startPeriod := fmt.Sprintf("%d", now-int64(period))
+			wg.Add(1)
+			go func() {
+				quotasRedisPollQuotasBySelector(c, &selector, &selectorValue, extra_count)
+				wg.Done()
+			}()
+		}
+	}
 
-				quotaKey := fmt.Sprintf("cluegetter-%d-quotas-counts-%s_%s_%d", instance, selector, selectorValue, period)
-				count := redisClient.ZCount(quotaKey, startPeriod, fmt.Sprintf("%d", now)).Val()
-				if (int(count) + extra_count) > curb {
-					redisClient.ZRemRangeByScore(quotaKey, "-inf", startPeriod)
-					count = redisClient.ZCount(quotaKey, startPeriod, fmt.Sprintf("%d", now)).Val()
-				}
+	go func() {
+		wg.Wait()
+		close(c)
+	}()
 
-				for i := 1; i <= extra_count; i++ {
-					callback := quotasRedisAddMsg(&quotaKey, i)
-					callbacks = append(callbacks, &callback)
-				}
+	results := make([]*quotasResult, 0)
+	for result := range c {
+		results = append(results, result)
 
-				if (int(count) + extra_count) > curb {
-					return &MessageCheckResult{
-						module:          "quotas",
-						suggestedAction: messageTempFail,
-						message:         "Qutoa Reached", //TODO Add some key numbers here
-						score:           100,
-					}
-				}
+		for i := 1; i <= int(result.ExtraCount); i++ {
+			callback := quotasRedisAddMsg(result.QuotaKey, i)
+			callbacks = append(callbacks, &callback)
+		}
+	}
 
-			}
+	determinants := map[string]interface{}{"quotas": results}
+
+	rejectMsg := ""
+	for _, result := range results {
+		if result.FutureTotalCount > result.Curb {
+			Log.Notice("Quota Exceeding, max of %d messages per %d seconds for %s '%s'",
+				result.Curb, result.Period, &result.Selector, &result.FactorValue)
+			rejectMsg = fmt.Sprintf("REJECT Policy reject; Exceeding quota, max of %d messages per %d seconds for %s '%s'",
+				result.Curb, result.Period, &result.Selector, &result.FactorValue)
+		} else {
+			Log.Info("Quota Updated, Adding %d message(s) to total of %d (max %d) for last %d seconds for %s '%s'",
+				result.ExtraCount, result.FutureTotalCount, result.Curb, result.Period, *result.Selector, *result.FactorValue)
+		}
+	}
+
+	if rejectMsg != "" {
+		return &MessageCheckResult{
+			module:          "quotas",
+			suggestedAction: messageTempFail,
+			message:         rejectMsg,
+			score:           100,
+			determinants:    determinants,
+			callbacks:       callbacks,
 		}
 	}
 
@@ -225,7 +254,48 @@ func quotasRedisIsAllowed(msg *Message) *MessageCheckResult {
 		suggestedAction: messagePermit,
 		message:         "",
 		score:           1,
+		determinants:    determinants,
 		callbacks:       callbacks,
+	}
+}
+
+func quotasRedisPollQuotasBySelector(c chan *quotasResult, selector, selectorValue *string, extra_count int) {
+	key := fmt.Sprintf("cluegetter-%d-quotas-definitions-%s_%s", instance, *selector, *selectorValue)
+
+	var wg sync.WaitGroup
+	for _, quota := range redisClient.LRange(key, 0, -1).Val() {
+		wg.Add(1)
+		go func() {
+			quotasRedisPollQuotasBySelectorAndPeriod(c, quota, selector, selectorValue, extra_count)
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+}
+
+func quotasRedisPollQuotasBySelectorAndPeriod(c chan *quotasResult, quota string,
+	selector, selectorValue *string, extra_count int) {
+	now := time.Now().Unix()
+	period, _ := strconv.Atoi(strings.Split(quota, "_")[0])
+	curb, _ := strconv.Atoi(strings.Split(quota, "_")[1])
+	startPeriod := fmt.Sprintf("%d", now-int64(period))
+
+	quotaKey := fmt.Sprintf("cluegetter-%d-quotas-counts-%s_%s_%d", instance, *selector, *selectorValue, period)
+	count := redisClient.ZCount(quotaKey, startPeriod, fmt.Sprintf("%d", now)).Val()
+	if (int(count) + extra_count) > curb {
+		redisClient.ZRemRangeByScore(quotaKey, "-inf", startPeriod)
+		count = redisClient.ZCount(quotaKey, startPeriod, fmt.Sprintf("%d", now)).Val()
+	}
+
+	c <- &quotasResult{
+		Curb:             uint64(curb),
+		ExtraCount:       uint64(extra_count),
+		FactorValue:      selectorValue,
+		FutureTotalCount: uint64(int(count) + extra_count),
+		Period:           uint64(period),
+		Selector:         selector,
+		QuotaKey:         &quotaKey,
 	}
 }
 
