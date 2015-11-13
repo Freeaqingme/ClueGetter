@@ -10,6 +10,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"github.com/glenn-brown/golang-pkg-pcre/src/pkg/pcre"
 	redis "gopkg.in/redis.v3"
 	"strconv"
 	"strings"
@@ -37,10 +38,20 @@ type quotasResult struct {
 	QuotaKey         *string
 }
 
+type quotasRegex struct {
+	selector *string
+	regex    *pcre.Regexp
+	period   int
+	curb     int
+}
+
 var QuotasSelectStmt = *new(*sql.Stmt)
 var QuotaInsertQuotaMessageStmt = *new(*sql.Stmt)
 var QuotaInsertDeducedQuotaStmt = *new(*sql.Stmt)
-var QuotaGetAllQuotas = *new(*sql.Stmt)
+var QuotaGetAllQuotasStmt = *new(*sql.Stmt)
+var QuotaGetAllRegexesStmt = *new(*sql.Stmt)
+
+var quotasRegexes *[]*quotasRegex
 
 func quotasStart() {
 	if Config.Quotas.Enabled != true {
@@ -51,9 +62,75 @@ func quotasStart() {
 	quotasPrepStmt()
 	if Config.Redis.Enabled {
 		quotasRedisStart()
+		quotasRegexesStart()
 	}
 
 	Log.Info("Quotas module started successfully")
+}
+
+func quotasRegexesStart() {
+	go func() {
+		ticker := time.NewTicker(time.Duration(1) * time.Minute)
+		for {
+			select {
+			case <-ticker.C:
+				quotasRegexesLoad()
+			}
+		}
+	}()
+
+	go quotasRegexesLoad()
+}
+
+func quotasRegexesLoad() {
+	defer func() {
+		if Config.ClueGetter.Exit_On_Panic {
+			return
+		}
+		r := recover()
+		if r == nil {
+			return
+		}
+		Log.Error("Panic caught in quotasRegexesLoad(). Recovering. Error: %s", r)
+	}()
+
+	Log.Info("Importing regexes from RDBMS")
+	t0 := time.Now()
+
+	regexes, err := QuotaGetAllRegexesStmt.Query()
+	if err != nil {
+		StatsCounters["RdbmsErrors"].increase(1)
+		panic("Error occurred while retrieving quotas")
+	}
+
+	defer regexes.Close()
+
+	var regexCollection []*quotasRegex
+	i := 0
+	for regexes.Next() {
+		var selector string // sasl_username
+		var regexStr string // ^.*$
+		var period int      // 86400
+		var curb int        // 5000
+		regexes.Scan(&selector, &regexStr, &period, &curb)
+
+		regex, err := pcre.Compile(regexStr, 0)
+		if err != nil {
+			Log.Error("Could not compile regex: /%s/. Ignoring. Error: %s", regexStr, err.String())
+			continue
+		}
+
+		regexCollection = append(regexCollection, &quotasRegex{
+			selector: &selector,
+			regex:    &regex,
+			period:   period,
+			curb:     curb,
+		})
+		i++
+	}
+
+	quotasRegexes = &regexCollection
+	Log.Info("Imported %d regexes in %.2f seconds", i, time.Now().Sub(t0).Seconds())
 }
 
 func quotasRedisStart() {
@@ -85,7 +162,7 @@ func quotasRedisUpdateFromRdbms() {
 	Log.Info("Importing quotas into Redis")
 	t0 := time.Now()
 
-	quotas, err := QuotaGetAllQuotas.Query()
+	quotas, err := QuotaGetAllQuotasStmt.Query()
 	if err != nil {
 		StatsCounters["RdbmsErrors"].increase(1)
 		panic("Error occurred while retrieving quotas")
@@ -113,7 +190,7 @@ func quotasRedisUpdateFromRdbms() {
 
 	// Todo: Use some sort of scripting or pipelining here?
 	for k, v := range groupedQuotas {
-		key := fmt.Sprintf("cluegetter-%d-quotas-definitions-%s", instance, k)
+		key := fmt.Sprintf("{cluegetter-%d-quotas-%s}-definitions", instance, k)
 		redisClient.Del(key)
 		redisClient.LPush(key, v...)
 		redisClient.Expire(key, time.Duration(24)*time.Hour)
@@ -160,8 +237,20 @@ func quotasPrepStmt() {
 	if err != nil {
 		Log.Fatal(err)
 	}
-	QuotaGetAllQuotas = stmt
+	QuotaGetAllQuotasStmt = stmt
 
+	stmt, err = Rdbms.Prepare(fmt.Sprintf(`
+		SELECT q.selector, q.value factorValue, pp.period, pp.curb
+			FROM quota q
+				LEFT JOIN quota_profile p         ON p.id = q.profile
+				LEFT JOIN quota_class c           ON c.id = p.class
+				LEFT JOIN quota_profile_period pp ON p.id = pp.profile
+			WHERE q.is_regex = 1 AND c.cluegetter_instance = %d
+			GROUP BY pp.id, q.id`, instance))
+	if err != nil {
+		Log.Fatal(err)
+	}
+	QuotaGetAllRegexesStmt = stmt
 }
 
 func quotasStop() {
@@ -184,7 +273,6 @@ func quotasIsAllowed(msg *Message, _ chan bool) *MessageCheckResult {
 	return quotasRdbmsIsAllowed(msg)
 }
 
-// TODO: Regexes
 func quotasRedisIsAllowed(msg *Message) *MessageCheckResult {
 	c := make(chan *quotasResult)
 	var wg sync.WaitGroup
@@ -200,9 +288,11 @@ func quotasRedisIsAllowed(msg *Message) *MessageCheckResult {
 		}
 
 		for _, selectorValue := range selectorValues {
+			lselector := selector
+			lselectorValue := selectorValue
 			wg.Add(1)
 			go func() {
-				quotasRedisPollQuotasBySelector(c, &selector, &selectorValue, extra_count)
+				quotasRedisPollQuotasBySelector(c, &lselector, &lselectorValue, extra_count)
 				wg.Done()
 			}()
 		}
@@ -260,11 +350,13 @@ func quotasRedisIsAllowed(msg *Message) *MessageCheckResult {
 }
 
 func quotasRedisPollQuotasBySelector(c chan *quotasResult, selector, selectorValue *string, extra_count int) {
-	key := fmt.Sprintf("cluegetter-%d-quotas-definitions-%s_%s", instance, *selector, *selectorValue)
+	key := fmt.Sprintf("{cluegetter-%d-quotas-%s_%s}-definitions", instance, *selector, *selectorValue)
 
 	var wg sync.WaitGroup
+	i := 0
 	for _, quota := range redisClient.LRange(key, 0, -1).Val() {
 		wg.Add(1)
+		i++
 		go func() {
 			quotasRedisPollQuotasBySelectorAndPeriod(c, quota, selector, selectorValue, extra_count)
 			wg.Done()
@@ -272,6 +364,48 @@ func quotasRedisPollQuotasBySelector(c chan *quotasResult, selector, selectorVal
 	}
 
 	wg.Wait()
+
+	if i != 0 {
+		return
+	}
+
+	if !quotasRedisInsertRegexesForSelector(selector, selectorValue) {
+		return
+	}
+
+	for _, quota := range redisClient.LRange(key, 0, -1).Val() {
+		wg.Add(1)
+		lquota := quota
+		go func() {
+			quotasRedisPollQuotasBySelectorAndPeriod(c, lquota, selector, selectorValue, extra_count)
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+}
+
+func quotasRedisInsertRegexesForSelector(selector, selectorValue *string) bool {
+	regexes := *quotasRegexes
+
+	inserted := 0
+	for _, regex := range regexes {
+		if *regex.selector != *selector {
+			continue
+		}
+
+		regexp := *regex.regex
+		if len(regexp.FindIndex([]byte(*selectorValue), 0)) == 0 {
+			continue
+		}
+
+		key := fmt.Sprintf("{cluegetter-%d-quotas-%s_%s}-definitions", instance, *selector, *selectorValue)
+		redisClient.LPush(key, fmt.Sprintf("%d_%d", regex.period, regex.curb))
+		redisClient.Expire(key, time.Duration(24)*time.Hour)
+		inserted++
+	}
+
+	return inserted != 0
 }
 
 func quotasRedisPollQuotasBySelectorAndPeriod(c chan *quotasResult, quota string,
@@ -281,7 +415,7 @@ func quotasRedisPollQuotasBySelectorAndPeriod(c chan *quotasResult, quota string
 	curb, _ := strconv.Atoi(strings.Split(quota, "_")[1])
 	startPeriod := fmt.Sprintf("%d", now-int64(period))
 
-	quotaKey := fmt.Sprintf("cluegetter-%d-quotas-counts-%s_%s_%d", instance, *selector, *selectorValue, period)
+	quotaKey := fmt.Sprintf("{cluegetter-%d-quotas-%s_%s}-counts-%d", instance, *selector, *selectorValue, period)
 	count := redisClient.ZCount(quotaKey, startPeriod, fmt.Sprintf("%d", now)).Val()
 	if (int(count) + extra_count) > curb {
 		redisClient.ZRemRangeByScore(quotaKey, "-inf", startPeriod)
