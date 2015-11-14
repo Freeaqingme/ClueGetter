@@ -95,7 +95,7 @@ CREATE TABLE message_header (
 CREATE TABLE message_result (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   message varchar(25) CHARACTER SET ascii NOT NULL,
-  module enum('quotas','spamassassin','rspamd','greylisting') NOT NULL,
+  module varchar(32) NOT NULL,
   verdict enum('permit','tempfail','reject', 'error') NOT NULL,
   score float(6,2) DEFAULT NULL,
   weighted_score float(6,2) DEFAULT NULL,
