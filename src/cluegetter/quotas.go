@@ -52,6 +52,7 @@ var QuotaGetAllQuotasStmt = *new(*sql.Stmt)
 var QuotaGetAllRegexesStmt = *new(*sql.Stmt)
 
 var quotasRegexes *[]*quotasRegex
+var quotasRegexesLock *sync.RWMutex
 
 func quotasStart() {
 	if Config.Quotas.Enabled != true {
@@ -69,6 +70,8 @@ func quotasStart() {
 }
 
 func quotasRegexesStart() {
+	quotasRegexesLock = &sync.RWMutex{}
+
 	go func() {
 		ticker := time.NewTicker(time.Duration(1) * time.Minute)
 		for {
@@ -128,6 +131,9 @@ func quotasRegexesLoad() {
 		})
 		i++
 	}
+
+	quotasRegexesLock.Lock()
+	defer quotasRegexesLock.Unlock()
 
 	quotasRegexes = &regexCollection
 	Log.Info("Imported %d regexes in %.2f seconds", i, time.Now().Sub(t0).Seconds())
@@ -386,7 +392,9 @@ func quotasRedisPollQuotasBySelector(c chan *quotasResult, selector, selectorVal
 }
 
 func quotasRedisInsertRegexesForSelector(selector, selectorValue *string) bool {
+	quotasRegexesLock.RLock()
 	regexes := *quotasRegexes
+	quotasRegexesLock.RUnlock()
 
 	inserted := 0
 	for _, regex := range regexes {
