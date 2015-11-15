@@ -231,7 +231,7 @@ func httpReturnJson(w http.ResponseWriter, obj interface{}) {
 func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 	queueId := r.URL.Path[len("/message/"):]
 	row := Rdbms.QueryRow(`
-		SELECT m.session, m.date, coalesce(m.body_size,0), m.sender_local || '@' || m.sender_domain sender,
+		SELECT m.session, m.date, COALESCE(m.body_size,0), CONCAT(m.sender_local, '@', m.sender_domain) sender,
 				m.rcpt_count, m.verdict, m.verdict_msg,
 				COALESCE(m.rejectScore,0), COALESCE(m.rejectScoreThreshold,0), COALESCE(m.tempfailScore,0),
 				(COALESCE(m.rejectScore,0) + COALESCE(m.tempfailScore,0)) scoreCombined,

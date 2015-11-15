@@ -24,7 +24,6 @@ type config struct {
 		Rdbms_Password                   string
 		Rdbms_Protocol                   string
 		Rdbms_Database                   string
-		Rdbms_Mysql_Strictmode           bool
 		Message_Reject_Score             float64
 		Message_Tempfail_Score           float64
 		Breaker_Score                    float64
@@ -113,7 +112,6 @@ func DefaultConfig(cfg *config) {
 	cfg.ClueGetter.Rdbms_Password = ""
 	cfg.ClueGetter.Rdbms_Protocol = "tcp"
 	cfg.ClueGetter.Rdbms_Database = "cluegetter"
-	cfg.ClueGetter.Rdbms_Mysql_Strictmode = true
 	cfg.ClueGetter.Message_Reject_Score = 5
 	cfg.ClueGetter.Message_Tempfail_Score = 8
 	cfg.ClueGetter.Breaker_Score = 100
