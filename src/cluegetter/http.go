@@ -65,6 +65,7 @@ type httpMessage struct {
 
 	Ip           string
 	ReverseDns   string
+	Helo         string
 	SaslUsername string
 	SaslMethod   string
 	CertIssuer   string
@@ -77,7 +78,7 @@ type httpMessage struct {
 	MtaDaemonName string
 
 	Id                     string
-	SessionId              int
+	SessionId              string
 	Date                   *time.Time
 	BodySize               uint32
 	BodySizeStr            string
@@ -124,14 +125,26 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rows, err := Rdbms.Query(`
-		SELECT m.id, m.date, m.sender_local || '@' || m.sender_domain sender, m.rcpt_count, m.verdict,
-			GROUP_CONCAT(distinct IF(r.domain = '', r.local, (r.local || '@' || r.domain))) recipients
-			FROM message m
-				LEFT JOIN message_recipient mr on mr.message = m.id
-				LEFT JOIN recipient r ON r.id = mr.recipient
-			WHERE (m.sender_domain = ? AND (m.sender_local = ? OR ? = ''))
-				OR (r.domain = ? AND (r.local = ? OR ? = ''))
-			GROUP BY m.id ORDER BY date DESC LIMIT 0,250
+	SELECT m.id, m.date, CONCAT(m.sender_local, '@', m.sender_domain) sender, m.rcpt_count, m.verdict,
+		GROUP_CONCAT(DISTINCT IF(r.domain = '', r.local, (CONCAT(r.local, '@', r.domain)))) recipients
+		FROM message m
+			LEFT JOIN message_recipient mr on mr.message = m.id
+			LEFT JOIN recipient r ON r.id = mr.recipient
+			INNER JOIN (
+				SELECT DISTINCT id FROM (
+						SELECT m.id
+							FROM message m
+							WHERE (m.sender_domain = ? AND (m.sender_local = ? OR ? = ''))
+					UNION
+						SELECT mr.message
+							FROM message_recipient mr
+								LEFT JOIN recipient r ON r.id = mr.recipient
+							WHERE (r.domain = ? AND (r.local = ? OR ? = ''))
+				) t2
+			) t1 ON t1.id = m.id
+		GROUP BY m.id
+		ORDER BY date DESC
+		LIMIT 0,250
 	`, domain, local, local, domain, local, local)
 	if err != nil {
 		panic(err)
@@ -218,24 +231,27 @@ func httpReturnJson(w http.ResponseWriter, obj interface{}) {
 func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 	queueId := r.URL.Path[len("/message/"):]
 	row := Rdbms.QueryRow(`
-		SELECT m.session, m.date, coalesce(m.body_size,0), m.sender_local || '@' || m.sender_domain sender,
+		SELECT m.session, m.date, COALESCE(m.body_size,0), CONCAT(m.sender_local, '@', m.sender_domain) sender,
 				m.rcpt_count, m.verdict, m.verdict_msg,
 				COALESCE(m.rejectScore,0), COALESCE(m.rejectScoreThreshold,0), COALESCE(m.tempfailScore,0),
 				(COALESCE(m.rejectScore,0) + COALESCE(m.tempfailScore,0)) scoreCombined,
-				COALESCE(m.tempfailScoreThreshold,0), s.ip, s.reverse_dns, s.sasl_username, s.sasl_method,
-				s.cert_issuer, s.cert_subject, s.cipher_bits, s.cipher, s.tls_version,
+				COALESCE(m.tempfailScoreThreshold,0), s.ip, s.reverse_dns, s.helo, s.sasl_username,
+				s.sasl_method, s.cert_issuer, s.cert_subject, s.cipher_bits, s.cipher, s.tls_version,
 				cc.hostname mtaHostname, cc.daemon_name mtaDaemonName
 			FROM message m
 				LEFT JOIN session s ON s.id = m.session
 				LEFT JOIN cluegetter_client cc on s.cluegetter_client = cc.id
 			WHERE m.id = ?`, queueId)
 	msg := &httpMessage{Recipients: make([]*httpMessageRecipient, 0)}
-	row.Scan(&msg.SessionId, &msg.Date, &msg.BodySize, &msg.Sender, &msg.RcptCount,
+	err := row.Scan(&msg.SessionId, &msg.Date, &msg.BodySize, &msg.Sender, &msg.RcptCount,
 		&msg.Verdict, &msg.VerdictMsg, &msg.RejectScore, &msg.RejectScoreThreshold,
 		&msg.TempfailScore, &msg.ScoreCombined, &msg.TempfailScoreThreshold,
-		&msg.Ip, &msg.ReverseDns, &msg.SaslUsername, &msg.SaslMethod,
+		&msg.Ip, &msg.ReverseDns, &msg.Helo, &msg.SaslUsername, &msg.SaslMethod,
 		&msg.CertIssuer, &msg.CertSubject, &msg.CipherBits, &msg.Cipher, &msg.TlsVersion,
 		&msg.MtaHostname, &msg.MtaDaemonName)
+	if err != nil {
+		panic("Could not execute main query in httpHandlerMessage(): " + err.Error())
+	}
 	msg.BodySizeStr = humanize.Bytes(uint64(msg.BodySize))
 
 	recipientRows, _ := Rdbms.Query(
@@ -262,9 +278,12 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 		msg.Headers = append(msg.Headers, header)
 	}
 
-	checkResultRows, _ := Rdbms.Query(
+	checkResultRows, err := Rdbms.Query(
 		`SELECT module, verdict, score, weighted_score, COALESCE(duration, 0.0),
 			determinants FROM message_result WHERE message = ?`, queueId)
+	if err != nil {
+		panic("Error while retrieving check results in httpHandlerMessage(): " + err.Error())
+	}
 	defer checkResultRows.Close()
 	for checkResultRows.Next() {
 		checkResult := &httpMessageCheckResult{}

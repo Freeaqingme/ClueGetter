@@ -41,7 +41,6 @@ rdbms-password         =
 rdbms-protocol         = tcp
 rdbms-address          = localhost:3306
 rdbms-database         = cluegetter
-rdbms-mysql-strictmode = true
 
 # Various modules determine whether an email should be rejected. E.g.
 # when an email is determined to be spam. Rejecting an email will
@@ -106,6 +105,10 @@ archive-retention-header = 26
 archive-retention-message-result = 2
 archive-retention-message = 52
 
+# If Cassandra support is enabled, this is the TTL (in weeks) to use
+# for storing messages in Cassandra.
+archive-retention-cassandra = 4
+
 [moduleGroup "spam"]
 module = 0.9 spamassassin
 module = 0.1 rspamd
@@ -120,6 +123,25 @@ module = 0.1 rspamd
 enabled = true
 listen-port = 1937
 listen-host = "127.0.0.1"
+
+[cassandra]
+# If you want to archive messages (including their body), but don't want
+# to do so in your RDBMS.
+
+enabled  = false
+keyspace = "cluegetter"
+#host     = "node1"
+#host     = "node2"
+#host     = "node3"
+#username = ""
+#password = ""
+
+[redis]
+# Redis can be used as a cache so that ClueGetter will continue functioning
+# even when the RDBMS becomes unavailable. The '''host''' directive can be
+# repeated multiple times if you're running a redis cluster.
+enabled = false
+host = "localhost:6379"
 
 [bounceHandler]
 # Enable the Bounce Handler functionality in order to get insights in

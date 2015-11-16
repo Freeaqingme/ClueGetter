@@ -11,6 +11,7 @@ import (
 	"bytes"
 	"database/sql"
 	"fmt"
+	"github.com/golang/protobuf/proto"
 	"net"
 	"strconv"
 	"strings"
@@ -19,17 +20,17 @@ import (
 )
 
 type milterSession struct {
-	id        uint64
+	id        [16]byte
 	timeStart time.Time
 	timeEnd   time.Time
-	messages  []*milterMessage
+	messages  []*Message
 
 	SaslUsername  string
 	SaslSender    string
 	SaslMethod    string
 	CertIssuer    string
 	CertSubject   string
-	CipherBits    string
+	CipherBits    uint32
 	Cipher        string
 	TlsVersion    string
 	Ip            string
@@ -38,6 +39,8 @@ type milterSession struct {
 	Helo          string
 	MtaHostName   string
 	MtaDaemonName string
+
+	persisted bool
 }
 
 type milterSessionWhitelistRange struct {
@@ -58,31 +61,25 @@ type milterSessionCluegetterClients struct {
 }
 
 var milterSessionInsertStmt = *new(*sql.Stmt)
-var milterSessionUpdateStmt = *new(*sql.Stmt)
 var milterCluegetterClientInsertStmt = *new(*sql.Stmt)
 var milterSessionWhitelist []*milterSessionWhitelistRange
 var milterSessionClients milterSessionCluegetterClients
 
+var milterSessionPersistQueue = make(chan []byte, 100)
+
 func milterSessionPrepStmt() {
 	stmt, err := Rdbms.Prepare(`
-		INSERT INTO session(cluegetter_instance, cluegetter_client, date_connect, date_disconnect, ip, reverse_dns, sasl_username)
-			VALUES(?, ?, ?, NULL, ?, ?, ?)
+		INSERT INTO session(id, cluegetter_instance, cluegetter_client, date_connect,
+							date_disconnect, ip, reverse_dns, helo, sasl_username,
+							sasl_method, cert_issuer, cert_subject, cipher_bits, cipher, tls_version)
+			VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		ON DUPLICATE KEY UPDATE date_disconnect=?
 	`)
 	if err != nil {
 		Log.Fatal(err)
 	}
 
 	milterSessionInsertStmt = stmt
-
-	stmt, err = Rdbms.Prepare(`
-		UPDATE session SET ip=?, reverse_dns=?, sasl_username=?, sasl_method=?, cert_issuer=?,
-		                   cert_subject=?, cipher_bits=?, cipher=?, tls_version=?, date_disconnect=?
-		   WHERE id=?`)
-	if err != nil {
-		Log.Fatal(err)
-	}
-
-	milterSessionUpdateStmt = stmt
 
 	stmt, err = Rdbms.Prepare(`
 		INSERT INTO cluegetter_client (hostname, daemon_name) VALUES(?,?)
@@ -94,19 +91,19 @@ func milterSessionPrepStmt() {
 	milterCluegetterClientInsertStmt = stmt
 }
 
-func (s *milterSession) getNewMessage() *milterMessage {
-	msg := &milterMessage{}
+func (s *milterSession) getNewMessage() *Message {
+	msg := &Message{}
 	msg.session = s
 
 	s.messages = append(s.messages, msg)
 	return msg
 }
 
-func (s *milterSession) getLastMessage() *milterMessage {
+func (s *milterSession) getLastMessage() *Message {
 	return s.messages[len(s.messages)-1]
 }
 
-func (s *milterSession) getId() uint64 {
+func (s *milterSession) getId() [16]byte {
 	return s.id
 }
 
@@ -130,7 +127,7 @@ func (s *milterSession) getCertSubject() string {
 	return s.CertSubject
 }
 
-func (s *milterSession) getCipherBits() string {
+func (s *milterSession) getCipherBits() uint32 {
 	return s.CipherBits
 }
 
@@ -204,39 +201,99 @@ func milterSessionStart() {
 		milterSessionWhitelist[idx] = &milterSessionWhitelistRange{ip.IP.To16(), net.IP(ipEnd).To16(), mask}
 	}
 
+	messagePersistQueue = make(chan []byte)
+	in := make(chan []byte)
+	redisListSubscribe("cluegetter-"+strconv.Itoa(int(instance))+"-session-persist", milterSessionPersistQueue, in)
+	go milterSessionPersistHandleQueue(in)
+
 	Log.Info("Milter Session module started successfully")
 }
 
-func (s *milterSession) persist() {
-	revDns := s.getReverseDns()
-	if revDns == "unknown" {
-		revDns = ""
+func milterSessionPersistHandleQueue(queue chan []byte) {
+	for {
+		data := <-queue
+		go milterSessionPersistProtoBuf(data)
+	}
+}
+
+func milterSessionPersistProtoBuf(protoBuf []byte) {
+	defer func() {
+		if Config.ClueGetter.Exit_On_Panic {
+			return
+		}
+		r := recover()
+		if r == nil {
+			return
+		}
+		Log.Error("Panic caught in milterSessionPersistProtoBuf(). Recovering. Error: %s", r)
+		return
+	}()
+
+	msg := &Proto_MessageV1_Session{}
+	err := proto.Unmarshal(protoBuf, msg)
+	if err != nil {
+		panic("unmarshaling error: " + err.Error())
 	}
 
-	client := milterSessionGetClient(s.getMtaHostName(), s.getMtaDaemonName())
+	milterSessionPersist(msg)
+	return
+}
+
+func milterSessionPersist(sess *Proto_MessageV1_Session) {
+	client := milterSessionGetClient(sess.GetMtaHostName(), sess.GetMtaDaemonName())
+
+	var date_disconnect time.Time
+	if sess.GetTimeEnd() != 0 {
+		date_disconnect = time.Unix(int64(*sess.TimeEnd), 0)
+	}
 
 	StatsCounters["RdbmsQueries"].increase(1)
-	if s.id == 0 {
-		res, err := milterSessionInsertStmt.Exec(
-			instance, client.id, time.Now(), s.getIp(), revDns, s.getSaslUsername(),
-		)
-		if err != nil {
-			panic("Could not execute milterSessionInsertStmt in milterSession.persist(): " + err.Error())
-		}
+	_, err := milterSessionInsertStmt.Exec(
+		string(sess.Id[:]), sess.InstanceId, client.id, time.Unix(int64(*sess.TimeStart), 0), date_disconnect, sess.GetIp(),
+		sess.ReverseDns, sess.GetHelo(), sess.GetSaslUsername(), sess.GetSaslMethod(), sess.GetCertIssuer(),
+		sess.GetCertSubject(), sess.GetCipherBits(), sess.GetCipher(), sess.GetTlsVersion(), date_disconnect,
+	)
+	if err != nil {
+		panic("Could not execute milterSessionInsertStmt in milterSession.persist(): " + err.Error())
+	}
+}
 
-		id, err := res.LastInsertId()
-		if err != nil {
-			panic("Could not get lastinsertid from milterSessionInsertStmt in milterSession.persist(): " + err.Error())
-		}
+func (s *milterSession) persist() {
 
-		s.id = uint64(id)
+	protoMsg, err := proto.Marshal(s.getProtoBufStruct())
+	if err != nil {
+		panic("marshaling error: " + err.Error())
 	}
 
-	_, err := milterSessionUpdateStmt.Exec(
-		s.getIp(), revDns, s.getSaslUsername(), s.getSaslMethod(), s.getCertIssuer(), s.getCertSubject(),
-		s.getCipherBits(), s.getCipher(), s.getTlsVersion(), s.timeEnd, s.getId())
-	if err != nil {
-		panic("Could not execute milterSessionUpdateStmt in milterSession.persist(): " + err.Error())
+	milterSessionPersistQueue <- protoMsg
+}
+
+func (sess *milterSession) getProtoBufStruct() *Proto_MessageV1_Session {
+	timeStart := uint64(sess.timeStart.Unix())
+	var timeEnd uint64
+	if &sess.timeEnd != nil {
+		timeEnd = uint64(sess.timeEnd.Unix())
+	}
+	instanceId := uint64(instance)
+	return &Proto_MessageV1_Session{
+		InstanceId:    &instanceId,
+		Id:            sess.id[:],
+		TimeStart:     &timeStart,
+		TimeEnd:       &timeEnd,
+		SaslUsername:  &sess.SaslUsername,
+		SaslSender:    &sess.SaslSender,
+		SaslMethod:    &sess.SaslMethod,
+		CertIssuer:    &sess.CertIssuer,
+		CertSubject:   &sess.CertSubject,
+		CipherBits:    &sess.CipherBits,
+		Cipher:        &sess.Cipher,
+		TlsVersion:    &sess.TlsVersion,
+		Ip:            &sess.Ip,
+		ReverseDns:    &sess.ReverseDns,
+		Hostname:      &sess.Hostname,
+		Helo:          &sess.Helo,
+		MtaHostName:   &sess.Hostname,
+		MtaDaemonName: &sess.MtaDaemonName,
 	}
 }
 
@@ -263,71 +320,4 @@ func milterSessionGetClient(hostname string, daemonName string) *milterSessionCl
 	client := &milterSessionCluegetterClient{uint64(id), hostname, daemonName}
 	milterSessionClients.clients = append(milterSessionClients.clients, client)
 	return client
-}
-
-/******** milterMessage **********/
-
-type milterMessage struct {
-	session *milterSession
-
-	QueueId string
-	From    string
-	Rcpt    []string
-	Headers []*MessageHeader
-	Body    []string
-
-	injectMessageId string
-}
-
-func (m *milterMessage) getHeaders() []*MessageHeader {
-	return m.Headers
-}
-
-func (m *milterMessage) getSession() *Session {
-	var session Session
-	session = m.session
-	return &session
-}
-
-func (m *milterMessage) getQueueId() string {
-	return m.QueueId
-}
-
-func (m *milterMessage) getFrom() string {
-	return m.From
-}
-
-func (m *milterMessage) getRcptCount() int {
-	return len(m.Rcpt)
-}
-
-func (m *milterMessage) getRecipients() []string {
-	return m.Rcpt
-}
-
-func (m *milterMessage) getBody() []string {
-	return m.Body
-}
-
-func (m *milterMessage) setInjectMessageId(id string) {
-	m.injectMessageId = id
-}
-
-func (m *milterMessage) getInjectMessageId() string {
-	return m.injectMessageId
-}
-
-/******** milterMessageHeader ********/
-
-type milterMessageHeader struct {
-	Key   string
-	Value string
-}
-
-func (h *milterMessageHeader) getKey() string {
-	return h.Key
-}
-
-func (h *milterMessageHeader) getValue() string {
-	return h.Value
 }

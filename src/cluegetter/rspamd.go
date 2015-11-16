@@ -46,7 +46,7 @@ func rspamdStart() {
 	Log.Info("Rspamd module started successfully")
 }
 
-func rspamdGetResult(msg Message, abort chan bool) *MessageCheckResult {
+func rspamdGetResult(msg *Message, abort chan bool) *MessageCheckResult {
 	rawResult := rspamdGetRawResult(msg)
 	parsedResponse := rspamdParseRawResult(rawResult)
 
@@ -129,20 +129,20 @@ func rspamdParseRawResult(rawResult interface{}) *rspamdResponse {
 
 }
 
-func rspamdGetRawResult(msg Message) interface{} {
-	sess := *msg.getSession()
+func rspamdGetRawResult(msg *Message) interface{} {
+	sess := *msg.session
 	var reqBody = msg.String()
 
 	url := fmt.Sprintf("http://%s:%d/check", Config.Rspamd.Host, Config.Rspamd.Port)
 	client := &http.Client{}
 	req, _ := http.NewRequest("GET", url, bytes.NewBuffer(reqBody))
-	for _, rcpt := range msg.getRecipients() {
+	for _, rcpt := range msg.Rcpt {
 		req.Header.Add("Rcpt", rcpt)
 	}
 	req.Header.Set("IP", sess.getIp())
 	req.Header.Set("Helo", sess.getHelo())
-	req.Header.Set("From", msg.getFrom())
-	req.Header.Set("Queue-Id", msg.getQueueId())
+	req.Header.Set("From", msg.From)
+	req.Header.Set("Queue-Id", msg.QueueId)
 	req.Header.Set("User", sess.getSaslUsername())
 	res, err := client.Do(req)
 

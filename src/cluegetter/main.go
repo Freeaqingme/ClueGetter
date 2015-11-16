@@ -23,6 +23,7 @@ var Log = logging.MustGetLogger("cluegetter")
 var instance uint
 
 func main() {
+
 	configFile := flag.String("config", "", "Path to Config File")
 	logFile := flag.String("logfile", "", "Log file to use. Will use STDOUT/STDERR otherwise.")
 	logLevel := flag.String("loglevel", "NOTICE",
@@ -43,6 +44,8 @@ func main() {
 	done := make(chan struct{})
 	statsStart()
 	rdbmsStart()
+	persistStart()
+	cqlStart()
 	setInstance()
 
 	milterSessionStart()
@@ -63,6 +66,7 @@ func main() {
 	bounceHandlerStop()
 	quotasStop()
 	messageStop()
+	cqlStop()
 	rdbmsStop()
 	statsStop()
 

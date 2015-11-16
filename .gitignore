@@ -1,5 +1,6 @@
 src/cluegetter/assets/
 cluegetter.conf
 src/github.com
+src/gopkg.in
 bin
 pkg

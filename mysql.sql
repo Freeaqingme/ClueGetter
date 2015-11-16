@@ -28,29 +28,32 @@ CREATE TABLE cluegetter_client (
 ) ENGINE=InnoDB;
 
 CREATE TABLE session (
-  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  id binary(16) NOT NULL,
   cluegetter_instance bigint(20) unsigned NOT NULL,
   cluegetter_client bigint(20) unsigned NOT NULL,
   date_connect datetime NOT NULL,
-  date_disconnect datetime DEFAULT NULL,
+  date_disconnect datetime NOT NULL,
   ip varchar(45) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
   reverse_dns varchar(255) CHARSET utf8 NOT NULL DEFAULT '',
+  helo varchar(255) charset utf8 NOT NULL DEFAULT '',
   sasl_username varchar(255) NOT NULL DEFAULT '',
   sasl_method varchar(32) NOT NULL DEFAULT '',
   cert_issuer varchar(255) charset ascii NOT NULL DEFAULT '',
   cert_subject varchar(255) charset ascii NOT NULL DEFAULT '',
-  cipher_bits varchar(255) charset ascii NOT NULL DEFAULT '',
+  cipher_bits smallint(5) unsigned DEFAULT NULL,
   cipher varchar(255) charset ascii NOT NULL DEFAULT '',
   tls_version varchar(31) charset ascii NOT NULL DEFAULT '',
   PRIMARY KEY (id),
   KEY cluegetter_instance (cluegetter_instance),
+  KEY session_date (cluegetter_instance,date_connect),
+  KEY message_sender_domain (sender_domain),
   CONSTRAINT session_ibfk_1 FOREIGN KEY (cluegetter_instance) REFERENCES instance (id),
   CONSTRAINT session_ibfk_2 FOREIGN KEY (cluegetter_client) REFERENCES cluegetter_client (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE message (
   id varchar(25) CHARACTER SET ascii NOT NULL,
-  session bigint(20) unsigned NOT NULL,
+  session binary(16) NOT NULL,
   date datetime NOT NULL,
   body_size int unsigned DEFAULT NULL,
   body_hash char(32) DEFAULT '',
@@ -67,6 +70,7 @@ CREATE TABLE message (
   PRIMARY KEY (id),
   KEY session (session),
   KEY messageId (messageId(25)),
+  KEY message_date_session (date,session),
   CONSTRAINT message_ibfk_1 FOREIGN KEY (session) REFERENCES session (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
@@ -91,7 +95,7 @@ CREATE TABLE message_header (
 CREATE TABLE message_result (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   message varchar(25) CHARACTER SET ascii NOT NULL,
-  module enum('quotas','spamassassin','rspamd','greylisting') NOT NULL,
+  module varchar(32) NOT NULL,
   verdict enum('permit','tempfail','reject', 'error') NOT NULL,
   score float(6,2) DEFAULT NULL,
   weighted_score float(6,2) DEFAULT NULL,

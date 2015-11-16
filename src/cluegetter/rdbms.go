@@ -46,10 +46,7 @@ func rdbmsStop() {
 
 func rdbmsGetDsn(display bool) string {
 	cfg := Config.ClueGetter
-	dsn_options := "sql_notes=false&parseTime=true&SESSION tx_isolation='READ-UNCOMMITTED'"
-	if cfg.Rdbms_Mysql_Strictmode {
-		dsn_options += "&strict=true"
-	}
+	dsn_options := "sql_notes=false&parseTime=true&strict=true&SESSION tx_isolation='READ-UNCOMMITTED'"
 
 	password := cfg.Rdbms_Password
 	if display && cfg.Rdbms_Password != "" {

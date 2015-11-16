@@ -34,7 +34,7 @@ func saStart() {
 	Log.Info("SpamAssassin module started successfully")
 }
 
-func saGetResult(msg Message, abort chan bool) *MessageCheckResult {
+func saGetResult(msg *Message, abort chan bool) *MessageCheckResult {
 	rawReply, err := saGetRawReply(msg, abort)
 	if err != nil || rawReply.Code != spamc.EX_OK {
 		Log.Error("SpamAssassin returned an error: %s", err)
@@ -47,7 +47,7 @@ func saGetResult(msg Message, abort chan bool) *MessageCheckResult {
 		}
 	}
 
-	Log.Debug("Getting SA report for %s", msg.getQueueId())
+	Log.Debug("Getting SA report for %s", msg.QueueId)
 	report := saParseReply(rawReply)
 	factsStr := func() []string {
 		out := make([]string, 0)
@@ -57,7 +57,7 @@ func saGetResult(msg Message, abort chan bool) *MessageCheckResult {
 		return out
 	}()
 
-	Log.Debug("Got SA score of %.2f for %s. Tests: [%s]", report.score, msg.getQueueId(), strings.Join(factsStr, ","))
+	Log.Debug("Got SA score of %.2f for %s. Tests: [%s]", report.score, msg.QueueId, strings.Join(factsStr, ","))
 	return &MessageCheckResult{
 		module:          "spamassassin",
 		suggestedAction: messageReject,
@@ -68,7 +68,7 @@ func saGetResult(msg Message, abort chan bool) *MessageCheckResult {
 	}
 }
 
-func saGetRawReply(msg Message, abort chan bool) (*spamc.SpamDOut, error) {
+func saGetRawReply(msg *Message, abort chan bool) (*spamc.SpamDOut, error) {
 	bodyStr := string(msg.String())
 
 	host := Config.SpamAssassin.Host + ":" + strconv.Itoa(Config.SpamAssassin.Port)
@@ -78,7 +78,7 @@ func saGetRawReply(msg Message, abort chan bool) (*spamc.SpamDOut, error) {
 		bodyStr = bodyStr[:Config.SpamAssassin.Max_Size]
 	}
 
-	return client.Report(abort, bodyStr, msg.getRecipients()[0])
+	return client.Report(abort, bodyStr, msg.Rcpt[0])
 }
 
 /*

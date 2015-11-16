@@ -7,6 +7,10 @@
 //
 package main
 
+/**
+@TODO: Implement REDIS stuff
+*/
+
 import (
 	"database/sql"
 	"fmt"

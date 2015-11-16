@@ -1,3 +1,19 @@
+-- v0.3.5
+ALTER TABLE session ADD KEY session_date (cluegetter_instance, date_connect);
+ALTER TABLE message ADD KEY message_date_session (date,session);
+ALTER TABLE message ADD key message_sender_domain (sender_domain);
+ALTER TABLE session ADD helo VARCHAR(255) CHARACTER SET utf8 not null default '' after reverse_dns;
+ALTER TABLE message_result CHANGE module module VARCHAR(32) NOT NULL;
+LOCK TABLES session WRITE, message WRITE;
+ALTER TABLE message DROP FOREIGN KEY message_ibfk_1;
+ALTER TABLE session CHANGE id id binary(16) Not NULL;
+ALTER TABLE message CHANGE session session binary(16) NOT NULL;
+ALTER TABLE message ADD CONSTRAINT message_ibfk_1 FOREIGN KEY (session) REFERENCES session (id);
+ALTER TABLE session CHANGE cipher_bits cipher_bits varchar(255) CHARACTER SET ascii default null;
+UPDATE session SET cipher_bits = NULL WHERE cipher_bits = '';
+ALTER TABLE session CHANGE cipher_bits cipher_bits SMALLINT UNSIGNED DEFAULT NULL;
+UNLOCK TABLES;
+
 -- V0.3.3
 ALTER TABLE message CHANGE body_size body_size int unsigned DEFAULT NULL ;
 ALTER TABLE message_result CHANGE module module enum('quotas','spamassassin','rspamd','greylisting') NOT NULL;
