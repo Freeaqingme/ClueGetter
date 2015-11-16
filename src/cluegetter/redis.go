@@ -45,16 +45,25 @@ func persistStart() {
 	RedisLPushChan = make(chan *RedisKeyValue, 255)
 	var client RedisClient
 
+	if len(Config.Redis.Host) == 0 {
+		Log.Fatal("No Redis.Host specified")
+	}
+
 	switch Config.Redis.Method {
 	case "standalone":
 		client = redis.NewClient(&redis.Options{
-			Addr:     "localhost:6379",
+			Addr:     Config.Redis.Host[0],
 			Password: "",
 			DB:       0,
 		})
 	case "cluster":
 		client = redis.NewClusterClient(&redis.ClusterOptions{
 			Addrs: Config.Redis.Host,
+		})
+	case "sentinel":
+		client = redis.NewFailoverClient(&redis.FailoverOptions{
+			MasterName:    "master",
+			SentinelAddrs: Config.Redis.Host,
 		})
 	default:
 		Log.Fatal("Unknown redis connection method specified")
