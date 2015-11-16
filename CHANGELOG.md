@@ -1,5 +1,10 @@
 # Change Log
 
+### 2015-11-16 Version 0.4
+* New Feature: Redis integration: Optionally use Redis for quotas greylisting, and asynchronous persistence.
+* Improvement: Updated some queries and indexes to improve database performance significantly.
+* New Feature: Experimental Cassandra support.
+
 ### 2015-11-04 Version 0.3.4
 * New Feature: Allow to configure pruning interval, or disable pruning altogether.
 

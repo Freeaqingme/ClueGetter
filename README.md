@@ -68,6 +68,10 @@ make
 ./bin/cluegetter --config ./cluegetter.conf --loglevel=DEBUG
 ```
 
+Once you got things up and running, consider setting up Redis. This will
+significantly improve performance and the ability to handle email while
+under load.
+
 ## Quotas
 The quotas module allows to set arbitrary limits on various factors, where the
 limits can be different per (predefined) factor value.
