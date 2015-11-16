@@ -363,10 +363,10 @@ func quotasRedisPollQuotasBySelector(c chan *quotasResult, selector, selectorVal
 	for _, quota := range redisClient.LRange(key, 0, -1).Val() {
 		wg.Add(1)
 		i++
-		go func() {
+		go func(quota string) {
 			quotasRedisPollQuotasBySelectorAndPeriod(c, quota, selector, selectorValue, extra_count)
 			wg.Done()
-		}()
+		}(quota)
 	}
 
 	wg.Wait()
