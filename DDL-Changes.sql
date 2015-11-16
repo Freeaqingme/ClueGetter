@@ -1,4 +1,7 @@
--- v0.3.5
+-- v0.4.1
+ALTER TABLE session CHANGE date_disconnect date_disconnect datetime DEFAULT NULL;
+
+-- v0.4
 ALTER TABLE session ADD KEY session_date (cluegetter_instance, date_connect);
 ALTER TABLE message ADD KEY message_date_session (date,session);
 ALTER TABLE message ADD key message_sender_domain (sender_domain);

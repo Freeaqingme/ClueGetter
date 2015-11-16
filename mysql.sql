@@ -32,7 +32,7 @@ CREATE TABLE session (
   cluegetter_instance bigint(20) unsigned NOT NULL,
   cluegetter_client bigint(20) unsigned NOT NULL,
   date_connect datetime NOT NULL,
-  date_disconnect datetime NOT NULL,
+  date_disconnect datetime DEFAULT NULL,
   ip varchar(45) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
   reverse_dns varchar(255) CHARSET utf8 NOT NULL DEFAULT '',
   helo varchar(255) charset utf8 NOT NULL DEFAULT '',
@@ -46,7 +46,6 @@ CREATE TABLE session (
   PRIMARY KEY (id),
   KEY cluegetter_instance (cluegetter_instance),
   KEY session_date (cluegetter_instance,date_connect),
-  KEY message_sender_domain (sender_domain),
   CONSTRAINT session_ibfk_1 FOREIGN KEY (cluegetter_instance) REFERENCES instance (id),
   CONSTRAINT session_ibfk_2 FOREIGN KEY (cluegetter_client) REFERENCES cluegetter_client (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -71,6 +70,7 @@ CREATE TABLE message (
   KEY session (session),
   KEY messageId (messageId(25)),
   KEY message_date_session (date,session),
+  KEY message_sender_domain (sender_domain),
   CONSTRAINT message_ibfk_1 FOREIGN KEY (session) REFERENCES session (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
