@@ -292,7 +292,7 @@ func (sess *milterSession) getProtoBufStruct() *Proto_MessageV1_Session {
 		ReverseDns:    &sess.ReverseDns,
 		Hostname:      &sess.Hostname,
 		Helo:          &sess.Helo,
-		MtaHostName:   &sess.Hostname,
+		MtaHostName:   &sess.MtaHostName,
 		MtaDaemonName: &sess.MtaDaemonName,
 	}
 }

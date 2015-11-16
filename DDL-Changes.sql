@@ -1,6 +1,12 @@
 -- v0.4.1
 ALTER TABLE session CHANGE date_disconnect date_disconnect datetime DEFAULT NULL;
 
+UPDATE session SET cluegetter_client = (SELECT id FROM cluegetter_client
+    WHERE hostname = daemon_name AND daemon_name =
+           (SELECT daemon_name FROM cluegetter_client cc2 WHERE cc2.id = session.cluegetter_client))
+  WHERE date_connect >= '2015-11-10';
+DELETE FROM cluegetter_session WHERE hostname != daemon_name;
+
 -- v0.4
 ALTER TABLE session ADD KEY session_date (cluegetter_instance, date_connect);
 ALTER TABLE message ADD KEY message_date_session (date,session);
