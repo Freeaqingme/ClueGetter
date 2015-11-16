@@ -460,6 +460,26 @@ func quotasRedisAddMsg(quotasKey *string, count int) func(*Message, int) {
 	}
 }
 
+func quotasRdbmsAddMsg(quota_id uint64) func(*Message, int) {
+	return func(msg *Message, verdict int) {
+		if verdict != 0 {
+			return
+		}
+
+		// Right now we have no sync mechanism that ensures that the quotas
+		// are persisted after the message (the message being persisted
+		// asynchronously. As such, we use a crude delay and hope
+		// for the best. Improvements are welcome.
+		time.Sleep(5 * time.Second)
+
+		StatsCounters["RdbmsQueries"].increase(1)
+		_, err := QuotaInsertQuotaMessageStmt.Exec(quota_id, msg.QueueId)
+		if err != nil {
+			panic("Could not execute QuotaInsertQuotaMessageStmt in quotasRdbmsAddMsg(). Error: " + err.Error())
+		}
+	}
+}
+
 func quotasRdbmsIsAllowed(msg *Message) *MessageCheckResult {
 	counts, err := quotasGetCounts(msg, true)
 	if err != nil {
@@ -521,12 +541,10 @@ func quotasRdbmsIsAllowed(msg *Message) *MessageCheckResult {
 		}
 	}
 
+	callbacks := make([]*func(*Message, int), 0)
 	for quota_id := range quotas {
-		StatsCounters["RdbmsQueries"].increase(1)
-		_, err := QuotaInsertQuotaMessageStmt.Exec(quota_id, msg.QueueId)
-		if err != nil {
-			panic("Could not execute QuotaInsertQuotaMessageStmt in quotasIsAllowed(). Error: " + err.Error())
-		}
+		callback := quotasRdbmsAddMsg(quota_id)
+		callbacks = append(callbacks, &callback)
 	}
 
 	return &MessageCheckResult{
@@ -535,6 +553,7 @@ func quotasRdbmsIsAllowed(msg *Message) *MessageCheckResult {
 		message:         "",
 		score:           1,
 		determinants:    determinants,
+		callbacks:       callbacks,
 	}
 }
 
