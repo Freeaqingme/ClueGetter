@@ -267,7 +267,19 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 
 	for _, result := range flatResults {
 		for _, callback := range result.callbacks {
-			go (*callback)(msg, verdict)
+			go func(callback *func(*Message,int), msg *Message, verdict int) {
+				defer func() {
+					if Config.ClueGetter.Exit_On_Panic {
+						return
+					}
+					r := recover()
+					if r == nil {
+						return
+					}
+					Log.Error("Panic caught in callback in messageGetVerdict(). Recovering. Error: %s", r)
+				}()
+				(*callback)(msg, verdict)
+			}(callback, msg, verdict)
 		}
 	}
 

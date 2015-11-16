@@ -1,5 +1,11 @@
 # Change Log
 
+### 2015-11-16 Version 0.4.1
+* Bugfix: Correctly register MtaHostName, rather than using PTR
+* Bugfix: Prevent potential race condition in quotasRedisPollQuotasBySelector()
+* Bugfix: Quotas in RDBMS should not fail when message is persisted asynchronously
+* Improvement: Gracefully recover in case a message callback fails
+
 ### 2015-11-16 Version 0.4
 * New Feature: Redis integration: Optionally use Redis for quotas greylisting, and asynchronous persistence.
 * Improvement: Updated some queries and indexes to improve database performance significantly.
