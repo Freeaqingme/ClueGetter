@@ -10,7 +10,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/op/go-logging"
+	logging "github.com/op/go-logging"
 	"log"
 	"log/syslog"
 	"os"
@@ -81,7 +81,7 @@ func initLogging(logLevelStr string, logPath string) {
 	}
 
 	var formatStdout = logging.MustStringFormatter(
-		"%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{color:reset} %{message}",
+		"%{color}%{time:2006-01-02T15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{color:reset} %{message}",
 	)
 	stdout := logging.NewLogBackend(os.Stdout, "", 0)
 	formatter := logging.NewBackendFormatter(stdout, formatStdout)
