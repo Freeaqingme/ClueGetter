@@ -64,6 +64,10 @@ message-reject-score   = 5
 # always be higher than the message-reject-score directive.
 message-tempfail-score = 8
 
+# All messages equal or above to this value can be marked as spam
+# through the x-spam-flag header.
+message-spamflag-score = 4.5
+
 # Abort all checking modules when the score for a given result (permit,
 # reject, tempfail) exceeds this score. Useful e.g. to stop scanning
 # for SPAM when the quota limit is hit.
@@ -82,12 +86,18 @@ whitelist = "127.0.0.0/8"
 whitelist = "::1"
 
 # Insert headers into each message. Can be repeated multiple times.
-# Key and value are separated by a ':'. '%h' will automatically be
-# replaced by the hostname.
-# add-header = X-Report-Abuse-To: abuse@example.com
-add-header = X-Scanned-By: ClueGetter at %h
+# Key and value are separated by a ':'.
+# The following symbols can be used:
+# %h                hostname
+# %{rejectScore}    The reject score
+# %{spamFlag}       YES/NO - Is higher than spam flag score, or not.
+add-header = X-Report-Abuse-To: abuse@example.com
+add-header = X-Scanned: ClueGetter at %h
+add-header = X-Spam-Score: %{rejectScore}
+add-header = X-Spam-Flag: %{spamFlag}
 
 # Add a header named 'X-Spam-Score' indicating the total reject score.
+# DEPRECATED
 add-header-x-spam-score = true
 
 # Sometimes an email does not have a message-id header. Because it's a

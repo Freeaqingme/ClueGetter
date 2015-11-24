@@ -446,13 +446,14 @@ func messageGetHeadersToAdd(msg *Message, results [4][]*MessageCheckResult) []*M
 	out := make([]*MessageHeader, len(MessageInsertHeaders))
 	copy(out, MessageInsertHeaders)
 
-	if Config.ClueGetter.Add_Header_X_Spam_Score {
-		spamscore := 0.0
-		for _, result := range results[messageReject] {
-			spamscore += result.score
-		}
+	rejectscore := 0.0
+	for _, result := range results[messageReject] {
+		rejectscore += result.score
+	}
 
-		out = append(out, &MessageHeader{"X-Spam-Score", fmt.Sprintf("%.2f", spamscore)})
+	if Config.ClueGetter.Add_Header_X_Spam_Score {
+		// DEPRECATED: Remove me soonishly
+		out = append(out, &MessageHeader{"X-Spam-Score", fmt.Sprintf("%.2f", rejectscore)})
 	}
 
 	if Config.ClueGetter.Insert_Missing_Message_Id == true && msg.injectMessageId != "" {
@@ -461,6 +462,13 @@ func messageGetHeadersToAdd(msg *Message, results [4][]*MessageCheckResult) []*M
 
 	for k, v := range out {
 		out[k].Value = strings.Replace(v.Value, "%h", sess.getMtaHostName(), -1)
+		out[k].Value = strings.Replace(v.Value, "%{rejectScore}", fmt.Sprintf("%.2f", rejectscore), -1)
+
+		if rejectscore >= Config.ClueGetter.Message_Spamflag_Score {
+			out[k].Value = strings.Replace(v.Value, "%{spamFlag}", "YES", -1)
+		} else {
+			out[k].Value = strings.Replace(v.Value, "%{spamFlag}", "NO", -1)
+		}
 	}
 
 	return out
