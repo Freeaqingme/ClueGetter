@@ -92,7 +92,7 @@ func messageStart() {
 
 		flagsPosStart := strings.Index(header.Key, "[")
 		flagsPosEnd := strings.Index(header.Key, "]")
-		if flagsPosStart == 0 && flagsPosEnd != -1 && flagsPosStart < flagsPosEnd {
+		if flagsPosStart == 0 && flagsPosEnd != -1 {
 			for _, flag := range strings.Split(header.Key[1:flagsPosEnd], ",") {
 				switch flag {
 				case "U":
@@ -483,7 +483,10 @@ func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (a
 			delete = append(delete, msg.GetHeader(v.getKey(), false)...)
 		}
 
+		// DEPRECATED: Remove me soonishly
 		add[k].Value = strings.Replace(v.Value, "%h", sess.getMtaHostName(), -1)
+
+		add[k].Value = strings.Replace(v.Value, "%{hostname}", sess.getMtaHostName(), -1)
 		add[k].Value = strings.Replace(v.Value, "%{rejectScore}", fmt.Sprintf("%.2f", rejectscore), -1)
 
 		if rejectscore >= Config.ClueGetter.Message_Spamflag_Score {
@@ -500,16 +503,6 @@ func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (a
 	}
 
 	return add, delete
-}
-
-func (msg *Message) HasHeader(key string) bool {
-	for _, v := range msg.Headers {
-		if strings.EqualFold(v.getKey(), key) {
-			return true
-		}
-	}
-
-	return false
 }
 
 func (msg *Message) GetHeader(key string, includeDeleted bool) []*MessageHeader {
