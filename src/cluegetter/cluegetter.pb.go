@@ -67,7 +67,7 @@ type Proto_MessageV1 struct {
 	From                   *string                        `protobuf:"bytes,3,req,name=from" json:"from,omitempty"`
 	Rcpt                   []string                       `protobuf:"bytes,4,rep,name=rcpt" json:"rcpt,omitempty"`
 	Headers                []*Proto_MessageV1_Header      `protobuf:"bytes,5,rep,name=headers" json:"headers,omitempty"`
-	Body                   []byte                         `protobuf:"bytes,6,req,name=body" json:"body,omitempty"`
+	Body                   []byte                         `protobuf:"bytes,6,opt,name=body" json:"body,omitempty"`
 	Verdict                *Proto_MessageV1_Verdict       `protobuf:"varint,7,req,name=verdict,enum=main.Proto_MessageV1_Verdict" json:"verdict,omitempty"`
 	VerdictMsg             *string                        `protobuf:"bytes,8,req,name=verdictMsg" json:"verdictMsg,omitempty"`
 	RejectScore            *float64                       `protobuf:"fixed64,9,req,name=rejectScore" json:"rejectScore,omitempty"`
