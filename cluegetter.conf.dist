@@ -100,7 +100,7 @@ whitelist = "::1"
 # unique flag with an empty value:
 # add-header = [U] Foo:
 
-add-header = X-Scanned: ClueGetter at %h
+add-header = X-Scanned: ClueGetter at %{hostname}
 add-header = [U] X-Report-Abuse-To: abuse@example.com
 add-header = [U] X-Spam-Score: %{rejectScore}
 add-header = [U] X-Spam-Flag: %{spamFlag}
