@@ -72,7 +72,7 @@ func saGetRawReply(msg *Message, abort chan bool) (*spamc.SpamDOut, error) {
 	bodyStr := string(msg.String())
 
 	host := Config.SpamAssassin.Host + ":" + strconv.Itoa(Config.SpamAssassin.Port)
-	client := spamc.New(host, 10)
+	client := spamc.New(host, Config.SpamAssassin.Timeout, Config.SpamAssassin.Connect_Timeout)
 
 	if len(bodyStr) > Config.SpamAssassin.Max_Size {
 		bodyStr = bodyStr[:Config.SpamAssassin.Max_Size]

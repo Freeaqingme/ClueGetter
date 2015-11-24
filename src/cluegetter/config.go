@@ -85,10 +85,12 @@ type config struct {
 		Multiplier float64
 	}
 	SpamAssassin struct {
-		Enabled  bool
-		Host     string
-		Port     int
-		Max_Size int
+		Enabled         bool
+		Host            string
+		Port            int
+		Timeout         float64
+		Connect_Timeout float64
+		Max_Size        int
 	}
 }
 
@@ -165,5 +167,7 @@ func DefaultConfig(cfg *config) {
 	cfg.SpamAssassin.Enabled = false
 	cfg.SpamAssassin.Host = "127.0.0.1"
 	cfg.SpamAssassin.Port = 783
+	cfg.SpamAssassin.Timeout = 0.1
+	cfg.SpamAssassin.Connect_Timeout = 10.0
 	cfg.SpamAssassin.Max_Size = 8388608
 }

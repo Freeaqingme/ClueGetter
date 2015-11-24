@@ -94,8 +94,8 @@ add-header-x-spam-score = true
 # convenient way to track messages across MTAs.
 insert-missing-message-id = true
 
-# Interval with which you want to prune items that are beyond their
-# retention period. Set to 0 to disable pruning.
+# Interval (in seconds) with which you want to prune items that
+# are beyond their retention period. Set to 0 to disable pruning.
 archive-prune-interval = 21600
 
 # The number of weeks to archive these items for before pruning them.
@@ -201,6 +201,13 @@ multiplier = 0.67
 enabled = false
 host    = 127.0.0.1
 port    = 783
+
+# Abort connecting to SpamAssassin if it takes longer than the configured
+# timeout (in seconds) to set up a connection.
+connect-timeout = 0.1
+
+# Abort determining if a message is spam after this amount of seconds.
+timeout = 10.0
 
 # The max message size (in bytes) to send to SpamAssassin.
 max-size = 8388608
