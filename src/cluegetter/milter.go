@@ -82,7 +82,7 @@ func milterStart() {
 	milter := new(milter)
 	milter.FilterName = "ClueGetter"
 	milter.Debug = false
-	milter.Flags = m.ADDHDRS | m.ADDRCPT | m.CHGFROM | m.CHGBODY
+	milter.Flags = m.ADDHDRS | m.ADDRCPT | m.CHGFROM | m.CHGBODY | m.CHGHDRS
 	milter.Socket = Config.ClueGetter.Milter_Socket
 
 	go func() {
@@ -208,12 +208,14 @@ func (milter *milter) EnvRcpt(ctx uintptr, rcpt []string) (sfsistat int8) {
 func (milter *milter) Header(ctx uintptr, headerf, headerv string) (sfsistat int8) {
 	defer milterHandleError(ctx, &sfsistat)
 
-	var header *MessageHeader
-	header = &MessageHeader{headerf, headerv}
-
 	sess := milterGetSession(ctx, true, false)
 	msg := sess.getLastMessage()
-	msg.Headers = append(msg.Headers, header)
+
+	msg.Headers = append(msg.Headers, &MessageHeader{
+		Key:       headerf,
+		Value:     headerv,
+		milterIdx: len(msg.GetHeader(headerf, false)) + 1},
+	)
 
 	StatsCounters["MilterCallbackHeader"].increase(1)
 	Log.Debug("%s Milter.Header() called: header %s = %s", sess.milterGetDisplayId(), headerf, headerv)
@@ -255,7 +257,20 @@ func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
 	Log.Debug("%s milter.Eom() was called", s.milterGetDisplayId())
 
 	verdict, msg, results := messageGetVerdict(s.getLastMessage())
-	for _, hdr := range messageGetHeadersToAdd(s.getLastMessage(), results) {
+	headersAdd, headersDelete := messageGetMutableHeaders(s.getLastMessage(), results)
+	for _, hdr := range headersDelete {
+		var delete string // Must be null to delete
+		m.ChgHeader(ctx, hdr.getKey(), hdr.milterIdx, delete)
+		hdr.deleted = true
+
+		for _, allHdr := range s.getLastMessage().GetHeader(hdr.getKey(), false) {
+			if allHdr.milterIdx > hdr.milterIdx {
+				allHdr.milterIdx = allHdr.milterIdx - 1
+			}
+		}
+	}
+
+	for _, hdr := range headersAdd {
 		m.AddHeader(ctx, hdr.getKey(), hdr.getValue())
 	}
 

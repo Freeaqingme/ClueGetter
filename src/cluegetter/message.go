@@ -39,8 +39,11 @@ type Message struct {
 }
 
 type MessageHeader struct {
-	Key   string
-	Value string
+	Key        string
+	Value      string
+	milterIdx  int
+	flagUnique bool
+	deleted    bool
 }
 
 func (h *MessageHeader) getKey() string {
@@ -83,9 +86,24 @@ func messageStart() {
 		}
 
 		header := &MessageHeader{
-			strings.SplitN(hdrString, ":", 2)[0],
-			strings.Trim(strings.SplitN(hdrString, ":", 2)[1], " "),
+			Key:   strings.Trim(strings.SplitN(hdrString, ":", 2)[0], " "),
+			Value: strings.Trim(strings.SplitN(hdrString, ":", 2)[1], " "),
 		}
+
+		flagsPosStart := strings.Index(header.Key, "[")
+		flagsPosEnd := strings.Index(header.Key, "]")
+		if flagsPosStart == 0 && flagsPosEnd != -1 && flagsPosStart < flagsPosEnd {
+			for _, flag := range strings.Split(header.Key[1:flagsPosEnd], ",") {
+				switch flag {
+				case "U":
+					header.flagUnique = true
+				default:
+					Log.Fatal("Unrecognized flag: " + flag)
+				}
+			}
+			header.Key = strings.Trim(header.Key[flagsPosEnd+1:len(header.Key)], " ")
+		}
+
 		MessageInsertHeaders = append(MessageInsertHeaders, header)
 	}
 
@@ -441,10 +459,10 @@ func messageSave(msg *Message, checkResults []*Proto_MessageV1_CheckResult, verd
 	messagePersistQueue <- protoMsg
 }
 
-func messageGetHeadersToAdd(msg *Message, results [4][]*MessageCheckResult) []*MessageHeader {
+func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (add, delete []*MessageHeader) {
 	sess := *msg.session
-	out := make([]*MessageHeader, len(MessageInsertHeaders))
-	copy(out, MessageInsertHeaders)
+	add = make([]*MessageHeader, len(MessageInsertHeaders))
+	copy(add, MessageInsertHeaders)
 
 	rejectscore := 0.0
 	for _, result := range results[messageReject] {
@@ -453,21 +471,52 @@ func messageGetHeadersToAdd(msg *Message, results [4][]*MessageCheckResult) []*M
 
 	if Config.ClueGetter.Add_Header_X_Spam_Score {
 		// DEPRECATED: Remove me soonishly
-		out = append(out, &MessageHeader{"X-Spam-Score", fmt.Sprintf("%.2f", rejectscore)})
+		add = append(add, &MessageHeader{Key: "X-Spam-Score", Value: fmt.Sprintf("%.2f", rejectscore)})
 	}
 
 	if Config.ClueGetter.Insert_Missing_Message_Id == true && msg.injectMessageId != "" {
-		out = append(out, &MessageHeader{"Message-Id", msg.injectMessageId})
+		add = append(add, &MessageHeader{Key: "Message-Id", Value: msg.injectMessageId})
 	}
 
-	for k, v := range out {
-		out[k].Value = strings.Replace(v.Value, "%h", sess.getMtaHostName(), -1)
-		out[k].Value = strings.Replace(v.Value, "%{rejectScore}", fmt.Sprintf("%.2f", rejectscore), -1)
+	for k, v := range add {
+		if v.flagUnique {
+			delete = append(delete, msg.GetHeader(v.getKey(), false)...)
+		}
+
+		add[k].Value = strings.Replace(v.Value, "%h", sess.getMtaHostName(), -1)
+		add[k].Value = strings.Replace(v.Value, "%{rejectScore}", fmt.Sprintf("%.2f", rejectscore), -1)
 
 		if rejectscore >= Config.ClueGetter.Message_Spamflag_Score {
-			out[k].Value = strings.Replace(v.Value, "%{spamFlag}", "YES", -1)
+			add[k].Value = strings.Replace(v.Value, "%{spamFlag}", "YES", -1)
 		} else {
-			out[k].Value = strings.Replace(v.Value, "%{spamFlag}", "NO", -1)
+			add[k].Value = strings.Replace(v.Value, "%{spamFlag}", "NO", -1)
+		}
+	}
+
+	for k, v := range add {
+		if v.Value == "" {
+			add = append(add[:k], add[k+1:]...)
+		}
+	}
+
+	return add, delete
+}
+
+func (msg *Message) HasHeader(key string) bool {
+	for _, v := range msg.Headers {
+		if strings.EqualFold(v.getKey(), key) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (msg *Message) GetHeader(key string, includeDeleted bool) []*MessageHeader {
+	out := make([]*MessageHeader, 0)
+	for _, hdr := range msg.Headers {
+		if strings.EqualFold(hdr.Key, key) && (includeDeleted || !hdr.deleted) {
+			out = append(out, hdr)
 		}
 	}
 
@@ -524,7 +573,7 @@ func messageEnsureHasMessageId(msg *Message) {
 			time.Now().Unix(), msg.QueueId, sess.getMtaHostName())
 		msg.injectMessageId = messageIdHdr
 		msg.Headers = append(msg.Headers, &MessageHeader{
-			"Message-Id", messageIdHdr,
+			Key: "Message-Id", Value: messageIdHdr,
 		})
 	}
 }
