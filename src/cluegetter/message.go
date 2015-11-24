@@ -190,7 +190,8 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 	var breakerScore [4]float64
 	done := make(chan bool)
 	errorCount := 0
-	for result := range messageGetResults(msg, done) {
+	resultsChan := messageGetResults(msg, done)
+	for result := range resultsChan {
 		results[result.suggestedAction] = append(results[result.suggestedAction], result)
 		flatResults = append(flatResults, result)
 		breakerScore[result.suggestedAction] += result.score
@@ -204,6 +205,13 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 				breakerScore[result.suggestedAction],
 				Config.ClueGetter.Breaker_Score,
 			)
+
+			go func() {
+				for _ = range resultsChan {
+					// Allow other modules to finish and flush through the channel
+					// It will be closed in messageGetResults() once all are finished.
+				}
+			}()
 			break
 		}
 	}
@@ -267,7 +275,7 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 
 	for _, result := range flatResults {
 		for _, callback := range result.callbacks {
-			go func(callback *func(*Message,int), msg *Message, verdict int) {
+			go func(callback *func(*Message, int), msg *Message, verdict int) {
 				defer func() {
 					if Config.ClueGetter.Exit_On_Panic {
 						return
@@ -336,9 +344,9 @@ func messageGetResults(msg *Message, done chan bool) chan *MessageCheckResult {
 	for moduleName, moduleCallback := range modules {
 		wg.Add(1)
 		go func(moduleName string, moduleCallback func(*Message, chan bool) *MessageCheckResult) {
-			defer wg.Done()
 			t0 := time.Now()
 			defer func() {
+				wg.Done()
 				if Config.ClueGetter.Exit_On_Panic {
 					return
 				}
