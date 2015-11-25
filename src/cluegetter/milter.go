@@ -360,12 +360,14 @@ func milterGetSession(ctx uintptr, keep bool, returnNil bool) *milterSession {
 	var u [16]byte
 	res := m.GetPriv(ctx, &u)
 	if res != 0 {
-		//		panic("Could not get data from libmilter")
+		// We purposefully do not act on errors. For some reason, the FreeBSD build always
+		// returns an error. Also, in practice it never fails. Famous last words...
+		//  panic("Could not get data from libmilter")
 	}
 	if keep {
 		res := m.SetPriv(ctx, u)
 		if res != 0 {
-			//			panic(fmt.Sprintf("Session %d could not be stored in milterDataIndex", u))
+			panic(fmt.Sprintf("Session %d could not be stored in milterDataIndex", u))
 		}
 	}
 
