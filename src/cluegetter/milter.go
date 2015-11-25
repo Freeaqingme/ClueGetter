@@ -145,7 +145,7 @@ func (milter *milter) Connect(ctx uintptr, hostname string, ip net.IP) (sfsistat
 
 	MilterDataIndex.addNewSession(sess)
 	sessId := sess.getId()
-	err := m.SetPrivBytes(ctx, sessId[:])
+	err := m.SetPriv(ctx, sessId)
 	if err != nil {
 		panic(fmt.Sprintf("Session %d could not be stored in milterDataIndex: %s", err.Error()))
 	}
@@ -358,15 +358,12 @@ func milterLog(i ...interface{}) {
 
 func milterGetSession(ctx uintptr, keep bool, returnNil bool) *milterSession {
 	var u [16]byte
-	raw, err := m.GetPrivBytes(ctx)
+	err := m.GetPriv(ctx, &u)
 	if err != nil {
 		panic("Could not get data from libmilter: " + err.Error())
 	}
-	for k, v := range raw {
-		u[k] = v
-	}
 	if keep {
-		err := m.SetPrivBytes(ctx, u[:])
+		err := m.SetPriv(ctx, u)
 		if err != nil {
 			panic(fmt.Sprintf("Session %d could not be stored in milterDataIndex: %s", u, err.Error()))
 		}
