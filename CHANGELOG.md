@@ -1,5 +1,13 @@
 # Change Log
 
+### 2015-11-25 Version 0.4.2
+* New Feature: Support deletion of headers and made adding of headers more generic
+* Bugfix: Properly close all goroutines when breaker score is hit, prevents leaks
+* Bugfix: Allow empty message bodies again.
+* Improvement: Allow to configure SpamAssassin connect timeout
+* Improvement: Add net/http/pprof to web interface
+* Improvement: Add date to log format
+
 ### 2015-11-16 Version 0.4.1
 * Bugfix: Correctly register MtaHostName, rather than using PTR
 * Bugfix: Prevent potential race condition in quotasRedisPollQuotasBySelector()
