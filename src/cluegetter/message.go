@@ -39,8 +39,11 @@ type Message struct {
 }
 
 type MessageHeader struct {
-	Key   string
-	Value string
+	Key        string
+	Value      string
+	milterIdx  int
+	flagUnique bool
+	deleted    bool
 }
 
 func (h *MessageHeader) getKey() string {
@@ -83,9 +86,24 @@ func messageStart() {
 		}
 
 		header := &MessageHeader{
-			strings.SplitN(hdrString, ":", 2)[0],
-			strings.Trim(strings.SplitN(hdrString, ":", 2)[1], " "),
+			Key:   strings.Trim(strings.SplitN(hdrString, ":", 2)[0], " "),
+			Value: strings.Trim(strings.SplitN(hdrString, ":", 2)[1], " "),
 		}
+
+		flagsPosStart := strings.Index(header.Key, "[")
+		flagsPosEnd := strings.Index(header.Key, "]")
+		if flagsPosStart == 0 && flagsPosEnd != -1 {
+			for _, flag := range strings.Split(header.Key[1:flagsPosEnd], ",") {
+				switch flag {
+				case "U":
+					header.flagUnique = true
+				default:
+					Log.Fatal("Unrecognized flag: " + flag)
+				}
+			}
+			header.Key = strings.Trim(header.Key[flagsPosEnd+1:len(header.Key)], " ")
+		}
+
 		MessageInsertHeaders = append(MessageInsertHeaders, header)
 	}
 
@@ -190,7 +208,8 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 	var breakerScore [4]float64
 	done := make(chan bool)
 	errorCount := 0
-	for result := range messageGetResults(msg, done) {
+	resultsChan := messageGetResults(msg, done)
+	for result := range resultsChan {
 		results[result.suggestedAction] = append(results[result.suggestedAction], result)
 		flatResults = append(flatResults, result)
 		breakerScore[result.suggestedAction] += result.score
@@ -204,6 +223,13 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 				breakerScore[result.suggestedAction],
 				Config.ClueGetter.Breaker_Score,
 			)
+
+			go func() {
+				for _ = range resultsChan {
+					// Allow other modules to finish and flush through the channel
+					// It will be closed in messageGetResults() once all are finished.
+				}
+			}()
 			break
 		}
 	}
@@ -267,7 +293,7 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 
 	for _, result := range flatResults {
 		for _, callback := range result.callbacks {
-			go func(callback *func(*Message,int), msg *Message, verdict int) {
+			go func(callback *func(*Message, int), msg *Message, verdict int) {
 				defer func() {
 					if Config.ClueGetter.Exit_On_Panic {
 						return
@@ -336,9 +362,9 @@ func messageGetResults(msg *Message, done chan bool) chan *MessageCheckResult {
 	for moduleName, moduleCallback := range modules {
 		wg.Add(1)
 		go func(moduleName string, moduleCallback func(*Message, chan bool) *MessageCheckResult) {
-			defer wg.Done()
 			t0 := time.Now()
 			defer func() {
+				wg.Done()
 				if Config.ClueGetter.Exit_On_Panic {
 					return
 				}
@@ -433,26 +459,58 @@ func messageSave(msg *Message, checkResults []*Proto_MessageV1_CheckResult, verd
 	messagePersistQueue <- protoMsg
 }
 
-func messageGetHeadersToAdd(msg *Message, results [4][]*MessageCheckResult) []*MessageHeader {
+func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (add, delete []*MessageHeader) {
 	sess := *msg.session
-	out := make([]*MessageHeader, len(MessageInsertHeaders))
-	copy(out, MessageInsertHeaders)
+	add = make([]*MessageHeader, len(MessageInsertHeaders))
+	copy(add, MessageInsertHeaders)
+
+	rejectscore := 0.0
+	for _, result := range results[messageReject] {
+		rejectscore += result.score
+	}
 
 	if Config.ClueGetter.Add_Header_X_Spam_Score {
-		spamscore := 0.0
-		for _, result := range results[messageReject] {
-			spamscore += result.score
-		}
-
-		out = append(out, &MessageHeader{"X-Spam-Score", fmt.Sprintf("%.2f", spamscore)})
+		// DEPRECATED: Remove me soonishly
+		add = append(add, &MessageHeader{Key: "X-Spam-Score", Value: fmt.Sprintf("%.2f", rejectscore)})
 	}
 
 	if Config.ClueGetter.Insert_Missing_Message_Id == true && msg.injectMessageId != "" {
-		out = append(out, &MessageHeader{"Message-Id", msg.injectMessageId})
+		add = append(add, &MessageHeader{Key: "Message-Id", Value: msg.injectMessageId})
 	}
 
-	for k, v := range out {
-		out[k].Value = strings.Replace(v.Value, "%h", sess.getMtaHostName(), -1)
+	for k, v := range add {
+		if v.flagUnique {
+			delete = append(delete, msg.GetHeader(v.getKey(), false)...)
+		}
+
+		// DEPRECATED: Remove me soonishly
+		add[k].Value = strings.Replace(v.Value, "%h", sess.getMtaHostName(), -1)
+
+		add[k].Value = strings.Replace(v.Value, "%{hostname}", sess.getMtaHostName(), -1)
+		add[k].Value = strings.Replace(v.Value, "%{rejectScore}", fmt.Sprintf("%.2f", rejectscore), -1)
+
+		if rejectscore >= Config.ClueGetter.Message_Spamflag_Score {
+			add[k].Value = strings.Replace(v.Value, "%{spamFlag}", "YES", -1)
+		} else {
+			add[k].Value = strings.Replace(v.Value, "%{spamFlag}", "NO", -1)
+		}
+	}
+
+	for k, v := range add {
+		if v.Value == "" {
+			add = append(add[:k], add[k+1:]...)
+		}
+	}
+
+	return add, delete
+}
+
+func (msg *Message) GetHeader(key string, includeDeleted bool) []*MessageHeader {
+	out := make([]*MessageHeader, 0)
+	for _, hdr := range msg.Headers {
+		if strings.EqualFold(hdr.Key, key) && (includeDeleted || !hdr.deleted) {
+			out = append(out, hdr)
+		}
 	}
 
 	return out
@@ -508,7 +566,7 @@ func messageEnsureHasMessageId(msg *Message) {
 			time.Now().Unix(), msg.QueueId, sess.getMtaHostName())
 		msg.injectMessageId = messageIdHdr
 		msg.Headers = append(msg.Headers, &MessageHeader{
-			"Message-Id", messageIdHdr,
+			Key: "Message-Id", Value: messageIdHdr,
 		})
 	}
 }

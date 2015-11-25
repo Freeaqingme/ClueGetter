@@ -26,6 +26,7 @@ type config struct {
 		Rdbms_Database                   string
 		Message_Reject_Score             float64
 		Message_Tempfail_Score           float64
+		Message_Spamflag_Score           float64
 		Breaker_Score                    float64
 		Milter_Socket                    string
 		Whitelist                        []string
@@ -85,10 +86,12 @@ type config struct {
 		Multiplier float64
 	}
 	SpamAssassin struct {
-		Enabled  bool
-		Host     string
-		Port     int
-		Max_Size int
+		Enabled         bool
+		Host            string
+		Port            int
+		Timeout         float64
+		Connect_Timeout float64
+		Max_Size        int
 	}
 }
 
@@ -114,6 +117,7 @@ func DefaultConfig(cfg *config) {
 	cfg.ClueGetter.Rdbms_Database = "cluegetter"
 	cfg.ClueGetter.Message_Reject_Score = 5
 	cfg.ClueGetter.Message_Tempfail_Score = 8
+	cfg.ClueGetter.Message_Spamflag_Score = 4.5
 	cfg.ClueGetter.Breaker_Score = 100
 	cfg.ClueGetter.Milter_Socket = "inet:10033@127.0.0.1"
 	cfg.ClueGetter.Whitelist = []string{} // "127.0.0.0/8", "::1" }
@@ -165,5 +169,7 @@ func DefaultConfig(cfg *config) {
 	cfg.SpamAssassin.Enabled = false
 	cfg.SpamAssassin.Host = "127.0.0.1"
 	cfg.SpamAssassin.Port = 783
+	cfg.SpamAssassin.Timeout = 0.1
+	cfg.SpamAssassin.Connect_Timeout = 10.0
 	cfg.SpamAssassin.Max_Size = 8388608
 }

@@ -188,7 +188,6 @@ func greylistGetResult(msg *Message, done chan bool) *MessageCheckResult {
 }
 
 func greylistGetVerdictRedis(msg *Message, spfWhitelistErr error, spfDomain string) *MessageCheckResult {
-
 	determinants := map[string]interface{}{
 		"Found in whitelist":     "false",
 		"Found in SPF whitelist": "false",
@@ -251,8 +250,8 @@ func greylistGetVerdictRdbms(msg *Message, spfWhitelistErr error, spfDomain stri
 		"SpfDomain":              spfDomain,
 	}
 
-	Log.Debug("%d Got %d allow verdicts, %d disallow verdicts in greylist module. First verdict was %.2f minutes ago",
-		(*msg.session).getId(), allowCount, disallowCount, timeDiff)
+	Log.Debug("%s Got %d allow verdicts, %d disallow verdicts in greylist module. First verdict was %.2f minutes ago",
+		(*msg.session).milterGetDisplayId(), allowCount, disallowCount, timeDiff)
 
 	if allowCount > 0 || timeDiff > float64(Config.Greylisting.Initial_Period) {
 		return &MessageCheckResult{

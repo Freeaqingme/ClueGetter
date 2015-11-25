@@ -5,7 +5,8 @@ UPDATE session SET cluegetter_client = (SELECT id FROM cluegetter_client
     WHERE hostname = daemon_name AND daemon_name =
            (SELECT daemon_name FROM cluegetter_client cc2 WHERE cc2.id = session.cluegetter_client))
   WHERE date_connect >= '2015-11-10';
-DELETE FROM cluegetter_session WHERE hostname != daemon_name;
+UPDATE cluegetter_client SET daemon_name = 'unknown' WHERE hostname = 'unknown' LIMIT 1;
+DELETE FROM cluegetter_client WHERE hostname != daemon_name;
 
 -- v0.4
 ALTER TABLE session ADD KEY session_date (cluegetter_instance, date_connect);

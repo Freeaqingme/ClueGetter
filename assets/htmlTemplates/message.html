@@ -7,7 +7,7 @@
     <dt>MTA</dt>
     <dd>{{printf "%s" .MtaHostname}} ({{printf "%s" .MtaDaemonName}})</dd>
     <dt>IP</dt>
-    <dd>{{printf "%s" .Ip}} (Reverse DNS: {{printf "%s" .ReverseDns}}, HELO: {{printf "%s" .Helo}})</dd>
+    <dd>{{printf "%s" .Ip}} (RDNS: <i>{{printf "%s" .ReverseDns}}</i>, HELO: <i>{{printf "%s" .Helo}}</i>)</dd>
     <dt>Sasl Username</dt>
     <dd>{{printf "%s" .SaslUsername}} ({{printf "%s" .SaslMethod}})</dd>
     <dt>Certificate</dt>
