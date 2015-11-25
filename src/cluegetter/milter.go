@@ -360,7 +360,7 @@ func milterGetSession(ctx uintptr, keep bool, returnNil bool) *milterSession {
 	var u [16]byte
 	raw, err := m.GetPrivBytes(ctx)
 	if err != nil {
-		panic("Could not get data from libmilter")
+		panic("Could not get data from libmilter: " + error.Error())
 	}
 	for k, v := range raw {
 		u[k] = v
