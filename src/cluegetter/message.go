@@ -362,9 +362,9 @@ func messageGetResults(msg *Message, done chan bool) chan *MessageCheckResult {
 	for moduleName, moduleCallback := range modules {
 		wg.Add(1)
 		go func(moduleName string, moduleCallback func(*Message, chan bool) *MessageCheckResult) {
+			defer wg.Done()
 			t0 := time.Now()
 			defer func() {
-				wg.Done()
 				if Config.ClueGetter.Exit_On_Panic {
 					return
 				}
