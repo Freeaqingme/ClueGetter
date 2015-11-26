@@ -1,3 +1,7 @@
+-- v0.4.3
+ALTER TABLE message_header CHANGE name name varbinary(74) not null,
+                            CHANGE body body blob not null;
+
 -- v0.4.1
 ALTER TABLE session CHANGE date_disconnect date_disconnect datetime DEFAULT NULL;
 
