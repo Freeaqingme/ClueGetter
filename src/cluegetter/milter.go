@@ -145,9 +145,9 @@ func (milter *milter) Connect(ctx uintptr, hostname string, ip net.IP) (sfsistat
 
 	MilterDataIndex.addNewSession(sess)
 	sessId := sess.getId()
-	err := m.SetPrivBytes(ctx, sessId[:])
-	if err != nil {
-		panic(fmt.Sprintf("Session %d could not be stored in milterDataIndex: %s", err.Error()))
+	res := m.SetPriv(ctx, sessId)
+	if res != 0 {
+		panic(fmt.Sprintf("Session %d could not be stored in milterDataIndex"))
 	}
 
 	StatsCounters["MilterCallbackConnect"].increase(1)
@@ -358,17 +358,16 @@ func milterLog(i ...interface{}) {
 
 func milterGetSession(ctx uintptr, keep bool, returnNil bool) *milterSession {
 	var u [16]byte
-	raw, err := m.GetPrivBytes(ctx)
-	if err != nil {
-		panic("Could not get data from libmilter")
-	}
-	for k, v := range raw {
-		u[k] = v
+	res := m.GetPriv(ctx, &u)
+	if res != 0 {
+		// We purposefully do not act on errors. For some reason, the FreeBSD build always
+		// returns an error. Also, in practice it never fails. Famous last words...
+		//  panic("Could not get data from libmilter")
 	}
 	if keep {
-		err := m.SetPrivBytes(ctx, u[:])
-		if err != nil {
-			panic(fmt.Sprintf("Session %d could not be stored in milterDataIndex: %s", u, err.Error()))
+		res := m.SetPriv(ctx, u)
+		if res != 0 {
+			panic(fmt.Sprintf("Session %d could not be stored in milterDataIndex", u))
 		}
 	}
 

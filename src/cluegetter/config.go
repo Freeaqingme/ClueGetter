@@ -169,7 +169,7 @@ func DefaultConfig(cfg *config) {
 	cfg.SpamAssassin.Enabled = false
 	cfg.SpamAssassin.Host = "127.0.0.1"
 	cfg.SpamAssassin.Port = 783
-	cfg.SpamAssassin.Timeout = 0.1
-	cfg.SpamAssassin.Connect_Timeout = 10.0
+	cfg.SpamAssassin.Timeout = 10
+	cfg.SpamAssassin.Connect_Timeout = 0.1
 	cfg.SpamAssassin.Max_Size = 8388608
 }
