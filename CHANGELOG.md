@@ -1,5 +1,10 @@
 # Change Log
 
+### 2015-11-26 Version 0.4.3
+* Bugfix: SpamAssassin default value for timeout and connect timeout were swapped
+* Bugfix: Panics are now properly caught, regression introduced in v0.4.2.
+* Improvement: Libmilter's error handling behaves differently on FreeBSD than on Linux
+
 ### 2015-11-25 Version 0.4.2
 * New Feature: Support deletion of headers and made adding of headers more generic
 * Bugfix: Properly close all goroutines when breaker score is hit, prevents leaks
