@@ -51,20 +51,23 @@ func main() {
 	milterSessionStart()
 	httpStart(done)
 	messageStart()
-	quotasStart()
-	saStart()
-	rspamdStart()
-	greylistStart()
+	for _, module := range modules {
+		if module.init != nil {
+			(*module.init)()
+		}
+	}
 	milterStart()
-	bounceHandlerStart()
 
 	s := <-ch
 	Log.Notice(fmt.Sprintf("Received '%s', exiting...", s.String()))
 
 	close(done)
 	milterStop()
-	bounceHandlerStop()
-	quotasStop()
+	for _, module := range modules {
+		if module.stop != nil {
+			(*module.stop)()
+		}
+	}
 	messageStop()
 	cqlStop()
 	rdbmsStop()

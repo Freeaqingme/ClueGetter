@@ -54,6 +54,19 @@ var QuotaGetAllRegexesStmt = *new(*sql.Stmt)
 var quotasRegexes *[]*quotasRegex
 var quotasRegexesLock *sync.RWMutex
 
+func init() {
+	init := quotasStart
+	stop := quotasStop
+	milterCheck := quotasIsAllowed
+
+	Register(&module{
+		name:        "quotas",
+		init:        &init,
+		stop:        &stop,
+		milterCheck: &milterCheck,
+	})
+}
+
 func quotasStart() {
 	if Config.Quotas.Enabled != true {
 		Log.Info("Skipping Quota module because it was not enabled in the config")
@@ -272,6 +285,10 @@ func quotasStop() {
 }
 
 func quotasIsAllowed(msg *Message, _ chan bool) *MessageCheckResult {
+	if !Config.Quotas.Enabled {
+		return nil
+	}
+
 	if Config.Redis.Enabled {
 		return quotasRedisIsAllowed(msg)
 	}

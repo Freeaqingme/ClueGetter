@@ -25,6 +25,17 @@ type saReportFact struct {
 	Description string
 }
 
+func init() {
+	init := saStart
+	milterCheck := saGetResult
+
+	Register(&module{
+		name:        "spamassassin",
+		init:        &init,
+		milterCheck: &milterCheck,
+	})
+}
+
 func saStart() {
 	if Config.SpamAssassin.Enabled != true {
 		Log.Info("Skipping SpamAssassin module because it was not enabled in the config")
@@ -35,6 +46,10 @@ func saStart() {
 }
 
 func saGetResult(msg *Message, abort chan bool) *MessageCheckResult {
+	if !Config.SpamAssassin.Enabled {
+		return nil
+	}
+
 	rawReply, err := saGetRawReply(msg, abort)
 	if err != nil || rawReply.Code != spamc.EX_OK {
 		Log.Error("SpamAssassin returned an error: %s", err)

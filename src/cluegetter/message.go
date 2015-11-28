@@ -358,10 +358,12 @@ func messageGetResults(msg *Message, done chan bool) chan *MessageCheckResult {
 	var wg sync.WaitGroup
 	out := make(chan *MessageCheckResult)
 
-	modules := messageGetEnabledModules()
-	for moduleName, moduleCallback := range modules {
+	for _, module := range modules {
+		if module.milterCheck == nil {
+			continue
+		}
 		wg.Add(1)
-		go func(moduleName string, moduleCallback func(*Message, chan bool) *MessageCheckResult) {
+		go func(moduleName string, moduleCallback *func(*Message, chan bool) *MessageCheckResult) {
 			defer wg.Done()
 			t0 := time.Now()
 			defer func() {
@@ -388,10 +390,12 @@ func messageGetResults(msg *Message, done chan bool) chan *MessageCheckResult {
 				}
 			}()
 
-			res := moduleCallback(msg, done)
-			res.duration = time.Now().Sub(t0)
-			out <- res
-		}(moduleName, moduleCallback)
+			res := (*moduleCallback)(msg, done)
+			if res != nil {
+				res.duration = time.Now().Sub(t0)
+				out <- res
+			}
+		}(module.name, module.milterCheck)
 	}
 
 	go func() {
@@ -400,28 +404,6 @@ func messageGetResults(msg *Message, done chan bool) chan *MessageCheckResult {
 	}()
 
 	return out
-}
-
-func messageGetEnabledModules() (out map[string]func(*Message, chan bool) *MessageCheckResult) {
-	out = make(map[string]func(*Message, chan bool) *MessageCheckResult)
-
-	if Config.Quotas.Enabled {
-		out["quotas"] = quotasIsAllowed
-	}
-
-	if Config.SpamAssassin.Enabled {
-		out["spamassassin"] = saGetResult
-	}
-
-	if Config.Rspamd.Enabled {
-		out["rspamd"] = rspamdGetResult
-	}
-
-	if Config.Greylisting.Enabled {
-		out["greylisting"] = greylistGetResult
-	}
-
-	return
 }
 
 func messageSave(msg *Message, checkResults []*Proto_MessageV1_CheckResult, verdict int,

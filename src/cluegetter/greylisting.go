@@ -31,6 +31,17 @@ type greylistVerdict struct {
 	date    *time.Time
 }
 
+func init() {
+	init := greylistStart
+	milterCheck := greylistGetResult
+
+	Register(&module{
+		name:        "greylisting",
+		init:        &init,
+		milterCheck: &milterCheck,
+	})
+}
+
 func greylistStart() {
 	if Config.Greylisting.Enabled != true {
 		Log.Info("Skipping Greylist module because it was not enabled in the config")
@@ -146,6 +157,10 @@ func greylistUpdateWhitelist() {
 }
 
 func greylistGetResult(msg *Message, done chan bool) *MessageCheckResult {
+	if !Config.Greylisting.Enabled {
+		return nil
+	}
+
 	ip := (*msg.session).getIp()
 
 	res, spfDomain, spfWhitelistErr := greylistIsSpfWhitelisted(net.ParseIP(ip), done)

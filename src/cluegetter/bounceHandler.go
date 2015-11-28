@@ -8,7 +8,7 @@
 package main
 
 /**
-@TODO: Implement REDIS stuff
+@TODO: Implement REDIS stuff?
 */
 
 import (
@@ -44,6 +44,17 @@ type bounceHandlerRcptReport struct {
 
 var BounceHandlerSaveBounceStmt = *new(*sql.Stmt)
 var BounceHandlerSaveBounceReportStmt = *new(*sql.Stmt)
+
+func init() {
+	init := bounceHandlerStart
+	stop := bounceHandlerStop
+
+	Register(&module{
+		name: "bouncehandler",
+		init: &init,
+		stop: &stop,
+	})
+}
 
 func bounceHandlerStart() {
 	if Config.BounceHandler.Enabled != true {
