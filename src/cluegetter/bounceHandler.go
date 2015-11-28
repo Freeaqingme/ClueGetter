@@ -49,7 +49,7 @@ func init() {
 	init := bounceHandlerStart
 	stop := bounceHandlerStop
 
-	Register(&module{
+	ModuleRegister(&module{
 		name: "bouncehandler",
 		init: &init,
 		stop: &stop,

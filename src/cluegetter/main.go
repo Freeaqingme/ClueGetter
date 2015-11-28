@@ -15,12 +15,24 @@ import (
 	"log/syslog"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 )
 
-var Config = *new(config)
-var Log = logging.MustGetLogger("cluegetter")
-var instance uint
+var (
+	modulesMu sync.Mutex
+	modules   = make([]*module, 0)
+	Config    = *new(config)
+	Log       = logging.MustGetLogger("cluegetter")
+	instance  uint
+)
+
+type module struct {
+	name        string
+	init        *func()
+	stop        *func()
+	milterCheck *func(*Message, chan bool) *MessageCheckResult
+}
 
 func main() {
 
@@ -119,4 +131,18 @@ func setInstance() {
 	}
 
 	Log.Notice("Instance name: %s. Id: %d", Config.ClueGetter.Instance, instance)
+}
+
+func ModuleRegister(module *module) {
+	modulesMu.Lock()
+	defer modulesMu.Unlock()
+	if module == nil {
+		panic("Module: Register module is nil")
+	}
+	for _, dup := range modules {
+		if dup.name == module.name {
+			panic("Module: Register called twice for module " + module.name)
+		}
+	}
+	modules = append(modules, module)
 }

@@ -29,7 +29,7 @@ func init() {
 	init := saStart
 	milterCheck := saGetResult
 
-	Register(&module{
+	ModuleRegister(&module{
 		name:        "spamassassin",
 		init:        &init,
 		milterCheck: &milterCheck,

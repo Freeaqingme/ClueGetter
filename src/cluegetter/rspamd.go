@@ -41,7 +41,7 @@ func init() {
 	init := rspamdStart
 	milterCheck := rspamdGetResult
 
-	Register(&module{
+	ModuleRegister(&module{
 		name:        "rspamd",
 		init:        &init,
 		milterCheck: &milterCheck,

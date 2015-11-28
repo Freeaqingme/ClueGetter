@@ -59,7 +59,7 @@ func init() {
 	stop := quotasStop
 	milterCheck := quotasIsAllowed
 
-	Register(&module{
+	ModuleRegister(&module{
 		name:        "quotas",
 		init:        &init,
 		stop:        &stop,
