@@ -1,0 +1,26 @@
+cmd github.com/cockroachdb/c-protobuf/cmd/protoc
+cmd github.com/gogo/protobuf/protoc-gen-gogo
+cmd github.com/golang/lint/golint
+cmd github.com/jteeuwen/go-bindata/go-bindata
+cmd github.com/robfig/glock
+github.com/bmatsuo/uuid cccd189d45f7ac3368a0d127efb7f4d08ae0b655
+github.com/cockroachdb/c-protobuf 6a18bfcdd5169966cd1235edb71d749c950216e8
+github.com/dustin/go-humanize 8929fe90cee4b2cb9deb468b51fb34eba64d1bf0
+github.com/Freeaqingme/golang-sql-driver-mysql 3661f81cbe59e8d38b135be428e28f0414b4a541
+github.com/Freeaqingme/go-libspf2 b6690e62a7ecafbe84c3a722351015563089de1a
+github.com/Freeaqingme/gomilter c60841ef06d6eddb92d3dc6d5b0e77388b71e2d3
+github.com/Freeaqingme/go-spamc cb8a8ab4355e50516cd493266ccbe2fb02482ddf
+github.com/glenn-brown/golang-pkg-pcre 48bb82a8b8ceea98f4e97825b43870f6ba1970d6
+github.com/gocql/gocql 87cc1854b57c7a4d8f4ae1d0cc358ed6ecb0f8c3
+github.com/gogo/protobuf d3235f01ecae4901dd9f7ea6af57a352c0189deb
+github.com/golang/lint 32a87160691b3c96046c0c678fe57c5bef761456
+github.com/golang/protobuf 221834dcb89c96e4b057ed8bb878bfe569dfacf4
+github.com/golang/snappy 723cc1e459b8eea2dea4583200fd60757d40097a
+github.com/hailocab/go-hostpool 0637eae892be221164aff5fcbccc57171aea6406
+github.com/jteeuwen/go-bindata a0ff2567cfb70903282db057e799fd826784d41d
+github.com/op/go-logging f2de3fa73ede49624df5ca7467011ac4fcd43635
+github.com/scalingdata/gcfg 37aabad69cfd3d20b8390d902a8b10e245c615ff
+gopkg.in/bsm/ratelimit.v1 fbc2d5a2daac4dc3801ee3073874800e2be6ccd1
+gopkg.in/inf.v0 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
+gopkg.in/redis.v3 ba9dda7567ee6939c265e36f734e6ae3e014779a
+

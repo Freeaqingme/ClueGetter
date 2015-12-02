@@ -6,6 +6,8 @@ default: all
 
 deps: assets
 	go get -tags '$(BUILDTAGS)' -d -v cluegetter/...
+	go get github.com/robfig/glock
+	git diff /dev/null GLOCKFILE | ./bin/glock apply .
 
 cluegetter: deps
 	go install -tags '$(BUILDTAGS)' cluegetter
