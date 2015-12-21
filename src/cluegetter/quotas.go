@@ -342,9 +342,9 @@ func quotasRedisIsAllowed(msg *Message) *MessageCheckResult {
 	for _, result := range results {
 		if result.FutureTotalCount > result.Curb {
 			Log.Notice("Quota Exceeding, max of %d messages per %d seconds for %s '%s'",
-				result.Curb, result.Period, &result.Selector, &result.FactorValue)
+				result.Curb, result.Period, *result.Selector, *result.FactorValue)
 			rejectMsg = fmt.Sprintf("REJECT Policy reject; Exceeding quota, max of %d messages per %d seconds for %s '%s'",
-				result.Curb, result.Period, &result.Selector, &result.FactorValue)
+				result.Curb, result.Period, *result.Selector, *result.FactorValue)
 		} else {
 			Log.Info("Quota Updated, Adding %d message(s) to total of %d (max %d) for last %d seconds for %s '%s'",
 				result.ExtraCount, result.FutureTotalCount, result.Curb, result.Period, *result.Selector, *result.FactorValue)
