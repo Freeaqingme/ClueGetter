@@ -11,12 +11,14 @@ import (
 	"cluegetter/assets"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	humanize "github.com/dustin/go-humanize"
 	"html/template"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -57,6 +59,12 @@ func httpStart(done <-chan struct{}) {
 
 type foo struct {
 	Foo string
+}
+
+type httpInstance struct {
+	Id          int
+	Name        string
+	Description string
 }
 
 type httpMessage struct {
@@ -125,10 +133,17 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 		domain = address
 	}
 
+	instances, err := httpParseFilterInstance(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	rows, err := Rdbms.Query(`
 	SELECT m.id, m.date, CONCAT(m.sender_local, '@', m.sender_domain) sender, m.rcpt_count, m.verdict,
 		GROUP_CONCAT(DISTINCT IF(r.domain = '', r.local, (CONCAT(r.local, '@', r.domain)))) recipients
 		FROM message m
+			LEFT JOIN session s ON s.id = m.session
 			LEFT JOIN message_recipient mr on mr.message = m.id
 			LEFT JOIN recipient r ON r.id = mr.recipient
 			INNER JOIN (
@@ -143,6 +158,7 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 							WHERE (r.domain = ? AND (r.local = ? OR ? = ''))
 				) t2
 			) t1 ON t1.id = m.id
+		WHERE s.cluegetter_instance IN (`+strings.Join(instances, ",")+`)
 		GROUP BY m.id
 		ORDER BY date DESC
 		LIMIT 0,250
@@ -157,6 +173,12 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 func httpHandlerMessageSearchClientAddress(w http.ResponseWriter, r *http.Request) {
 	address := r.URL.Path[len("/message/searchClientAddress/"):]
 
+	instances, err := httpParseFilterInstance(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	rows, err := Rdbms.Query(`
 		SELECT m.id, m.date, m.sender_local || '@' || m.sender_domain sender, m.rcpt_count, m.verdict,
 			GROUP_CONCAT(distinct IF(r.domain = '', r.local, (r.local || '@' || r.domain))) recipients
@@ -164,7 +186,7 @@ func httpHandlerMessageSearchClientAddress(w http.ResponseWriter, r *http.Reques
 				LEFT JOIN message_recipient mr on mr.message = m.id
 				LEFT JOIN recipient r ON r.id = mr.recipient
 				LEFT JOIN session s ON m.session = s.id
-			WHERE s.ip = ?
+			WHERE s.ip = ? AND s.cluegetter_instance IN (`+strings.Join(instances, ",")+`)
 			GROUP BY m.id ORDER BY date DESC LIMIT 0,250
 	`, net.ParseIP(address).String())
 	if err != nil {
@@ -177,6 +199,12 @@ func httpHandlerMessageSearchClientAddress(w http.ResponseWriter, r *http.Reques
 func httpHandleMessageSearchSaslUser(w http.ResponseWriter, r *http.Request) {
 	saslUser := r.URL.Path[len("/message/searchSaslUser/"):]
 
+	instances, err := httpParseFilterInstance(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	rows, err := Rdbms.Query(`
 		SELECT m.id, m.date, m.sender_local || '@' || m.sender_domain sender, m.rcpt_count, m.verdict,
 			GROUP_CONCAT(distinct IF(r.domain = '', r.local, (r.local || '@' || r.domain))) recipients
@@ -184,7 +212,7 @@ func httpHandleMessageSearchSaslUser(w http.ResponseWriter, r *http.Request) {
 				LEFT JOIN message_recipient mr on mr.message = m.id
 				LEFT JOIN recipient r ON r.id = mr.recipient
 				LEFT JOIN session s ON m.session = s.id
-			WHERE s.sasl_username = ?
+			WHERE s.sasl_username = ? AND s.cluegetter_instance IN (`+strings.Join(instances, ",")+`)
 			GROUP BY m.id ORDER BY date DESC LIMIT 0,250
 	`, saslUser)
 	if err != nil {
@@ -231,6 +259,12 @@ func httpReturnJson(w http.ResponseWriter, obj interface{}) {
 
 func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 	queueId := r.URL.Path[len("/message/"):]
+	instances, err := httpParseFilterInstance(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	row := Rdbms.QueryRow(`
 		SELECT m.session, m.date, COALESCE(m.body_size,0), CONCAT(m.sender_local, '@', m.sender_domain) sender,
 				m.rcpt_count, m.verdict, m.verdict_msg,
@@ -242,16 +276,18 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 			FROM message m
 				LEFT JOIN session s ON s.id = m.session
 				LEFT JOIN cluegetter_client cc on s.cluegetter_client = cc.id
-			WHERE m.id = ?`, queueId)
+			WHERE s.cluegetter_instance IN (`+strings.Join(instances, ",")+`)
+				AND m.id = ?`, queueId)
 	msg := &httpMessage{Recipients: make([]*httpMessageRecipient, 0)}
-	err := row.Scan(&msg.SessionId, &msg.Date, &msg.BodySize, &msg.Sender, &msg.RcptCount,
+	err = row.Scan(&msg.SessionId, &msg.Date, &msg.BodySize, &msg.Sender, &msg.RcptCount,
 		&msg.Verdict, &msg.VerdictMsg, &msg.RejectScore, &msg.RejectScoreThreshold,
 		&msg.TempfailScore, &msg.ScoreCombined, &msg.TempfailScoreThreshold,
 		&msg.Ip, &msg.ReverseDns, &msg.Helo, &msg.SaslUsername, &msg.SaslMethod,
 		&msg.CertIssuer, &msg.CertSubject, &msg.CipherBits, &msg.Cipher, &msg.TlsVersion,
 		&msg.MtaHostname, &msg.MtaDaemonName)
 	if err != nil {
-		panic("Could not execute main query in httpHandlerMessage(): " + err.Error())
+		http.Error(w, "404? "+err.Error(), http.StatusNotFound)
+		return
 	}
 	msg.BodySizeStr = humanize.Bytes(uint64(msg.BodySize))
 
@@ -311,25 +347,26 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 }
 
 func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
-	foo := foo{Foo: "Blaat"}
+	r.ParseForm()
+	filter := "instance=" + strings.Join(r.Form["instance"], ",")
 
 	if r.FormValue("queueId") != "" {
-		http.Redirect(w, r, "/message/"+r.FormValue("queueId"), http.StatusFound)
+		http.Redirect(w, r, "/message/"+r.FormValue("queueId")+"?"+filter, http.StatusFound)
 		return
 	}
 
 	if r.FormValue("mailAddress") != "" {
-		http.Redirect(w, r, "/message/searchEmail/"+r.FormValue("mailAddress"), http.StatusFound)
+		http.Redirect(w, r, "/message/searchEmail/"+r.FormValue("mailAddress")+"?"+filter, http.StatusFound)
 		return
 	}
 
 	if r.FormValue("clientAddress") != "" {
-		http.Redirect(w, r, "/message/searchClientAddress/"+r.FormValue("clientAddress"), http.StatusFound)
+		http.Redirect(w, r, "/message/searchClientAddress/"+r.FormValue("clientAddress")+"?"+filter, http.StatusFound)
 		return
 	}
 
 	if r.FormValue("saslUser") != "" {
-		http.Redirect(w, r, "/message/searchSaslUser/"+r.FormValue("saslUser"), http.StatusFound)
+		http.Redirect(w, r, "/message/searchSaslUser/"+r.FormValue("saslUser")+"?"+filter, http.StatusFound)
 		return
 	}
 
@@ -340,7 +377,7 @@ func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 	tpl.Parse(string(tplSkeleton))
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := tpl.ExecuteTemplate(w, "skeleton.html", foo); err != nil {
+	if err := tpl.ExecuteTemplate(w, "skeleton.html", httpGetInstances()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -358,4 +395,42 @@ func httpStatsHandler(w http.ResponseWriter, r *http.Request) {
 	if err := tpl.ExecuteTemplate(w, "skeleton.html", foo); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func httpGetInstances() []*httpInstance {
+	var instances []*httpInstance
+	rows, err := Rdbms.Query(`SELECT id, name, description FROM instance`)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		instance := &httpInstance{}
+		rows.Scan(&instance.Id, &instance.Name, &instance.Description)
+		instances = append(instances, instance)
+	}
+
+	return instances
+}
+
+func httpParseFilterInstance(r *http.Request) (out []string, err error) {
+	instanceStr := r.FormValue("instance")
+	if instanceStr == "" {
+		instanceIds := make([]string, 0)
+		for _, instance := range httpGetInstances() {
+			instanceIds = append(instanceIds, strconv.Itoa(instance.Id))
+		}
+
+		instanceStr = strings.Join(instanceIds, ",")
+	}
+
+	for _, instance := range strings.Split(instanceStr, ",") {
+		i, err := strconv.ParseInt(instance, 10, 64)
+		if err != nil {
+			return nil, errors.New("Non-numeric instance identifier found")
+		}
+		out = append(out, strconv.Itoa(int(i)))
+	}
+	return
 }
