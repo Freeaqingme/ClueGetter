@@ -57,9 +57,9 @@ type config struct {
 		Module []string
 	}
 	Http struct {
-		Enabled     bool
-		Listen_Port string
-		Listen_Host string
+		Enabled          bool
+		Listen_Port      string
+		Listen_Host      string
 		Google_Analytics string
 	}
 	BounceHandler struct {

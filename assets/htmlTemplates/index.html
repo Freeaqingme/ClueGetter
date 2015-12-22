@@ -21,7 +21,7 @@
     <div class="form-group">
         <label for="instance">Instance</label><br />
         <select name="instance" multiple="multiple" required="required">
-            {{ range $key, $instance := . }}
+            {{ range $key, $instance := .Instances }}
                 <option value="{{ $instance.Id }}" selected="selected">{{ $instance.Description }} ({{ $instance.Name }})</option>
             {{ end }}
         </select>

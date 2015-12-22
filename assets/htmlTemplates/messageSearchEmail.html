@@ -5,7 +5,7 @@
     <tr>
         <th>Id</th><th>Date</th><th>Verdict</th><th>Sender</th><th>Rcpt Count</th><th>Recipients</th>
     </tr>
-{{ range $key, $msg := . }}
+{{ range $key, $msg := .Messages }}
     <tr>
         <td><a href="/message/{{ $msg.Id }}">{{ $msg.Id }}</a></td>
         <td>{{ $msg.Date }}</td>

@@ -57,8 +57,8 @@ func httpStart(done <-chan struct{}) {
 	}()
 }
 
-type foo struct {
-	Foo string
+type HttpViewData struct {
+	GoogleAnalytics string
 }
 
 type httpInstance struct {
@@ -246,8 +246,16 @@ func httpProcessSearchResultRows(w http.ResponseWriter, r *http.Request, rows *s
 	tpl.Parse(string(tplMsgSearchEmail))
 	tpl.Parse(string(tplSkeleton))
 
+	data := struct {
+		HttpViewData
+		Messages []*httpMessage
+	}{
+		HttpViewData: HttpViewData{GoogleAnalytics: Config.Http.Google_Analytics},
+		Messages:     messages,
+	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := tpl.ExecuteTemplate(w, "skeleton.html", messages); err != nil {
+	if err := tpl.ExecuteTemplate(w, "skeleton.html", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -340,8 +348,16 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 	tpl.Parse(string(tplMsg))
 	tpl.Parse(string(tplSkeleton))
 
+	data := struct {
+		HttpViewData
+		Message *httpMessage
+	}{
+		HttpViewData: HttpViewData{GoogleAnalytics: Config.Http.Google_Analytics},
+		Message:      msg,
+	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := tpl.ExecuteTemplate(w, "skeleton.html", msg); err != nil {
+	if err := tpl.ExecuteTemplate(w, "skeleton.html", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -376,14 +392,24 @@ func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 	tpl.Parse(string(tplIndex))
 	tpl.Parse(string(tplSkeleton))
 
+	data := struct {
+		HttpViewData
+		Instances []*httpInstance
+	}{
+		HttpViewData: HttpViewData{GoogleAnalytics: Config.Http.Google_Analytics},
+		Instances:    httpGetInstances(),
+	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := tpl.ExecuteTemplate(w, "skeleton.html", httpGetInstances()); err != nil {
+	if err := tpl.ExecuteTemplate(w, "skeleton.html", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func httpStatsHandler(w http.ResponseWriter, r *http.Request) {
-	foo := foo{Foo: "Blaat"}
+	data := struct{ HttpViewData }{
+		HttpViewData{GoogleAnalytics: Config.Http.Google_Analytics},
+	}
 
 	tplStats, _ := assets.Asset("htmlTemplates/stats.html")
 	tplSkeleton, _ := assets.Asset("htmlTemplates/skeleton.html")
@@ -392,7 +418,7 @@ func httpStatsHandler(w http.ResponseWriter, r *http.Request) {
 	tpl.Parse(string(tplSkeleton))
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := tpl.ExecuteTemplate(w, "skeleton.html", foo); err != nil {
+	if err := tpl.ExecuteTemplate(w, "skeleton.html", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

@@ -3,41 +3,43 @@
 
 <dl class="dl-horizontal">
     <dt>Date</dt>
-    <dd>{{printf "%s" .Date}}</dd>
+    <dd>{{printf "%s" .Message.Date}}</dd>
     <dt>MTA</dt>
-    <dd>{{printf "%s" .MtaHostname}} ({{printf "%s" .MtaDaemonName}})</dd>
+    <dd>{{printf "%s" .Message.MtaHostname}} ({{printf "%s" .Message.MtaDaemonName}})</dd>
     <dt>IP</dt>
-    <dd>{{printf "%s" .Ip}} (RDNS: <i>{{printf "%s" .ReverseDns}}</i>, HELO: <i>{{printf "%s" .Helo}}</i>)</dd>
+    <dd>{{printf "%s" .Message.Ip}}
+        (RDNS: <i>{{printf "%s" .Message.ReverseDns}}</i>,
+        HELO: <i>{{printf "%s" .Message.Helo}}</i>)</dd>
     <dt>Sasl Username</dt>
-    <dd>{{printf "%s" .SaslUsername}} ({{printf "%s" .SaslMethod}})</dd>
+    <dd>{{printf "%s" .Message.SaslUsername}} ({{printf "%s" .Message.SaslMethod}})</dd>
     <dt>Certificate</dt>
-    <dd title="Issued by: {{printf "%s" .CertIssuer}}">{{printf "%s" .CertSubject}}</dd>
+    <dd title="Issued by: {{printf "%s" .Message.CertIssuer}}">{{printf "%s" .Message.CertSubject}}</dd>
     <dt>Cipher</dt>
-    <dd>{{printf "%s" .TlsVersion}} {{printf "%s" .CipherBits}} {{printf "%s" .Cipher}}</dd>
+    <dd>{{printf "%s" .Message.TlsVersion}} {{printf "%s" .Message.CipherBits}} {{printf "%s" .Message.Cipher}}</dd>
     <dt>Sender</dt>
-    <dd>{{printf "%s" .Sender}}</dd>
+    <dd>{{printf "%s" .Message.Sender}}</dd>
     <dt>Recipient Count</dt>
-    <dd>{{printf "%d" .RcptCount}}</dd>
+    <dd>{{printf "%d" .Message.RcptCount}}</dd>
     <dt>Recipients</dt>
-    {{ range $key, $value := .Recipients }}
+    {{ range $key, $value := .Message.Recipients }}
         <dd>{{ $value.Email }}</dd>
     {{ end }}
     <dt>Verdict</dt>
-    <dd>{{printf "%s" .Verdict}}</dd>
+    <dd>{{printf "%s" .Message.Verdict}}</dd>
     <dt>Verdict Message</dt>
-    <dd>{{printf "%s" .VerdictMsg}}</dd>
+    <dd>{{printf "%s" .Message.VerdictMsg}}</dd>
     <dt>Reject Score</dt>
-    <dd>{{printf "%.2f" .RejectScore}} (threshold: {{printf "%.2f" .RejectScoreThreshold}})</dd>
+    <dd>{{printf "%.2f" .Message.RejectScore}} (threshold: {{printf "%.2f" .Message.RejectScoreThreshold}})</dd>
     <dt>Tempfail Score</dt>
-    <dd>{{printf "%.2f" .TempfailScore}} (combined: {{printf "%.2f" .ScoreCombined }},
-        threshold: {{printf "%.2f" .TempfailScoreThreshold}})</dd>
+    <dd>{{printf "%.2f" .Message.TempfailScore}} (combined: {{printf "%.2f" .Message.ScoreCombined }},
+        threshold: {{printf "%.2f" .Message.TempfailScoreThreshold}})</dd>
     <dt>Body size</dt>
-    <dd title="{{printf "%d" .BodySize}} Bytes">{{printf "%s" .BodySizeStr}}</dd>
+    <dd title="{{printf "%d" .Message.BodySize}} Bytes">{{printf "%s" .Message.BodySizeStr}}</dd>
     <dt>Headers</dt>
     <dd>
         <dl class="dl-horizontal">
             <dt></dt><dd></dd> <!-- Circumvent CSS bug -->
-            {{ range $key, $value := .Headers }}
+            {{ range $key, $value := .Message.Headers }}
                 <dt>{{ $value.Name }}</dt>
                 <dd>{{ $value.Body }}</dd>
             {{ end }}
@@ -50,7 +52,7 @@
     <tr>
     <th>Module</th><th>Verdict</th><th>Duration</th><th>Score</th><th>Determinants</th>
     </tr>
-    {{ range $key, $value := .CheckResults }}
+    {{ range $key, $value := .Message.CheckResults }}
         <tr>
             <td>{{ $value.Module }}</td>
             <td>{{ $value.Verdict }}</td>
