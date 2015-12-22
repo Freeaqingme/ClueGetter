@@ -86,7 +86,7 @@ func quotasRegexesStart() {
 	quotasRegexesLock = &sync.RWMutex{}
 
 	go func() {
-		ticker := time.NewTicker(time.Duration(1) * time.Minute)
+		ticker := time.NewTicker(time.Duration(3) * time.Minute)
 		for {
 			select {
 			case <-ticker.C:
@@ -163,7 +163,7 @@ func quotasRedisStart() {
 		}
 	}()
 
-	quotasRedisUpdateFromRdbms()
+	go quotasRedisUpdateFromRdbms()
 }
 
 func quotasRedisUpdateFromRdbms() {
