@@ -198,7 +198,7 @@ func quotasRedisUpdateFromRdbms() {
 		quotas.Scan(&selector, &value, &period, &curb)
 
 		lval := fmt.Sprintf("%d_%d", period, curb)
-		if groupedQuota, ok := groupedQuotas[selector+"_"+value]; ok {
+		if _, ok := groupedQuotas[selector+"_"+value]; ok {
 			groupedQuotas[selector+"_"+value] = append(groupedQuotas[selector+"_"+value], lval)
 		} else {
 			groupedQuotas[selector+"_"+value] = []string{lval}
