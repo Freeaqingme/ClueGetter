@@ -60,6 +60,7 @@ type config struct {
 		Enabled     bool
 		Listen_Port string
 		Listen_Host string
+		Google_Analytics string
 	}
 	BounceHandler struct {
 		Enabled     bool
@@ -145,6 +146,7 @@ func DefaultConfig(cfg *config) {
 	cfg.Http.Enabled = true
 	cfg.Http.Listen_Port = "1937"
 	cfg.Http.Listen_Host = "127.0.0.1"
+	cfg.Http.Google_Analytics = ""
 
 	cfg.BounceHandler.Enabled = false
 	cfg.BounceHandler.Listen_Port = "10034"

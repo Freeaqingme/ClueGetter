@@ -143,6 +143,9 @@ enabled = true
 listen-port = 1937
 listen-host = "127.0.0.1"
 
+# Your Google Analytics ID
+google-analytics = ""
+
 [cassandra]
 # If you want to archive messages (including their body), but don't want
 # to do so in your RDBMS.
