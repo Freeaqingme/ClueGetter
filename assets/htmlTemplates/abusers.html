@@ -1,0 +1,46 @@
+{{ define "title" }}Abusers{{ end }}
+
+{{ define "body" }}
+
+    <form action="" method="get">
+        <div class="form-group">
+            <label for="period">Period (in hours)</label>
+            <input type="text" class="form-control" name="period" placeholder="Period in hours" value="{{ .Period }}" />
+        </div>
+        <div class="form-group">
+            <label for="instance">Instance</label><br />
+            <select name="instance" multiple="multiple" required="required">
+                {{ range $key, $instance := .Instances }}
+			{{ if $instance.Selected }}
+	                    <option value="{{ $instance.Id }}" selected="selected">{{ $instance.Description }} ({{ $instance.Name }})</option>
+			{{ else }}
+        	            <option value="{{ $instance.Id }}">{{ $instance.Description }} ({{ $instance.Name }})</option>
+			{{ end }}
+                {{ end }}
+            </select>
+        </div>
+       <button type="submit" class="btn btn-default">Show Abusers</button>
+   </form>
+
+    <table class="table table-striped">
+        <tr>
+            <th>Sender Domain</th>
+            <th title="Sum of messages with status tempfail and status reject">Not accepted</th>
+        </tr>
+
+	{{ range $key, $senderDomain := .SenderDomainTop }}
+		<tr>
+<!--			<td><a href="/stats/sender-domain/{{ $senderDomain.Identifier }}" -->
+			<td><a href="/message/searchEmail/@e{{ $senderDomain.Identifier }}"
+				>{{ $senderDomain.Identifier }}</td>
+			<td>{{ $senderDomain.Count }}</td>
+		</tr>
+	{{ end }}
+
+    </table>
+
+{{ end }}
+
+{{ define "script_footer" }}
+
+{{ end }}

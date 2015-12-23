@@ -41,7 +41,7 @@ func httpStart(done <-chan struct{}) {
 	}
 	Log.Info("HTTP interface now listening on %s", listener.Addr())
 
-	http.HandleFunc("/stats/", httpStatsHandler)
+	http.HandleFunc("/stats/abusers/", httpAbusersHandler)
 	http.HandleFunc("/message/", httpHandlerMessage)
 	http.HandleFunc("/message/searchEmail/", httpHandlerMessageSearchEmail)
 	http.HandleFunc("/message/searchClientAddress/", httpHandlerMessageSearchClientAddress)
@@ -62,9 +62,10 @@ type HttpViewData struct {
 }
 
 type httpInstance struct {
-	Id          int
+	Id          string
 	Name        string
 	Description string
+	Selected    bool
 }
 
 type httpMessage struct {
@@ -158,7 +159,7 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 							WHERE (r.domain = ? AND (r.local = ? OR ? = ''))
 				) t2
 			) t1 ON t1.id = m.id
-		WHERE s.cluegetter_instance IN (`+strings.Join(instances, ",")+`)
+                        WHERE s.cluegetter_instance IN (`+strings.Join(instances, ",")+`)
 		GROUP BY m.id
 		ORDER BY date DESC
 		LIMIT 0,250
@@ -406,15 +407,77 @@ func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func httpStatsHandler(w http.ResponseWriter, r *http.Request) {
-	data := struct{ HttpViewData }{
+type httpAbuserTop struct {
+	Identifier string
+	Count      int
+}
+
+func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+
+	data := struct {
+		HttpViewData
+		Instances       []*httpInstance
+		Period          string
+		SenderDomainTop []*httpAbuserTop
+	}{
 		HttpViewData{GoogleAnalytics: Config.Http.Google_Analytics},
+		httpGetInstances(),
+		"4",
+		make([]*httpAbuserTop, 0),
 	}
 
-	tplStats, _ := assets.Asset("htmlTemplates/stats.html")
+	selectedInstances, err := httpParseFilterInstance(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if len(selectedInstances) == 0 {
+		for _, instance := range data.Instances {
+			instance.Selected = true
+		}
+	} else {
+		for _, selectedInstance := range selectedInstances {
+			for _, instance := range data.Instances {
+				if instance.Id == selectedInstance {
+					instance.Selected = true
+				}
+			}
+		}
+	}
+
+	period := r.FormValue("period")
+	if _, err := strconv.ParseFloat(period, 64); err != nil || period == "" {
+		period = data.Period
+	} else {
+		data.Period = period
+	}
+
+	rows, err := Rdbms.Query(`
+		SELECT sender_domain, count(*) amount
+			FROM session s JOIN message m ON m.session = s.id
+			WHERE m.date > (? - INTERVAL ? HOUR)
+				AND s.cluegetter_instance IN(`+strings.Join(selectedInstances, ",")+`)
+				AND (verdict = 'tempfail' or verdict = 'reject')
+			GROUP BY sender_domain
+			HAVING amount > 2
+			ORDER BY amount DESC
+	`, time.Now(), period)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		result := &httpAbuserTop{}
+		rows.Scan(&result.Identifier, &result.Count)
+		data.SenderDomainTop = append(data.SenderDomainTop, result)
+	}
+
+	tplAbusers, _ := assets.Asset("htmlTemplates/abusers.html")
 	tplSkeleton, _ := assets.Asset("htmlTemplates/skeleton.html")
 	tpl := template.New("skeleton.html")
-	tpl.Parse(string(tplStats))
+	tpl.Parse(string(tplAbusers))
 	tpl.Parse(string(tplSkeleton))
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -441,17 +504,16 @@ func httpGetInstances() []*httpInstance {
 }
 
 func httpParseFilterInstance(r *http.Request) (out []string, err error) {
-	instanceStr := r.FormValue("instance")
-	if instanceStr == "" {
-		instanceIds := make([]string, 0)
-		for _, instance := range httpGetInstances() {
-			instanceIds = append(instanceIds, strconv.Itoa(instance.Id))
-		}
+	r.ParseForm()
+	instanceIds := r.Form["instance"]
 
-		instanceStr = strings.Join(instanceIds, ",")
+	if len(instanceIds) == 0 {
+		for _, instance := range httpGetInstances() {
+			instanceIds = append(instanceIds, instance.Id)
+		}
 	}
 
-	for _, instance := range strings.Split(instanceStr, ",") {
+	for _, instance := range instanceIds {
 		i, err := strconv.ParseInt(instance, 10, 64)
 		if err != nil {
 			return nil, errors.New("Non-numeric instance identifier found")

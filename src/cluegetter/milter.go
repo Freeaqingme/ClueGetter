@@ -95,7 +95,7 @@ func milterStart() {
 
 	go milterPrune()
 
-	Log.Info("Milter module started")
+	Log.Info("Milter module started. Now listening on " + Config.ClueGetter.Milter_Socket)
 }
 
 func milterStop() {
