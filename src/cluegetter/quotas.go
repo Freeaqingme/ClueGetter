@@ -54,6 +54,19 @@ var QuotaGetAllRegexesStmt = *new(*sql.Stmt)
 var quotasRegexes *[]*quotasRegex
 var quotasRegexesLock *sync.RWMutex
 
+func init() {
+	init := quotasStart
+	stop := quotasStop
+	milterCheck := quotasIsAllowed
+
+	ModuleRegister(&module{
+		name:        "quotas",
+		init:        &init,
+		stop:        &stop,
+		milterCheck: &milterCheck,
+	})
+}
+
 func quotasStart() {
 	if Config.Quotas.Enabled != true {
 		Log.Info("Skipping Quota module because it was not enabled in the config")
@@ -73,7 +86,7 @@ func quotasRegexesStart() {
 	quotasRegexesLock = &sync.RWMutex{}
 
 	go func() {
-		ticker := time.NewTicker(time.Duration(1) * time.Minute)
+		ticker := time.NewTicker(time.Duration(3) * time.Minute)
 		for {
 			select {
 			case <-ticker.C:
@@ -150,7 +163,7 @@ func quotasRedisStart() {
 		}
 	}()
 
-	quotasRedisUpdateFromRdbms()
+	go quotasRedisUpdateFromRdbms()
 }
 
 func quotasRedisUpdateFromRdbms() {
@@ -185,8 +198,8 @@ func quotasRedisUpdateFromRdbms() {
 		quotas.Scan(&selector, &value, &period, &curb)
 
 		lval := fmt.Sprintf("%d_%d", period, curb)
-		if groupedQuota, ok := groupedQuotas[selector+"_"+value]; ok {
-			groupedQuota = append(groupedQuota, lval)
+		if _, ok := groupedQuotas[selector+"_"+value]; ok {
+			groupedQuotas[selector+"_"+value] = append(groupedQuotas[selector+"_"+value], lval)
 		} else {
 			groupedQuotas[selector+"_"+value] = []string{lval}
 		}
@@ -272,6 +285,10 @@ func quotasStop() {
 }
 
 func quotasIsAllowed(msg *Message, _ chan bool) *MessageCheckResult {
+	if !Config.Quotas.Enabled {
+		return nil
+	}
+
 	if Config.Redis.Enabled {
 		return quotasRedisIsAllowed(msg)
 	}
@@ -325,9 +342,9 @@ func quotasRedisIsAllowed(msg *Message) *MessageCheckResult {
 	for _, result := range results {
 		if result.FutureTotalCount > result.Curb {
 			Log.Notice("Quota Exceeding, max of %d messages per %d seconds for %s '%s'",
-				result.Curb, result.Period, &result.Selector, &result.FactorValue)
+				result.Curb, result.Period, *result.Selector, *result.FactorValue)
 			rejectMsg = fmt.Sprintf("REJECT Policy reject; Exceeding quota, max of %d messages per %d seconds for %s '%s'",
-				result.Curb, result.Period, &result.Selector, &result.FactorValue)
+				result.Curb, result.Period, *result.Selector, *result.FactorValue)
 		} else {
 			Log.Info("Quota Updated, Adding %d message(s) to total of %d (max %d) for last %d seconds for %s '%s'",
 				result.ExtraCount, result.FutureTotalCount, result.Curb, result.Period, *result.Selector, *result.FactorValue)

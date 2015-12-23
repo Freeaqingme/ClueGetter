@@ -85,8 +85,8 @@ CREATE TABLE message_body (
 CREATE TABLE message_header (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   message varchar(25) CHARACTER SET ascii NOT NULL,
-  name varchar(74) CHARACTER SET ascii DEFAULT NULL,
-  body text CHARACTER SET ascii,
+  name varbinary(74) not null,
+  body blob not null,
   PRIMARY KEY (id),
   KEY message (message),
   CONSTRAINT message_header_ibfk_1 FOREIGN KEY (message) REFERENCES message (id)

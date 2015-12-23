@@ -31,6 +31,17 @@ type greylistVerdict struct {
 	date    *time.Time
 }
 
+func init() {
+	init := greylistStart
+	milterCheck := greylistGetResult
+
+	ModuleRegister(&module{
+		name:        "greylisting",
+		init:        &init,
+		milterCheck: &milterCheck,
+	})
+}
+
 func greylistStart() {
 	if Config.Greylisting.Enabled != true {
 		Log.Info("Skipping Greylist module because it was not enabled in the config")
@@ -146,6 +157,10 @@ func greylistUpdateWhitelist() {
 }
 
 func greylistGetResult(msg *Message, done chan bool) *MessageCheckResult {
+	if !Config.Greylisting.Enabled {
+		return nil
+	}
+
 	ip := (*msg.session).getIp()
 
 	res, spfDomain, spfWhitelistErr := greylistIsSpfWhitelisted(net.ParseIP(ip), done)
@@ -188,7 +203,6 @@ func greylistGetResult(msg *Message, done chan bool) *MessageCheckResult {
 }
 
 func greylistGetVerdictRedis(msg *Message, spfWhitelistErr error, spfDomain string) *MessageCheckResult {
-
 	determinants := map[string]interface{}{
 		"Found in whitelist":     "false",
 		"Found in SPF whitelist": "false",
@@ -251,8 +265,8 @@ func greylistGetVerdictRdbms(msg *Message, spfWhitelistErr error, spfDomain stri
 		"SpfDomain":              spfDomain,
 	}
 
-	Log.Debug("%d Got %d allow verdicts, %d disallow verdicts in greylist module. First verdict was %.2f minutes ago",
-		(*msg.session).getId(), allowCount, disallowCount, timeDiff)
+	Log.Debug("%s Got %d allow verdicts, %d disallow verdicts in greylist module. First verdict was %.2f minutes ago",
+		(*msg.session).milterGetDisplayId(), allowCount, disallowCount, timeDiff)
 
 	if allowCount > 0 || timeDiff > float64(Config.Greylisting.Initial_Period) {
 		return &MessageCheckResult{

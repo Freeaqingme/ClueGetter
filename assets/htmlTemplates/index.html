@@ -18,6 +18,14 @@
         <label for="mailAddress">Sasl Username</label>
         <input type="text" class="form-control" id="saslUser" placeholder="Enter the Sasl User to search for" name="saslUser">
     </div>
+    <div class="form-group">
+        <label for="instance">Instance</label><br />
+        <select name="instance" multiple="multiple" required="required">
+            {{ range $key, $instance := .Instances }}
+                <option value="{{ $instance.Id }}" selected="selected">{{ $instance.Description }} ({{ $instance.Name }})</option>
+            {{ end }}
+        </select>
+    </div>
     <button type="submit" class="btn btn-default">Submit</button>
 </form>
 

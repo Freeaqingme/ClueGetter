@@ -64,6 +64,10 @@ message-reject-score   = 5
 # always be higher than the message-reject-score directive.
 message-tempfail-score = 8
 
+# All messages equal or above to this value can be marked as spam
+# through the x-spam-flag header.
+message-spamflag-score = 4.5
+
 # Abort all checking modules when the score for a given result (permit,
 # reject, tempfail) exceeds this score. Useful e.g. to stop scanning
 # for SPAM when the quota limit is hit.
@@ -82,20 +86,35 @@ whitelist = "127.0.0.0/8"
 whitelist = "::1"
 
 # Insert headers into each message. Can be repeated multiple times.
-# Key and value are separated by a ':'. '%h' will automatically be
-# replaced by the hostname.
-# add-header = X-Report-Abuse-To: abuse@example.com
-add-header = X-Scanned-By: ClueGetter at %h
+# Key and value are separated by a ':'.
+# The following symbols can be used:
+# %h                hostname
+# %{rejectScore}    The reject score
+# %{spamFlag}       YES/NO - Is higher than spam flag score, or not.
+#
+# It's possible to specify flags per header. Right now only [U]
+# (unique) is supported. It ensures that all other headers with that
+# key are removed.
+#
+# It's possible to delete headers with a certain key by supplying a
+# unique flag with an empty value:
+# add-header = [U] Foo:
+
+add-header = X-Scanned: ClueGetter at %{hostname}
+add-header = [U] X-Report-Abuse-To: abuse@example.com
+add-header = [U] X-Spam-Score: %{rejectScore}
+add-header = [U] X-Spam-Flag: %{spamFlag}
 
 # Add a header named 'X-Spam-Score' indicating the total reject score.
+# DEPRECATED
 add-header-x-spam-score = true
 
 # Sometimes an email does not have a message-id header. Because it's a
 # convenient way to track messages across MTAs.
 insert-missing-message-id = true
 
-# Interval with which you want to prune items that are beyond their
-# retention period. Set to 0 to disable pruning.
+# Interval (in seconds) with which you want to prune items that
+# are beyond their retention period. Set to 0 to disable pruning.
 archive-prune-interval = 21600
 
 # The number of weeks to archive these items for before pruning them.
@@ -123,6 +142,9 @@ module = 0.1 rspamd
 enabled = true
 listen-port = 1937
 listen-host = "127.0.0.1"
+
+# Your Google Analytics ID
+google-analytics = ""
 
 [cassandra]
 # If you want to archive messages (including their body), but don't want
@@ -201,6 +223,13 @@ multiplier = 0.67
 enabled = false
 host    = 127.0.0.1
 port    = 783
+
+# Abort connecting to SpamAssassin if it takes longer than the configured
+# timeout (in seconds) to set up a connection.
+connect-timeout = 0.1
+
+# Abort determining if a message is spam after this amount of seconds.
+timeout = 10.0
 
 # The max message size (in bytes) to send to SpamAssassin.
 max-size = 8388608

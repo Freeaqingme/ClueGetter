@@ -11,11 +11,14 @@ import (
 	"cluegetter/assets"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	humanize "github.com/dustin/go-humanize"
 	"html/template"
 	"net"
 	"net/http"
+	_ "net/http/pprof"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -38,7 +41,7 @@ func httpStart(done <-chan struct{}) {
 	}
 	Log.Info("HTTP interface now listening on %s", listener.Addr())
 
-	http.HandleFunc("/stats/", httpStatsHandler)
+	http.HandleFunc("/stats/abusers/", httpAbusersHandler)
 	http.HandleFunc("/message/", httpHandlerMessage)
 	http.HandleFunc("/message/searchEmail/", httpHandlerMessageSearchEmail)
 	http.HandleFunc("/message/searchClientAddress/", httpHandlerMessageSearchClientAddress)
@@ -54,8 +57,15 @@ func httpStart(done <-chan struct{}) {
 	}()
 }
 
-type foo struct {
-	Foo string
+type HttpViewData struct {
+	GoogleAnalytics string
+}
+
+type httpInstance struct {
+	Id          string
+	Name        string
+	Description string
+	Selected    bool
 }
 
 type httpMessage struct {
@@ -124,10 +134,17 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 		domain = address
 	}
 
+	instances, err := httpParseFilterInstance(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	rows, err := Rdbms.Query(`
 	SELECT m.id, m.date, CONCAT(m.sender_local, '@', m.sender_domain) sender, m.rcpt_count, m.verdict,
 		GROUP_CONCAT(DISTINCT IF(r.domain = '', r.local, (CONCAT(r.local, '@', r.domain)))) recipients
 		FROM message m
+			LEFT JOIN session s ON s.id = m.session
 			LEFT JOIN message_recipient mr on mr.message = m.id
 			LEFT JOIN recipient r ON r.id = mr.recipient
 			INNER JOIN (
@@ -142,6 +159,7 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 							WHERE (r.domain = ? AND (r.local = ? OR ? = ''))
 				) t2
 			) t1 ON t1.id = m.id
+                        WHERE s.cluegetter_instance IN (`+strings.Join(instances, ",")+`)
 		GROUP BY m.id
 		ORDER BY date DESC
 		LIMIT 0,250
@@ -156,6 +174,12 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 func httpHandlerMessageSearchClientAddress(w http.ResponseWriter, r *http.Request) {
 	address := r.URL.Path[len("/message/searchClientAddress/"):]
 
+	instances, err := httpParseFilterInstance(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	rows, err := Rdbms.Query(`
 		SELECT m.id, m.date, m.sender_local || '@' || m.sender_domain sender, m.rcpt_count, m.verdict,
 			GROUP_CONCAT(distinct IF(r.domain = '', r.local, (r.local || '@' || r.domain))) recipients
@@ -163,7 +187,7 @@ func httpHandlerMessageSearchClientAddress(w http.ResponseWriter, r *http.Reques
 				LEFT JOIN message_recipient mr on mr.message = m.id
 				LEFT JOIN recipient r ON r.id = mr.recipient
 				LEFT JOIN session s ON m.session = s.id
-			WHERE s.ip = ?
+			WHERE s.ip = ? AND s.cluegetter_instance IN (`+strings.Join(instances, ",")+`)
 			GROUP BY m.id ORDER BY date DESC LIMIT 0,250
 	`, net.ParseIP(address).String())
 	if err != nil {
@@ -176,6 +200,12 @@ func httpHandlerMessageSearchClientAddress(w http.ResponseWriter, r *http.Reques
 func httpHandleMessageSearchSaslUser(w http.ResponseWriter, r *http.Request) {
 	saslUser := r.URL.Path[len("/message/searchSaslUser/"):]
 
+	instances, err := httpParseFilterInstance(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	rows, err := Rdbms.Query(`
 		SELECT m.id, m.date, m.sender_local || '@' || m.sender_domain sender, m.rcpt_count, m.verdict,
 			GROUP_CONCAT(distinct IF(r.domain = '', r.local, (r.local || '@' || r.domain))) recipients
@@ -183,7 +213,7 @@ func httpHandleMessageSearchSaslUser(w http.ResponseWriter, r *http.Request) {
 				LEFT JOIN message_recipient mr on mr.message = m.id
 				LEFT JOIN recipient r ON r.id = mr.recipient
 				LEFT JOIN session s ON m.session = s.id
-			WHERE s.sasl_username = ?
+			WHERE s.sasl_username = ? AND s.cluegetter_instance IN (`+strings.Join(instances, ",")+`)
 			GROUP BY m.id ORDER BY date DESC LIMIT 0,250
 	`, saslUser)
 	if err != nil {
@@ -217,8 +247,16 @@ func httpProcessSearchResultRows(w http.ResponseWriter, r *http.Request, rows *s
 	tpl.Parse(string(tplMsgSearchEmail))
 	tpl.Parse(string(tplSkeleton))
 
+	data := struct {
+		HttpViewData
+		Messages []*httpMessage
+	}{
+		HttpViewData: HttpViewData{GoogleAnalytics: Config.Http.Google_Analytics},
+		Messages:     messages,
+	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := tpl.ExecuteTemplate(w, "skeleton.html", messages); err != nil {
+	if err := tpl.ExecuteTemplate(w, "skeleton.html", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -230,6 +268,12 @@ func httpReturnJson(w http.ResponseWriter, obj interface{}) {
 
 func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 	queueId := r.URL.Path[len("/message/"):]
+	instances, err := httpParseFilterInstance(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	row := Rdbms.QueryRow(`
 		SELECT m.session, m.date, COALESCE(m.body_size,0), CONCAT(m.sender_local, '@', m.sender_domain) sender,
 				m.rcpt_count, m.verdict, m.verdict_msg,
@@ -241,16 +285,18 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 			FROM message m
 				LEFT JOIN session s ON s.id = m.session
 				LEFT JOIN cluegetter_client cc on s.cluegetter_client = cc.id
-			WHERE m.id = ?`, queueId)
+			WHERE s.cluegetter_instance IN (`+strings.Join(instances, ",")+`)
+				AND m.id = ?`, queueId)
 	msg := &httpMessage{Recipients: make([]*httpMessageRecipient, 0)}
-	err := row.Scan(&msg.SessionId, &msg.Date, &msg.BodySize, &msg.Sender, &msg.RcptCount,
+	err = row.Scan(&msg.SessionId, &msg.Date, &msg.BodySize, &msg.Sender, &msg.RcptCount,
 		&msg.Verdict, &msg.VerdictMsg, &msg.RejectScore, &msg.RejectScoreThreshold,
 		&msg.TempfailScore, &msg.ScoreCombined, &msg.TempfailScoreThreshold,
 		&msg.Ip, &msg.ReverseDns, &msg.Helo, &msg.SaslUsername, &msg.SaslMethod,
 		&msg.CertIssuer, &msg.CertSubject, &msg.CipherBits, &msg.Cipher, &msg.TlsVersion,
 		&msg.MtaHostname, &msg.MtaDaemonName)
 	if err != nil {
-		panic("Could not execute main query in httpHandlerMessage(): " + err.Error())
+		http.Error(w, "404? "+err.Error(), http.StatusNotFound)
+		return
 	}
 	msg.BodySizeStr = humanize.Bytes(uint64(msg.BodySize))
 
@@ -303,32 +349,41 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 	tpl.Parse(string(tplMsg))
 	tpl.Parse(string(tplSkeleton))
 
+	data := struct {
+		HttpViewData
+		Message *httpMessage
+	}{
+		HttpViewData: HttpViewData{GoogleAnalytics: Config.Http.Google_Analytics},
+		Message:      msg,
+	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := tpl.ExecuteTemplate(w, "skeleton.html", msg); err != nil {
+	if err := tpl.ExecuteTemplate(w, "skeleton.html", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
-	foo := foo{Foo: "Blaat"}
+	r.ParseForm()
+	filter := "instance=" + strings.Join(r.Form["instance"], ",")
 
 	if r.FormValue("queueId") != "" {
-		http.Redirect(w, r, "/message/"+r.FormValue("queueId"), http.StatusFound)
+		http.Redirect(w, r, "/message/"+r.FormValue("queueId")+"?"+filter, http.StatusFound)
 		return
 	}
 
 	if r.FormValue("mailAddress") != "" {
-		http.Redirect(w, r, "/message/searchEmail/"+r.FormValue("mailAddress"), http.StatusFound)
+		http.Redirect(w, r, "/message/searchEmail/"+r.FormValue("mailAddress")+"?"+filter, http.StatusFound)
 		return
 	}
 
 	if r.FormValue("clientAddress") != "" {
-		http.Redirect(w, r, "/message/searchClientAddress/"+r.FormValue("clientAddress"), http.StatusFound)
+		http.Redirect(w, r, "/message/searchClientAddress/"+r.FormValue("clientAddress")+"?"+filter, http.StatusFound)
 		return
 	}
 
 	if r.FormValue("saslUser") != "" {
-		http.Redirect(w, r, "/message/searchSaslUser/"+r.FormValue("saslUser"), http.StatusFound)
+		http.Redirect(w, r, "/message/searchSaslUser/"+r.FormValue("saslUser")+"?"+filter, http.StatusFound)
 		return
 	}
 
@@ -338,23 +393,141 @@ func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 	tpl.Parse(string(tplIndex))
 	tpl.Parse(string(tplSkeleton))
 
+	data := struct {
+		HttpViewData
+		Instances []*httpInstance
+	}{
+		HttpViewData: HttpViewData{GoogleAnalytics: Config.Http.Google_Analytics},
+		Instances:    httpGetInstances(),
+	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := tpl.ExecuteTemplate(w, "skeleton.html", foo); err != nil {
+	if err := tpl.ExecuteTemplate(w, "skeleton.html", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func httpStatsHandler(w http.ResponseWriter, r *http.Request) {
-	foo := foo{Foo: "Blaat"}
+type httpAbuserTop struct {
+	Identifier string
+	Count      int
+}
 
-	tplStats, _ := assets.Asset("htmlTemplates/stats.html")
+func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+
+	data := struct {
+		HttpViewData
+		Instances       []*httpInstance
+		Period          string
+		Threshold       string
+		SenderDomainTop []*httpAbuserTop
+	}{
+		HttpViewData{GoogleAnalytics: Config.Http.Google_Analytics},
+		httpGetInstances(),
+		"4",
+		"5",
+		make([]*httpAbuserTop, 0),
+	}
+
+	selectedInstances, err := httpParseFilterInstance(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if len(selectedInstances) == 0 {
+		for _, instance := range data.Instances {
+			instance.Selected = true
+		}
+	} else {
+		for _, selectedInstance := range selectedInstances {
+			for _, instance := range data.Instances {
+				if instance.Id == selectedInstance {
+					instance.Selected = true
+				}
+			}
+		}
+	}
+
+	period := r.FormValue("period")
+	if _, err := strconv.ParseFloat(period, 64); err != nil || period == "" {
+		period = data.Period
+	} else {
+		data.Period = period
+	}
+
+	threshold := r.FormValue("threshold")
+	if _, err := strconv.Atoi(threshold); err != nil || threshold == "" {
+		threshold = data.Threshold
+	} else {
+		data.Threshold = threshold
+	}
+
+	rows, err := Rdbms.Query(`
+		SELECT sender_domain, count(*) amount
+			FROM session s JOIN message m ON m.session = s.id
+			WHERE m.date > (? - INTERVAL ? HOUR)
+				AND s.cluegetter_instance IN(`+strings.Join(selectedInstances, ",")+`)
+				AND (verdict = 'tempfail' or verdict = 'reject')
+			GROUP BY sender_domain
+			HAVING amount >= ?
+			ORDER BY amount DESC
+	`, time.Now(), period, threshold)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		result := &httpAbuserTop{}
+		rows.Scan(&result.Identifier, &result.Count)
+		data.SenderDomainTop = append(data.SenderDomainTop, result)
+	}
+
+	tplAbusers, _ := assets.Asset("htmlTemplates/abusers.html")
 	tplSkeleton, _ := assets.Asset("htmlTemplates/skeleton.html")
 	tpl := template.New("skeleton.html")
-	tpl.Parse(string(tplStats))
+	tpl.Parse(string(tplAbusers))
 	tpl.Parse(string(tplSkeleton))
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := tpl.ExecuteTemplate(w, "skeleton.html", foo); err != nil {
+	if err := tpl.ExecuteTemplate(w, "skeleton.html", data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func httpGetInstances() []*httpInstance {
+	var instances []*httpInstance
+	rows, err := Rdbms.Query(`SELECT id, name, description FROM instance`)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		instance := &httpInstance{}
+		rows.Scan(&instance.Id, &instance.Name, &instance.Description)
+		instances = append(instances, instance)
+	}
+
+	return instances
+}
+
+func httpParseFilterInstance(r *http.Request) (out []string, err error) {
+	r.ParseForm()
+	instanceIds := r.Form["instance"]
+
+	if len(instanceIds) == 0 {
+		for _, instance := range httpGetInstances() {
+			instanceIds = append(instanceIds, instance.Id)
+		}
+	}
+
+	for _, instance := range instanceIds {
+		i, err := strconv.ParseInt(instance, 10, 64)
+		if err != nil {
+			return nil, errors.New("Non-numeric instance identifier found")
+		}
+		out = append(out, strconv.Itoa(int(i)))
+	}
+	return
 }

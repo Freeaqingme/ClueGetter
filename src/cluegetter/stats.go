@@ -30,6 +30,8 @@ type StatsCounter struct {
 }
 
 func (s *StatsCounter) increase(value int32) {
+	return
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -39,6 +41,8 @@ func (s *StatsCounter) increase(value int32) {
 }
 
 func (s *StatsCounter) decrease(value int32) {
+	return
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

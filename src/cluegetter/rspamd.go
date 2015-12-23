@@ -37,6 +37,17 @@ type rspamdResponse struct {
 	MessageId string
 }
 
+func init() {
+	init := rspamdStart
+	milterCheck := rspamdGetResult
+
+	ModuleRegister(&module{
+		name:        "rspamd",
+		init:        &init,
+		milterCheck: &milterCheck,
+	})
+}
+
 func rspamdStart() {
 	if Config.Rspamd.Enabled != true {
 		Log.Info("Skipping Rspamd module because it was not enabled in the config")
@@ -47,6 +58,10 @@ func rspamdStart() {
 }
 
 func rspamdGetResult(msg *Message, abort chan bool) *MessageCheckResult {
+	if !Config.Rspamd.Enabled {
+		return nil
+	}
+
 	rawResult := rspamdGetRawResult(msg)
 	parsedResponse := rspamdParseRawResult(rawResult)
 

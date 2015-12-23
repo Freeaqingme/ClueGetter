@@ -1,5 +1,28 @@
 # Change Log
 
+### 2015-12-23 Version 0.4.4
+* New Feature: Initial abuser implementation
+* New Feature: Allow to filter on instance in web interface
+* New Feature: Allow to embed a Google Analytics tag
+* DDL Change: Allow headers to contain unicode (or other, non-ascii) characters
+* Improvement: Don't block on importing quotas into redis upon starting
+* Bugfix: Quota error message no more shows pointers, but meaningful curbs
+* Bugfix: non-regex redis quotas only picked one (random) entry per tuple instead of all
+* Changed: No more stats, contained memleak. Will be refactored to statsd
+
+### 2015-11-26 Version 0.4.3
+* Bugfix: SpamAssassin default value for timeout and connect timeout were swapped
+* Bugfix: Panics are now properly caught, regression introduced in v0.4.2.
+* Improvement: Libmilter's error handling behaves differently on FreeBSD than on Linux
+
+### 2015-11-25 Version 0.4.2
+* New Feature: Support deletion of headers and made adding of headers more generic
+* Bugfix: Properly close all goroutines when breaker score is hit, prevents leaks
+* Bugfix: Allow empty message bodies again.
+* Improvement: Allow to configure SpamAssassin connect timeout
+* Improvement: Add net/http/pprof to web interface
+* Improvement: Add date to log format
+
 ### 2015-11-16 Version 0.4.1
 * Bugfix: Correctly register MtaHostName, rather than using PTR
 * Bugfix: Prevent potential race condition in quotasRedisPollQuotasBySelector()

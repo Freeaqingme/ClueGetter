@@ -10,17 +10,29 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/op/go-logging"
+	logging "github.com/op/go-logging"
 	"log"
 	"log/syslog"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 )
 
-var Config = *new(config)
-var Log = logging.MustGetLogger("cluegetter")
-var instance uint
+var (
+	modulesMu sync.Mutex
+	modules   = make([]*module, 0)
+	Config    = *new(config)
+	Log       = logging.MustGetLogger("cluegetter")
+	instance  uint
+)
+
+type module struct {
+	name        string
+	init        *func()
+	stop        *func()
+	milterCheck *func(*Message, chan bool) *MessageCheckResult
+}
 
 func main() {
 
@@ -51,20 +63,23 @@ func main() {
 	milterSessionStart()
 	httpStart(done)
 	messageStart()
-	quotasStart()
-	saStart()
-	rspamdStart()
-	greylistStart()
+	for _, module := range modules {
+		if module.init != nil {
+			(*module.init)()
+		}
+	}
 	milterStart()
-	bounceHandlerStart()
 
 	s := <-ch
 	Log.Notice(fmt.Sprintf("Received '%s', exiting...", s.String()))
 
 	close(done)
 	milterStop()
-	bounceHandlerStop()
-	quotasStop()
+	for _, module := range modules {
+		if module.stop != nil {
+			(*module.stop)()
+		}
+	}
 	messageStop()
 	cqlStop()
 	rdbmsStop()
@@ -81,7 +96,7 @@ func initLogging(logLevelStr string, logPath string) {
 	}
 
 	var formatStdout = logging.MustStringFormatter(
-		"%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{color:reset} %{message}",
+		"%{color}%{time:2006-01-02T15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{color:reset} %{message}",
 	)
 	stdout := logging.NewLogBackend(os.Stdout, "", 0)
 	formatter := logging.NewBackendFormatter(stdout, formatStdout)
@@ -116,4 +131,18 @@ func setInstance() {
 	}
 
 	Log.Notice("Instance name: %s. Id: %d", Config.ClueGetter.Instance, instance)
+}
+
+func ModuleRegister(module *module) {
+	modulesMu.Lock()
+	defer modulesMu.Unlock()
+	if module == nil {
+		panic("Module: Register module is nil")
+	}
+	for _, dup := range modules {
+		if dup.name == module.name {
+			panic("Module: Register called twice for module " + module.name)
+		}
+	}
+	modules = append(modules, module)
 }

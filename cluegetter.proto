@@ -2,44 +2,44 @@ package main;
 
 message Proto_Message_v1 {
 
-    required uint64 instanceId = 1;
-    required Session session   = 2;
+    required Session session   = 1;
 
-    required string id      = 3;
-    required string from    = 4;
-    repeated string rcpt    = 5;
-    repeated Header headers = 6;
-    required bytes  body    = 7;
+    required string id      = 2;
+    required string from    = 3;
+    repeated string rcpt    = 4;
+    repeated Header headers = 5;
+    optional bytes  body    = 6;
 
-    required Verdict verdict               = 8;
-    required string verdictMsg             = 9;
-    required double rejectScore            = 10;
-    required double rejectScoreThreshold   = 11;
-    required double tempfailScore          = 12;
-    required double tempfailScoreThreshold = 13;
+    required Verdict verdict               = 7;
+    required string verdictMsg             = 8;
+    required double rejectScore            = 9;
+    required double rejectScoreThreshold   = 10;
+    required double tempfailScore          = 11;
+    required double tempfailScoreThreshold = 12;
 
-    repeated CheckResult checkResults  = 14;
+    repeated CheckResult checkResults  = 13;
 
     message Session {
-        required bytes  id              = 1;
-        required uint64 timeStart       = 2;
-        optional uint64 timeEnd         = 3;
+        required uint64 instanceId      = 1;
+        required bytes  id              = 2;
+        required uint64 timeStart       = 3;
+        optional uint64 timeEnd         = 4;
 
-        optional string saslUsername    = 4;
-        optional string saslSender      = 5;
-        optional string saslMethod      = 6;
-        optional string certIssuer      = 7;
-        optional string certSubject     = 8;
-        optional uint32 cipherBits      = 9;
-        optional string cipher          = 10;
-        optional string tlsVersion      = 11;
+        optional string saslUsername    = 5;
+        optional string saslSender      = 6;
+        optional string saslMethod      = 7;
+        optional string certIssuer      = 8;
+        optional string certSubject     = 9;
+        optional uint32 cipherBits      = 10;
+        optional string cipher          = 11;
+        optional string tlsVersion      = 12;
 
-        required string ip              = 12;
-        optional string reverseDns      = 13;
-        optional string hostname        = 14;
-        optional string helo            = 15;
-        optional string mtaHostName     = 16;
-        optional string mtaDaemonName   = 17;
+        required string ip              = 13;
+        optional string reverseDns      = 14;
+        optional string hostname        = 15;
+        optional string helo            = 16;
+        optional string mtaHostName     = 17;
+        optional string mtaDaemonName   = 18;
     }
 
     message Header {
