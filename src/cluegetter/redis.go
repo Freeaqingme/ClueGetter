@@ -18,9 +18,9 @@ type RedisClient interface {
 	Expire(key string, expiration time.Duration) *redis.BoolCmd
 	Get(key string) *redis.StringCmd
 	LPush(key string, values ...string) *redis.IntCmd
-	LPushX(key, value string) *redis.IntCmd
+	LPushX(key, value interface{}) *redis.IntCmd
 	LRange(key string, start, stop int64) *redis.StringSliceCmd
-	LSet(key string, index int64, value string) *redis.StatusCmd
+	LSet(key string, index int64, value interface{}) *redis.StatusCmd
 	Ping() *redis.StatusCmd
 	RPop(key string) *redis.StringCmd
 	Set(key string, value interface{}, expiration time.Duration) *redis.StatusCmd
