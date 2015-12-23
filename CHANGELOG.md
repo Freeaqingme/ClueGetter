@@ -1,5 +1,15 @@
 # Change Log
 
+### 2015-12-23 Version 0.4.4
+* New Feature: Initial abuser implementation
+* New Feature: Allow to filter on instance in web interface
+* New Feature: Allow to embed a Google Analytics tag
+* DDL Change: Allow headers to contain unicode (or other, non-ascii) characters
+* Improvement: Don't block on importing quotas into redis upon starting
+* Bugfix: Quota error message no more shows pointers, but meaningful curbs
+* Bugfix: non-regex redis quotas only picked one (random) entry per tuple instead of all
+* Changed: No more stats, contained memleak. Will be refactored to statsd
+
 ### 2015-11-26 Version 0.4.3
 * Bugfix: SpamAssassin default value for timeout and connect timeout were swapped
 * Bugfix: Panics are now properly caught, regression introduced in v0.4.2.
