@@ -419,11 +419,13 @@ func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
 		HttpViewData
 		Instances       []*httpInstance
 		Period          string
+		Threshold       string
 		SenderDomainTop []*httpAbuserTop
 	}{
 		HttpViewData{GoogleAnalytics: Config.Http.Google_Analytics},
 		httpGetInstances(),
 		"4",
+		"5",
 		make([]*httpAbuserTop, 0),
 	}
 
@@ -453,6 +455,13 @@ func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
 		data.Period = period
 	}
 
+	threshold := r.FormValue("threshold")
+	if _, err := strconv.Atoi(threshold); err != nil || threshold == "" {
+		threshold = data.Threshold
+	} else {
+		data.Threshold = threshold
+	}
+
 	rows, err := Rdbms.Query(`
 		SELECT sender_domain, count(*) amount
 			FROM session s JOIN message m ON m.session = s.id
@@ -460,9 +469,9 @@ func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
 				AND s.cluegetter_instance IN(`+strings.Join(selectedInstances, ",")+`)
 				AND (verdict = 'tempfail' or verdict = 'reject')
 			GROUP BY sender_domain
-			HAVING amount > 2
+			HAVING amount >= ?
 			ORDER BY amount DESC
-	`, time.Now(), period)
+	`, time.Now(), period, threshold)
 	if err != nil {
 		panic(err)
 	}

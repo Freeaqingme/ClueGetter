@@ -8,6 +8,10 @@
             <input type="text" class="form-control" name="period" placeholder="Period in hours" value="{{ .Period }}" />
         </div>
         <div class="form-group">
+            <label for="period">Threshold (# of messages)</label>
+            <input type="text" class="form-control" name="threshold" placeholder="Number of messages to use as threshold" value="{{ .Threshold }}" />
+        </div>
+        <div class="form-group">
             <label for="instance">Instance</label><br />
             <select name="instance" multiple="multiple" required="required">
                 {{ range $key, $instance := .Instances }}
