@@ -23,4 +23,4 @@ github.com/op/go-logging f2de3fa73ede49624df5ca7467011ac4fcd43635
 github.com/scalingdata/gcfg 37aabad69cfd3d20b8390d902a8b10e245c615ff
 gopkg.in/bsm/ratelimit.v1 fbc2d5a2daac4dc3801ee3073874800e2be6ccd1
 gopkg.in/inf.v0 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
-gopkg.in/redis.v3 ba9dda7567ee6939c265e36f734e6ae3e014779a
+gopkg.in/redis.v3 f6d6826d82cbb2b772de2387493d9520168e1893
