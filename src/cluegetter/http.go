@@ -522,6 +522,10 @@ func httpParseFilterInstance(r *http.Request) (out []string, err error) {
 		}
 	}
 
+	if strings.Index(instanceIds[0], ",") != -1 {
+		instanceIds = strings.Split(instanceIds[0], ",")
+	}
+
 	for _, instance := range instanceIds {
 		i, err := strconv.ParseInt(instance, 10, 64)
 		if err != nil {
