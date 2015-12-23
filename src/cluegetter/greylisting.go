@@ -59,7 +59,7 @@ func greylistStart() {
 		}
 	}()
 
-	greylistUpdateWhitelist()
+	go greylistUpdateWhitelist()
 	Log.Info("Greylist module started")
 }
 
