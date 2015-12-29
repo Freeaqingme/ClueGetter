@@ -54,7 +54,6 @@ func main() {
 	}
 
 	done := make(chan struct{})
-	statsStart()
 	rdbmsStart()
 	persistStart()
 	cqlStart()
@@ -83,7 +82,6 @@ func main() {
 	messageStop()
 	cqlStop()
 	rdbmsStop()
-	statsStop()
 
 	Log.Notice("Successfully ceased all operations.")
 	os.Exit(0)
