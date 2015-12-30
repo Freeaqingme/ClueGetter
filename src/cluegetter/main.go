@@ -20,11 +20,12 @@ import (
 )
 
 var (
-	modulesMu sync.Mutex
-	modules   = make([]*module, 0)
-	Config    = *new(config)
-	Log       = logging.MustGetLogger("cluegetter")
-	instance  uint
+	modulesMu   sync.Mutex
+	modules     = make([]*module, 0)
+	Config      = *new(config)
+	Log         = logging.MustGetLogger("cluegetter")
+	hostname, _ = os.Hostname()
+	instance    uint
 )
 
 type module struct {

@@ -67,6 +67,10 @@ type config struct {
 		Listen_Port string
 		Listen_Host string
 	}
+	MailQueue struct {
+		Enabled   bool
+		Spool_Dir string
+	}
 	Greylisting struct {
 		Enabled        bool
 		Initial_Score  float64
@@ -151,6 +155,9 @@ func DefaultConfig(cfg *config) {
 	cfg.BounceHandler.Enabled = false
 	cfg.BounceHandler.Listen_Port = "10034"
 	cfg.BounceHandler.Listen_Host = "127.0.0.1"
+
+	cfg.MailQueue.Enabled = false
+	cfg.MailQueue.Spool_Dir = "/var/spool/postfix"
 
 	cfg.Greylisting.Enabled = false
 	cfg.Greylisting.Initial_Score = 7.0

@@ -173,6 +173,12 @@ enabled     = false
 listen-port = 10034
 listen-host = "127.0.0.1"
 
+[mailQueue]
+# Show and manipulate items currently in the (Postfix) queue.
+
+enabled = false
+spool-dir = /var/spool/postfix
+
 [greylisting]
 # When the greylisting module is enabled, hosts that haven not been seen
 # before and that seem a little spammy are temporarily rejected until
