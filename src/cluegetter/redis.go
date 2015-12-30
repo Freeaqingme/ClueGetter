@@ -29,6 +29,11 @@ type RedisClient interface {
 	ZRemRangeByScore(key, min, max string) *redis.IntCmd
 }
 
+type RedisClientMulti interface {
+	RedisClient
+	Exec(f func() error) ([]redis.Cmder, error)
+}
+
 type RedisKeyValue struct {
 	key   string
 	value []byte
@@ -43,6 +48,13 @@ func persistStart() {
 	}
 
 	RedisLPushChan = make(chan *RedisKeyValue, 255)
+	redisClient = redisNewClient()
+
+	go redisChannelListener()
+	Log.Info("Redis module started successfully")
+}
+
+func redisNewClient() RedisClient {
 	var client RedisClient
 
 	if len(Config.Redis.Host) == 0 {
@@ -56,10 +68,6 @@ func persistStart() {
 			Password: "",
 			DB:       0,
 		})
-	case "cluster":
-		client = redis.NewClusterClient(&redis.ClusterOptions{
-			Addrs: Config.Redis.Host,
-		})
 	case "sentinel":
 		client = redis.NewFailoverClient(&redis.FailoverOptions{
 			MasterName:    "master",
@@ -70,9 +78,14 @@ func persistStart() {
 
 	}
 
-	redisClient = client
-	go redisChannelListener()
-	Log.Info("Redis module started successfully")
+	return client
+}
+
+// Because transactions can be blocking the rest of the
+// connection we set up a separate client for the transaction
+func redisNewTransaction(keys ...string) (RedisClientMulti, error) {
+	client := redisNewClient().(*redis.Client)
+	return client.Watch(keys...)
 }
 
 func redisChannelListener() {

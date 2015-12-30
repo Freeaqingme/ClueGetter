@@ -9,6 +9,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -53,14 +54,34 @@ func mailQueueStart() {
 	}
 
 	for _, queueName := range mailQueueNames {
-		// todo: add recover() - to _all_ goroutines?
 		go mailQueueUpdate(queueName)
+		go func(queueName string) {
+			ticker := time.NewTicker(time.Duration(30) * time.Second)
+			for {
+				select {
+				case <-ticker.C:
+					mailQueueUpdate(queueName)
+				}
+			}
+		}(queueName)
 	}
 
 	Log.Info("MailQueue module started successfully")
 }
 
+func mailQueueRecover(funcName string) {
+	if Config.ClueGetter.Exit_On_Panic {
+		return
+	}
+	r := recover()
+	if r == nil {
+		return
+	}
+	Log.Error("Panic caught in %s(). Recovering. Error: %s", funcName, r)
+}
+
 func mailQueueUpdate(queueName string) {
+	defer mailQueueRecover("mailQueueUpdate")
 	t0 := time.Now()
 
 	wg := &sync.WaitGroup{}
@@ -71,6 +92,7 @@ func mailQueueUpdate(queueName string) {
 	wg.Add(1)
 	go mailQueueProcessFileList(wg, files, path, envelopes)
 	go func() {
+		defer mailQueueRecover("mailQueueUpdate")
 		count := mailQueueAddToRedis(envelopes, queueName)
 		Log.Info("Imported %d items from the '%s' mailqueue into Redis in %.2f seconds",
 			count, queueName, time.Now().Sub(t0).Seconds())
@@ -98,19 +120,29 @@ func mailQueueAddToRedis(envelopes chan *mailQueueItem, queueName string) int {
 	count := 0
 	key := fmt.Sprintf("cluegetter-%d-mailqueue-%s-%s", instance, hostname, queueName)
 
-	// begin transaction
-	// delete $key
-	for envelope := range envelopes {
-		count++
-		// add items to $key
+	tx, _ := redisNewTransaction(key)
+	_, err := tx.Exec(func() error {
+		tx.Del(key)
+
+		for envelope := range envelopes {
+			count++
+			envelopeStr, _ := json.Marshal(envelope)
+			tx.LPush(key, string(envelopeStr))
+		}
+		tx.Expire(key, time.Duration(5)*time.Minute)
+		return nil
+	})
+
+	if err != nil {
+		Log.Error("Could not update mailqueue %s, got error updating Redis: %s", queueName, err.Error())
 	}
-	// set ttl on $key
-	// commit
 
 	return count
 }
 
 func mailQueueProcessFileList(wg *sync.WaitGroup, files chan string, path string, envelopes chan *mailQueueItem) {
+	defer mailQueueRecover("mailQueueProcessFileList")
+
 	filesBatch := make([]string, 0, 256)
 	for file := range files {
 		filesBatch = append(filesBatch, file)
@@ -130,6 +162,8 @@ func mailQueueProcessFileList(wg *sync.WaitGroup, files chan string, path string
 }
 
 func mailQueueProcessFiles(filesBatch []string, path string, envelopes chan *mailQueueItem) {
+	defer mailQueueRecover("mailQueueProcessFileList")
+
 	cmd := exec.Command("postcat", append([]string{"-e"}, filesBatch...)...)
 	cmd.Dir = path
 	var out bytes.Buffer
@@ -137,7 +171,7 @@ func mailQueueProcessFiles(filesBatch []string, path string, envelopes chan *mai
 	err := cmd.Run()
 	if err != nil {
 		Log.Error("Error ocurred while running postcat: %s", err)
-		// TODO: Now what?
+		return
 	}
 
 	for _, envelope := range strings.Split(out.String(), "*** ENVELOPE RECORDS ")[1:] {
