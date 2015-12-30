@@ -173,10 +173,36 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 }
 
 func httpHandleMailQueue(w http.ResponseWriter, r *http.Request) {
-	items := mailQueueGetFromDataStore()
+	r.ParseForm()
+	data := struct {
+		HttpViewData
+		Instances  []*httpInstance
+		QueueItems map[string][]*mailQueueItem
+		Sender     string
+		Recipient  string
+	}{
+		HttpViewData: HttpViewData{GoogleAnalytics: Config.Http.Google_Analytics},
+		Instances:    httpGetInstances(),
+	}
+
+	selectedInstances, err := httpParseFilterInstance(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	httpSetSelectedInstances(data.Instances, selectedInstances)
+
+	data.Sender = r.FormValue("sender")
+	data.Recipient = r.FormValue("recipient")
+
+	data.QueueItems = mailQueueGetFromDataStore(&mailQueueGetOptions{
+		Sender:    data.Sender,
+		Recipient: data.Recipient,
+		Instances: selectedInstances,
+	})
 
 	if r.FormValue("json") == "1" {
-		httpReturnJson(w, items)
+		httpReturnJson(w, data.QueueItems)
 		return
 	}
 
@@ -185,14 +211,6 @@ func httpHandleMailQueue(w http.ResponseWriter, r *http.Request) {
 	tpl := template.New("skeleton.html")
 	tpl.Parse(string(tplMailQueue))
 	tpl.Parse(string(tplSkeleton))
-
-	data := struct {
-		HttpViewData
-		QueueItems map[string][]*mailQueueItem
-	}{
-		HttpViewData: HttpViewData{GoogleAnalytics: Config.Http.Google_Analytics},
-		QueueItems:   items,
-	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := tpl.ExecuteTemplate(w, "skeleton.html", data); err != nil {
@@ -463,19 +481,7 @@ func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if len(selectedInstances) == 0 {
-		for _, instance := range data.Instances {
-			instance.Selected = true
-		}
-	} else {
-		for _, selectedInstance := range selectedInstances {
-			for _, instance := range data.Instances {
-				if instance.Id == selectedInstance {
-					instance.Selected = true
-				}
-			}
-		}
-	}
+	httpSetSelectedInstances(data.Instances, selectedInstances)
 
 	period := r.FormValue("period")
 	if _, err := strconv.ParseFloat(period, 64); err != nil || period == "" {
@@ -563,4 +569,20 @@ func httpParseFilterInstance(r *http.Request) (out []string, err error) {
 		out = append(out, strconv.Itoa(int(i)))
 	}
 	return
+}
+
+func httpSetSelectedInstances(instances []*httpInstance, selectedInstances []string) {
+	if len(selectedInstances) == 0 {
+		for _, instance := range instances {
+			instance.Selected = true
+		}
+	} else {
+		for _, selectedInstance := range selectedInstances {
+			for _, instance := range instances {
+				if instance.Id == selectedInstance {
+					instance.Selected = true
+				}
+			}
+		}
+	}
 }

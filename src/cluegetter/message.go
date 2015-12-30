@@ -552,3 +552,15 @@ func messageEnsureHasMessageId(msg *Message) {
 		})
 	}
 }
+
+func messageParseAddress(address string) (local, domain string) {
+	if strings.Index(address, "@") != -1 {
+		local = strings.SplitN(address, "@", 2)[0]
+		domain = strings.SplitN(address, "@", 2)[1]
+	} else {
+		local = ""
+		domain = address
+	}
+
+	return
+}

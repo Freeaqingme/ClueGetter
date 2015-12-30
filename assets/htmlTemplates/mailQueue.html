@@ -1,6 +1,30 @@
 {{ define "title" }}Mail Queue{{ end }}
 {{ define "body" }}
 
+<form action="" method="get">
+    <div class="form-group">
+        <label for="sender">Sender Email Address Or Domain</label>
+        <input type="text" class="form-control" id="sender"  value="{{ .Sender }}" placeholder="Enter Mail Address or Domain to search for" name="sender">
+    </div>
+    <div class="form-group">
+        <label for="recipient">Recipient Email Address Or Domain</label>
+        <input type="text" class="form-control" id="recipient" value="{{ .Recipient }}" placeholder="Enter Mail Address or Domain to search for" name="recipient">
+    </div>
+    <div class="form-group">
+        <label for="instance">Instance</label><br />
+        <select name="instance" multiple="multiple" required="required">
+            {{ range $key, $instance := .Instances }}
+                {{ if $instance.Selected }}
+                    <option value="{{ $instance.Id }}" selected="selected">{{ $instance.Description }} ({{ $instance.Name }})</option>
+                {{ else }}
+                    <option value="{{ $instance.Id }}">{{ $instance.Description }} ({{ $instance.Name }})</option>
+                {{ end }}
+            {{ end }}
+        </select>
+    </div>
+    <button type="submit" class="btn btn-default">Submit</button>
+</form>
+
 {{ range $queue, $items := .QueueItems }}
     <h2>{{ $queue }} ({{ len $items }}) </h2>
 

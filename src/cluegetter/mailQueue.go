@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -33,6 +34,12 @@ func init() {
 type mailQueueItem struct {
 	Time time.Time // can be nil
 	Kv   map[string]string
+}
+
+type mailQueueGetOptions struct {
+	Sender    string
+	Recipient string
+	Instances []string
 }
 
 func mailQueueStart() {
@@ -69,12 +76,29 @@ func mailQueueStart() {
 	Log.Info("MailQueue module started successfully")
 }
 
-func mailQueueGetFromDataStore() map[string][]*mailQueueItem {
+func mailQueueGetFromDataStore(options *mailQueueGetOptions) map[string][]*mailQueueItem {
+	serviceInOneOfInstances := func(service *service, instances []string) bool {
+		for _, instance := range instances {
+			if strconv.Itoa(int(service.Instance)) == instance {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	senderLocal, senderDomain := messageParseAddress(options.Sender)
+	rcptLocal, rcptDomain := messageParseAddress(options.Recipient)
+
 	out := make(map[string][]*mailQueueItem, 0)
 	for _, queueName := range mailQueueNames {
 		out[queueName] = make([]*mailQueueItem, 0)
 
 		for _, service := range redisGetServices() {
+			if !serviceInOneOfInstances(service, options.Instances) {
+				continue
+			}
+
 			key := fmt.Sprintf("cluegetter-%d-mailqueue-%s-%s",
 				service.Instance, service.Hostname, queueName)
 
@@ -85,7 +109,22 @@ func mailQueueGetFromDataStore() map[string][]*mailQueueItem {
 					Log.Error("Could not parse json string: %s", err.Error())
 					continue
 				}
-				out[queueName] = append(out[queueName], item)
+
+				if options.Sender == "" && options.Recipient == "" {
+					out[queueName] = append(out[queueName], item)
+					continue
+				}
+
+				itemSenderLocal, itemSenderDomain := messageParseAddress(item.Kv["sender"])
+				itemRcptLocal, itemRcptDomain := messageParseAddress(item.Kv["recipient"])
+
+				if ((senderLocal == "" || itemSenderLocal == senderLocal) &&
+					itemSenderDomain == senderDomain) || options.Sender == "" {
+					if ((rcptLocal == "" || itemRcptLocal == rcptLocal) &&
+						itemRcptDomain == rcptDomain) || options.Recipient == "" {
+						out[queueName] = append(out[queueName], item)
+					}
+				}
 			}
 		}
 	}
