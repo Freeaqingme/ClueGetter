@@ -46,6 +46,7 @@ func httpStart(done <-chan struct{}) {
 	http.HandleFunc("/message/searchEmail/", httpHandlerMessageSearchEmail)
 	http.HandleFunc("/message/searchClientAddress/", httpHandlerMessageSearchClientAddress)
 	http.HandleFunc("/message/searchSaslUser/", httpHandleMessageSearchSaslUser)
+	http.HandleFunc("/mailqueue", httpHandleMailQueue)
 	http.HandleFunc("/", httpIndexHandler)
 
 	go http.Serve(listener, nil)
@@ -169,6 +170,34 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 	httpProcessSearchResultRows(w, r, rows)
+}
+
+func httpHandleMailQueue(w http.ResponseWriter, r *http.Request) {
+	items := mailQueueGetFromDataStore()
+
+	if r.FormValue("json") == "1" {
+		httpReturnJson(w, items)
+		return
+	}
+
+	tplMailQueue, _ := assets.Asset("htmlTemplates/mailQueue.html")
+	tplSkeleton, _ := assets.Asset("htmlTemplates/skeleton.html")
+	tpl := template.New("skeleton.html")
+	tpl.Parse(string(tplMailQueue))
+	tpl.Parse(string(tplSkeleton))
+
+	data := struct {
+		HttpViewData
+		QueueItems map[string][]*mailQueueItem
+	}{
+		HttpViewData: HttpViewData{GoogleAnalytics: Config.Http.Google_Analytics},
+		QueueItems:   items,
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := tpl.ExecuteTemplate(w, "skeleton.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func httpHandlerMessageSearchClientAddress(w http.ResponseWriter, r *http.Request) {

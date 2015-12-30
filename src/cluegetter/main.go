@@ -56,9 +56,9 @@ func main() {
 
 	done := make(chan struct{})
 	rdbmsStart()
+	setInstance()
 	persistStart()
 	cqlStart()
-	setInstance()
 
 	milterSessionStart()
 	httpStart(done)

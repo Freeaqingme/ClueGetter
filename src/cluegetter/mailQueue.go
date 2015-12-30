@@ -69,6 +69,29 @@ func mailQueueStart() {
 	Log.Info("MailQueue module started successfully")
 }
 
+func mailQueueGetFromDataStore() map[string][]*mailQueueItem {
+	out := make(map[string][]*mailQueueItem, 0)
+	for _, queueName := range mailQueueNames {
+		out[queueName] = make([]*mailQueueItem, 0)
+
+		for _, service := range redisGetServices() {
+			key := fmt.Sprintf("cluegetter-%d-mailqueue-%s-%s",
+				service.Instance, service.Hostname, queueName)
+
+			for _, jsonStr := range redisClient.LRange(key, 0, -1).Val() {
+				item := &mailQueueItem{}
+				err := json.Unmarshal([]byte(jsonStr), &item)
+				if err != nil {
+					Log.Error("Could not parse json string: %s", err.Error())
+					continue
+				}
+				out[queueName] = append(out[queueName], item)
+			}
+		}
+	}
+	return out
+}
+
 func mailQueueRecover(funcName string) {
 	if Config.ClueGetter.Exit_On_Panic {
 		return

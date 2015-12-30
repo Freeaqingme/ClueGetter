@@ -1,0 +1,27 @@
+{{ define "title" }}Mail Queue{{ end }}
+{{ define "body" }}
+
+{{ range $queue, $items := .QueueItems }}
+    <h2>{{ $queue }} ({{ len $items }}) </h2>
+
+    <table class="table table-striped">
+        <tr>
+            <th>Id</th><th>Date</th><th>Sender</th><th>Recipient</th><th>&nbsp;</th>
+        </tr>
+        {{ range $i, $item := $items }}
+            <tr>
+                <td><a href="/message/{{ $item.Kv.log_ident }}">{{  $item.Kv.log_ident }}</a></td>
+                <td>{{ $item.Time }}</td>
+                <td>{{ $item.Kv.sender }}</td>
+                <td>{{ $item.Kv.recipient }}</td>
+                <td>&nbsp;</td>
+            </tr>
+        {{ end }}
+    </table>
+
+{{ end }}
+
+{{ end }}
+{{ define "script_footer" }}
+
+{{ end }}

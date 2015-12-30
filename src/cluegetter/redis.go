@@ -8,7 +8,10 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	redis "gopkg.in/redis.v3"
+	"math"
 	"time"
 )
 
@@ -17,12 +20,16 @@ type RedisClient interface {
 	Exists(key string) *redis.BoolCmd
 	Expire(key string, expiration time.Duration) *redis.BoolCmd
 	Get(key string) *redis.StringCmd
+	HSet(key, field, value string) *redis.BoolCmd
+	HGetAllMap(key string) *redis.StringStringMapCmd
 	LPush(key string, values ...string) *redis.IntCmd
 	LPushX(key, value interface{}) *redis.IntCmd
 	LRange(key string, start, stop int64) *redis.StringSliceCmd
 	LSet(key string, index int64, value interface{}) *redis.StatusCmd
 	Ping() *redis.StatusCmd
 	RPop(key string) *redis.StringCmd
+	SAdd(key string, members ...string) *redis.IntCmd
+	SMembers(key string) *redis.StringSliceCmd
 	Set(key string, value interface{}, expiration time.Duration) *redis.StatusCmd
 	ZAdd(key string, members ...redis.Z) *redis.IntCmd
 	ZCount(key, min, max string) *redis.IntCmd
@@ -47,19 +54,30 @@ func persistStart() {
 		return
 	}
 
+	if len(Config.Redis.Host) == 0 {
+		Log.Fatal("No Redis.Host specified")
+	}
+
 	RedisLPushChan = make(chan *RedisKeyValue, 255)
 	redisClient = redisNewClient()
 
 	go redisChannelListener()
+
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		for {
+			select {
+			case <-ticker.C:
+				redisUpdateRunningList()
+			}
+		}
+	}()
+	go redisUpdateRunningList()
 	Log.Info("Redis module started successfully")
 }
 
 func redisNewClient() RedisClient {
 	var client RedisClient
-
-	if len(Config.Redis.Host) == 0 {
-		Log.Fatal("No Redis.Host specified")
-	}
 
 	switch Config.Redis.Method {
 	case "standalone":
@@ -75,7 +93,6 @@ func redisNewClient() RedisClient {
 		})
 	default:
 		Log.Fatal("Unknown redis connection method specified")
-
 	}
 
 	return client
@@ -154,4 +171,52 @@ func redisListSubscribeBypass(input chan []byte, output chan []byte) {
 		data := <-input
 		output <- data
 	}
+}
+
+type service struct {
+	Hostname string
+	Instance uint
+}
+
+func redisUpdateRunningList() {
+	Log.Debug("Running redisUpdateRunningList()")
+
+	now := time.Now().Unix()
+	start := int(float64(now) - math.Mod(float64(now), 60.0))
+
+	values := &service{
+		Hostname: hostname,
+		Instance: instance,
+	}
+	value, _ := json.Marshal(values)
+	valueStr := string(value)
+
+	for i := -1; i <= 1; i++ {
+		key := fmt.Sprintf("cluegetter-%d-service-%d", instance, start+(i*60))
+		redisClient.HSet(key, hostname, valueStr)
+		redisClient.Expire(key, time.Duration(120)*time.Second)
+
+		key = fmt.Sprintf("cluegetter-service-%d", start+(i*60))
+		redisClient.SAdd(key, valueStr)
+		redisClient.Expire(key, time.Duration(120)*time.Second)
+	}
+}
+
+func redisGetServices() []*service {
+	now := time.Now().Unix()
+	start := int(float64(now) - math.Mod(float64(now), 60.0))
+	key := fmt.Sprintf("cluegetter-service-%d", start)
+
+	out := make([]*service, 0)
+	for _, jsonStr := range redisClient.SMembers(key).Val() {
+		value := &service{}
+		err := json.Unmarshal([]byte(jsonStr), &value)
+		if err != nil {
+			Log.Error("Could not parse json service string: %s", err.Error())
+			continue
+		}
+		out = append(out, value)
+	}
+
+	return out
 }
