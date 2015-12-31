@@ -12,9 +12,9 @@ import (
 	"fmt"
 	redis "gopkg.in/redis.v3"
 	"math"
-	"time"
-	"strings"
 	"strconv"
+	"strings"
+	"time"
 )
 
 type RedisClientBase interface {
@@ -239,7 +239,7 @@ func redisRpc() {
 	}
 	defer pubsub.Close()
 
-	listeners := make(map[string][]chan string,0)
+	listeners := make(map[string][]chan string, 0)
 	for _, module := range modules {
 		if module.rpc == nil {
 			continue
@@ -261,7 +261,7 @@ func redisRpc() {
 
 		logMsg := msg.Payload
 		if len(logMsg) > 128 {
-			logMsg = logMsg[:128]+"..."
+			logMsg = logMsg[:128] + "..."
 		}
 
 		elements := strings.SplitN(msg.Channel, "!", 3)
@@ -270,12 +270,12 @@ func redisRpc() {
 			continue
 		}
 
-		if msgInstance, err := strconv.Atoi(elements[1]); err == nil {
+		if msgInstance, err := strconv.Atoi(elements[1]); err == nil && len(elements[1]) > 0 {
 			if msgInstance != int(instance) {
 				Log.Debug("Received RPC message for other instance (%d). Ignoring: <%s>%s", instance, msg.Channel, logMsg)
 				continue
 			}
-		} else if elements[1] != hostname {
+		} else if len(elements[1]) > 0 && elements[1] != hostname {
 			Log.Debug("Received RPC message for other service (%s). Ignoring: <%s>%s", elements[1], msg.Channel, logMsg)
 			continue
 		}

@@ -23,6 +23,8 @@ import (
 	"time"
 )
 
+type httpCallback func(w http.ResponseWriter, r *http.Request)
+
 func httpStart(done <-chan struct{}) {
 	if !Config.Http.Enabled {
 		Log.Info("HTTP module has not been enabled. Skipping...")
@@ -46,7 +48,13 @@ func httpStart(done <-chan struct{}) {
 	http.HandleFunc("/message/searchEmail/", httpHandlerMessageSearchEmail)
 	http.HandleFunc("/message/searchClientAddress/", httpHandlerMessageSearchClientAddress)
 	http.HandleFunc("/message/searchSaslUser/", httpHandleMessageSearchSaslUser)
-	http.HandleFunc("/mailqueue", httpHandleMailQueue)
+
+	for _, module := range modules {
+		for url, callback := range module.httpHandlers {
+			http.HandleFunc(url, callback)
+		}
+	}
+
 	http.HandleFunc("/", httpIndexHandler)
 
 	go http.Serve(listener, nil)
@@ -170,52 +178,6 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 	httpProcessSearchResultRows(w, r, rows)
-}
-
-func httpHandleMailQueue(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	data := struct {
-		HttpViewData
-		Instances  []*httpInstance
-		QueueItems map[string][]*mailQueueItem
-		Sender     string
-		Recipient  string
-	}{
-		HttpViewData: HttpViewData{GoogleAnalytics: Config.Http.Google_Analytics},
-		Instances:    httpGetInstances(),
-	}
-
-	selectedInstances, err := httpParseFilterInstance(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	httpSetSelectedInstances(data.Instances, selectedInstances)
-
-	data.Sender = r.FormValue("sender")
-	data.Recipient = r.FormValue("recipient")
-
-	data.QueueItems = mailQueueGetFromDataStore(&mailQueueGetOptions{
-		Sender:    data.Sender,
-		Recipient: data.Recipient,
-		Instances: selectedInstances,
-	})
-
-	if r.FormValue("json") == "1" {
-		httpReturnJson(w, data.QueueItems)
-		return
-	}
-
-	tplMailQueue, _ := assets.Asset("htmlTemplates/mailQueue.html")
-	tplSkeleton, _ := assets.Asset("htmlTemplates/skeleton.html")
-	tpl := template.New("skeleton.html")
-	tpl.Parse(string(tplMailQueue))
-	tpl.Parse(string(tplSkeleton))
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := tpl.ExecuteTemplate(w, "skeleton.html", data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
 }
 
 func httpHandlerMessageSearchClientAddress(w http.ResponseWriter, r *http.Request) {
@@ -584,5 +546,23 @@ func httpSetSelectedInstances(instances []*httpInstance, selectedInstances []str
 				}
 			}
 		}
+	}
+}
+
+func httpRenderOutput(w http.ResponseWriter, r *http.Request, templateFile string, data, jsonData interface{}) {
+	if r.FormValue("json") == "1" {
+		httpReturnJson(w, jsonData)
+		return
+	}
+
+	tplMailQueue, _ := assets.Asset("htmlTemplates/" + templateFile)
+	tplSkeleton, _ := assets.Asset("htmlTemplates/skeleton.html")
+	tpl := template.New("skeleton.html")
+	tpl.Parse(string(tplMailQueue))
+	tpl.Parse(string(tplSkeleton))
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := tpl.ExecuteTemplate(w, "skeleton.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

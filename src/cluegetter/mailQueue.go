@@ -11,6 +11,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -23,11 +24,21 @@ import (
 var mailQueueNames = []string{"incoming", "active", "deferred", "corrupt", "hold"}
 
 func init() {
-	init := mailQueueStart
+	deleteQueue := make(chan string)
+	init := func() {
+		mailQueueStart(deleteQueue)
+	}
 
 	ModuleRegister(&module{
 		name: "mailQueue",
 		init: &init,
+		rpc: map[string]chan string{
+			"mailQueue!delete": deleteQueue,
+		},
+		httpHandlers: map[string]httpCallback{
+			"/mailqueue":        mailQueueHttp,
+			"/mailqueue/delete": mailQueueHttpDelete,
+		},
 	})
 }
 
@@ -42,7 +53,8 @@ type mailQueueGetOptions struct {
 	Instances []string
 }
 
-func mailQueueStart() {
+func mailQueueStart(deleteQueue chan string) {
+
 	if Config.MailQueue.Enabled != true {
 		Log.Info("Skipping MailQueue module because it was not enabled in the config")
 		return
@@ -73,7 +85,51 @@ func mailQueueStart() {
 		}(queueName)
 	}
 
+	go mailQueueHandleDeleteChannel(deleteQueue)
+
 	Log.Info("MailQueue module started successfully")
+}
+
+func mailQueueHandleDeleteChannel(deleteQueue chan string) {
+	for queueString := range deleteQueue {
+		queueIds := strings.Split(queueString, " ")
+		go mailQueueDeleteItems(queueIds)
+	}
+}
+
+func mailQueueDeleteItems(queueIds []string) {
+	args := make([]string, 0, len(queueIds)*2)
+	for _, queueId := range queueIds {
+		if queueId == "" {
+			continue
+		}
+		if queueId == "ALL" || len(queueId) > 20 {
+			Log.Notice("Received invalid queue id '%s'. Ignoring", queueId)
+			continue
+		}
+		args = append(args, "-d", queueId)
+	}
+
+	cmd := exec.Command("postsuper", args...)
+	cmd.Dir = "/"
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		Log.Error("Error ocurred while running postsuper: %s", err)
+		return
+	}
+
+	// If postsuper deleted 0 items, 0 lines are displayed.
+	// Otherwise it's no. of lines + 1.
+	linesOut := strings.Split(strings.Trim(out.String(), "\r"), "\n")
+	amountDeleted := len(linesOut) - 1
+	if amountDeleted < 0 {
+		amountDeleted = 0
+	}
+
+	Log.Notice("Deleted queue items. %d requested, %d were present and deleted",
+		len(queueIds), amountDeleted)
 }
 
 func mailQueueGetFromDataStore(options *mailQueueGetOptions) map[string][]*mailQueueItem {
@@ -286,4 +342,50 @@ func mailQueueParseEnvelopeString(envelopeStr string) (*mailQueueItem, error) {
 	item.Time = parsedTime
 
 	return item, nil
+}
+
+func mailQueueHttp(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	data := struct {
+		HttpViewData
+		Instances  []*httpInstance
+		QueueItems map[string][]*mailQueueItem
+		Sender     string
+		Recipient  string
+	}{
+		HttpViewData: HttpViewData{GoogleAnalytics: Config.Http.Google_Analytics},
+		Instances:    httpGetInstances(),
+	}
+
+	selectedInstances, err := httpParseFilterInstance(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	httpSetSelectedInstances(data.Instances, selectedInstances)
+
+	data.Sender = r.FormValue("sender")
+	data.Recipient = r.FormValue("recipient")
+
+	data.QueueItems = mailQueueGetFromDataStore(&mailQueueGetOptions{
+		Sender:    data.Sender,
+		Recipient: data.Recipient,
+		Instances: selectedInstances,
+	})
+
+	httpRenderOutput(w, r, "mailQueue.html", &data, &data.QueueItems)
+}
+
+func mailQueueHttpDelete(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	for k, v := range r.Form {
+		if k != "queueId[]" {
+			continue
+		}
+
+		err := redisClient.Publish("cluegetter!!mailQueue!delete", strings.Join(v, " ")).Err()
+		if err != nil {
+			panic(err)
+		}
+	}
 }

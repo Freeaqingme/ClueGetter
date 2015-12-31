@@ -29,11 +29,12 @@ var (
 )
 
 type module struct {
-	name        string
-	init        *func()
-	stop        *func()
-	milterCheck *func(*Message, chan bool) *MessageCheckResult
-	rpc         map[string]chan string
+	name         string
+	init         *func()
+	stop         *func()
+	milterCheck  *func(*Message, chan bool) *MessageCheckResult
+	rpc          map[string]chan string
+	httpHandlers map[string]httpCallback
 }
 
 func main() {
