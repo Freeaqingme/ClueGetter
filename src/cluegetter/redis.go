@@ -13,9 +13,11 @@ import (
 	redis "gopkg.in/redis.v3"
 	"math"
 	"time"
+	"strings"
+	"strconv"
 )
 
-type RedisClient interface {
+type RedisClientBase interface {
 	Del(keys ...string) *redis.IntCmd
 	Exists(key string) *redis.BoolCmd
 	Expire(key string, expiration time.Duration) *redis.BoolCmd
@@ -36,8 +38,15 @@ type RedisClient interface {
 	ZRemRangeByScore(key, min, max string) *redis.IntCmd
 }
 
+type RedisClient interface {
+	RedisClientBase
+
+	PSubscribe(patterns ...string) (*redis.PubSub, error)
+	Publish(channel, message string) *redis.IntCmd
+}
+
 type RedisClientMulti interface {
-	RedisClient
+	RedisClientBase
 	Exec(f func() error) ([]redis.Cmder, error)
 }
 
@@ -74,6 +83,8 @@ func persistStart() {
 	}()
 	go redisUpdateRunningList()
 	Log.Info("Redis module started successfully")
+
+	go redisRpc()
 }
 
 func redisNewClient() RedisClient {
@@ -219,4 +230,66 @@ func redisGetServices() []*service {
 	}
 
 	return out
+}
+
+func redisRpc() {
+	pubsub, err := redisClient.PSubscribe("cluegetter!*")
+	if err != nil {
+		panic(err)
+	}
+	defer pubsub.Close()
+
+	listeners := make(map[string][]chan string,0)
+	for _, module := range modules {
+		if module.rpc == nil {
+			continue
+		}
+
+		for pattern, channel := range module.rpc {
+			if listeners[pattern] == nil {
+				listeners[pattern] = make([]chan string, 0)
+			}
+			listeners[pattern] = append(listeners[pattern], channel)
+		}
+	}
+
+	for {
+		msg, err := pubsub.ReceiveMessage()
+		if err != nil {
+			panic(err)
+		}
+
+		logMsg := msg.Payload
+		if len(logMsg) > 128 {
+			logMsg = logMsg[:128]+"..."
+		}
+
+		elements := strings.SplitN(msg.Channel, "!", 3)
+		if len(elements) < 3 || elements[0] != "cluegetter" {
+			Log.Notice("Received invalid RPC channel <%s>%s", msg.Channel, logMsg)
+			continue
+		}
+
+		if msgInstance, err := strconv.Atoi(elements[1]); err == nil {
+			if msgInstance != int(instance) {
+				Log.Debug("Received RPC message for other instance (%d). Ignoring: <%s>%s", instance, msg.Channel, logMsg)
+				continue
+			}
+		} else if elements[1] != hostname {
+			Log.Debug("Received RPC message for other service (%s). Ignoring: <%s>%s", elements[1], msg.Channel, logMsg)
+			continue
+		}
+
+		if listeners[elements[2]] == nil {
+			Log.Debug("Received RPC message but no such pattern was registered, ignoring: <%s>%s", msg.Channel, logMsg)
+			continue
+		}
+
+		Log.Info("Received RPC Message: <%s>%s", msg.Channel, logMsg)
+		for _, channel := range listeners[elements[2]] {
+			go func(payload string) {
+				channel <- payload
+			}(msg.Payload)
+		}
+	}
 }

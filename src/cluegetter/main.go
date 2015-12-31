@@ -33,6 +33,7 @@ type module struct {
 	init        *func()
 	stop        *func()
 	milterCheck *func(*Message, chan bool) *MessageCheckResult
+	rpc         map[string]chan string
 }
 
 func main() {
