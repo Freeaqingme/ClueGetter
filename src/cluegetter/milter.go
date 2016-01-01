@@ -11,7 +11,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	m "github.com/Freeaqingme/gomilter"
-	"github.com/bmatsuo/uuid"
+	"github.com/pborman/uuid"
 	"net"
 	"strconv"
 	"strings"
