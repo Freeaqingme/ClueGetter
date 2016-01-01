@@ -241,7 +241,7 @@ func redisRpc() {
 
 	listeners := make(map[string][]chan string, 0)
 	for _, module := range modules {
-		if module.rpc == nil {
+		if module.rpc == nil || (module.enable != nil && !(*module.enable)()) {
 			continue
 		}
 

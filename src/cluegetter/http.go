@@ -50,6 +50,10 @@ func httpStart(done <-chan struct{}) {
 	http.HandleFunc("/message/searchSaslUser/", httpHandleMessageSearchSaslUser)
 
 	for _, module := range modules {
+		if module.enable != nil && !(*module.enable)() {
+			continue
+		}
+
 		for url, callback := range module.httpHandlers {
 			http.HandleFunc(url, callback)
 		}
