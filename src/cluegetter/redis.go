@@ -82,9 +82,9 @@ func persistStart() {
 		}
 	}()
 	go redisUpdateRunningList()
+	go redisRpc()
 	Log.Info("Redis module started successfully")
 
-	go redisRpc()
 }
 
 func redisNewClient() RedisClient {
@@ -256,7 +256,9 @@ func redisRpc() {
 	for {
 		msg, err := pubsub.ReceiveMessage()
 		if err != nil {
-			panic(err)
+			Log.Error("Error from redis/pubsub.ReceiveMessage(): %s", err.Error())
+			time.Sleep(1 * time.Second)
+			continue
 		}
 
 		logMsg := msg.Payload
