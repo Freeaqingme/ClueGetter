@@ -25,13 +25,15 @@ var mailQueueNames = []string{"incoming", "active", "deferred", "corrupt", "hold
 
 func init() {
 	deleteQueue := make(chan string)
+	enable := func() bool { return Config.MailQueue.Enabled }
 	init := func() {
 		mailQueueStart(deleteQueue)
 	}
 
 	ModuleRegister(&module{
-		name: "mailQueue",
-		init: &init,
+		name:   "mailQueue",
+		enable: &enable,
+		init:   &init,
 		rpc: map[string]chan string{
 			"mailQueue!delete": deleteQueue,
 		},
@@ -54,12 +56,6 @@ type mailQueueGetOptions struct {
 }
 
 func mailQueueStart(deleteQueue chan string) {
-
-	if Config.MailQueue.Enabled != true {
-		Log.Info("Skipping MailQueue module because it was not enabled in the config")
-		return
-	}
-
 	if !Config.Redis.Enabled {
 		Log.Fatal("The mailQueue module requires the redis module to be enabled")
 	}
@@ -86,8 +82,6 @@ func mailQueueStart(deleteQueue chan string) {
 	}
 
 	go mailQueueHandleDeleteChannel(deleteQueue)
-
-	Log.Info("MailQueue module started successfully")
 }
 
 func mailQueueHandleDeleteChannel(deleteQueue chan string) {

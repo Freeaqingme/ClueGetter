@@ -38,23 +38,19 @@ type rspamdResponse struct {
 }
 
 func init() {
+	enable := func() bool { return Config.Rspamd.Enabled }
 	init := rspamdStart
 	milterCheck := rspamdGetResult
 
 	ModuleRegister(&module{
 		name:        "rspamd",
+		enable:      &enable,
 		init:        &init,
 		milterCheck: &milterCheck,
 	})
 }
 
 func rspamdStart() {
-	if Config.Rspamd.Enabled != true {
-		Log.Info("Skipping Rspamd module because it was not enabled in the config")
-		return
-	}
-
-	Log.Info("Rspamd module started successfully")
 }
 
 func rspamdGetResult(msg *Message, abort chan bool) *MessageCheckResult {

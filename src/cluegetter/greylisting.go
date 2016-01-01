@@ -32,22 +32,19 @@ type greylistVerdict struct {
 }
 
 func init() {
+	enable := func() bool { return Config.Greylisting.Enabled }
 	init := greylistStart
 	milterCheck := greylistGetResult
 
 	ModuleRegister(&module{
 		name:        "greylisting",
+		enable:      &enable,
 		init:        &init,
 		milterCheck: &milterCheck,
 	})
 }
 
 func greylistStart() {
-	if Config.Greylisting.Enabled != true {
-		Log.Info("Skipping Greylist module because it was not enabled in the config")
-		return
-	}
-
 	greylistPrepStmt()
 	go func() {
 		ticker := time.NewTicker(time.Duration(5) * time.Minute)
@@ -60,7 +57,6 @@ func greylistStart() {
 	}()
 
 	go greylistUpdateWhitelist()
-	Log.Info("Greylist module started")
 }
 
 func greylistPrepStmt() {

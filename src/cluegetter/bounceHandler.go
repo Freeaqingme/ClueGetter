@@ -46,26 +46,21 @@ var BounceHandlerSaveBounceStmt = *new(*sql.Stmt)
 var BounceHandlerSaveBounceReportStmt = *new(*sql.Stmt)
 
 func init() {
+	enable := func() bool { return Config.BounceHandler.Enabled }
 	init := bounceHandlerStart
 	stop := bounceHandlerStop
 
 	ModuleRegister(&module{
-		name: "bouncehandler",
-		init: &init,
-		stop: &stop,
+		name:   "bouncehandler",
+		enable: &enable,
+		init:   &init,
+		stop:   &stop,
 	})
 }
 
 func bounceHandlerStart() {
-	if Config.BounceHandler.Enabled != true {
-		Log.Info("Skipping BounceHandler module because it was not enabled in the config")
-		return
-	}
-
 	bounceHandlerPrepStmt()
 	go bounceHandlerListen()
-
-	Log.Info("BounceHandler module started successfully")
 }
 
 func bounceHandlerStop() {

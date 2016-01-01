@@ -30,6 +30,7 @@ var (
 
 type module struct {
 	name         string
+	enable       *func() bool
 	init         *func()
 	stop         *func()
 	milterCheck  *func(*Message, chan bool) *MessageCheckResult
@@ -66,8 +67,13 @@ func main() {
 	httpStart(done)
 	messageStart()
 	for _, module := range modules {
+		if module.enable != nil && !(*module.enable)() {
+			Log.Info("Skipping module '%s' because it was not enabled", module.name)
+			continue
+		}
 		if module.init != nil {
 			(*module.init)()
+			Log.Info("Module '%s' started successfully", module.name)
 		}
 	}
 	milterStart()

@@ -55,12 +55,14 @@ var quotasRegexes *[]*quotasRegex
 var quotasRegexesLock *sync.RWMutex
 
 func init() {
+	enable := func() bool { return Config.Quotas.Enabled }
 	init := quotasStart
 	stop := quotasStop
 	milterCheck := quotasIsAllowed
 
 	ModuleRegister(&module{
 		name:        "quotas",
+		enable:      &enable,
 		init:        &init,
 		stop:        &stop,
 		milterCheck: &milterCheck,
@@ -68,18 +70,11 @@ func init() {
 }
 
 func quotasStart() {
-	if Config.Quotas.Enabled != true {
-		Log.Info("Skipping Quota module because it was not enabled in the config")
-		return
-	}
-
 	quotasPrepStmt()
 	if Config.Redis.Enabled {
 		quotasRedisStart()
 		quotasRegexesStart()
 	}
-
-	Log.Info("Quotas module started successfully")
 }
 
 func quotasRegexesStart() {
