@@ -60,7 +60,7 @@ func httpStart(done <-chan struct{}) {
 		}
 	}
 
-	go http.Serve(listener, nil)
+	go http.Serve(listener, httpLogRequest(http.DefaultServeMux))
 
 	go func() {
 		<-done
@@ -134,6 +134,13 @@ type httpMessageCheckResult struct {
 	WeightedScore float64
 	Duration      float64
 	Determinants  string
+}
+
+func httpLogRequest(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		Log.Info("HTTP Request: %s %s %s \"%s\"", r.RemoteAddr, r.Method, r.URL, r.Header.Get("User-Agent"))
+		handler.ServeHTTP(w, r)
+	})
 }
 
 func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
