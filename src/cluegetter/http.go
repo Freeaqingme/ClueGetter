@@ -48,6 +48,7 @@ func httpStart(done <-chan struct{}) {
 	http.HandleFunc("/message/searchEmail/", httpHandlerMessageSearchEmail)
 	http.HandleFunc("/message/searchClientAddress/", httpHandlerMessageSearchClientAddress)
 	http.HandleFunc("/message/searchSaslUser/", httpHandleMessageSearchSaslUser)
+	http.HandleFunc("/", httpIndexHandler)
 
 	for _, module := range modules {
 		if module.enable != nil && !(*module.enable)() {
@@ -58,8 +59,6 @@ func httpStart(done <-chan struct{}) {
 			http.HandleFunc(url, callback)
 		}
 	}
-
-	http.HandleFunc("/", httpIndexHandler)
 
 	go http.Serve(listener, nil)
 
@@ -249,17 +248,6 @@ func httpProcessSearchResultRows(w http.ResponseWriter, r *http.Request, rows *s
 		messages = append(messages, message)
 	}
 
-	if r.FormValue("json") == "1" {
-		httpReturnJson(w, messages)
-		return
-	}
-
-	tplMsgSearchEmail, _ := assets.Asset("htmlTemplates/messageSearchEmail.html")
-	tplSkeleton, _ := assets.Asset("htmlTemplates/skeleton.html")
-	tpl := template.New("skeleton.html")
-	tpl.Parse(string(tplMsgSearchEmail))
-	tpl.Parse(string(tplSkeleton))
-
 	data := struct {
 		*HttpViewData
 		Messages []*httpMessage
@@ -268,10 +256,7 @@ func httpProcessSearchResultRows(w http.ResponseWriter, r *http.Request, rows *s
 		Messages:     messages,
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := tpl.ExecuteTemplate(w, "skeleton.html", data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	httpRenderOutput(w, r, "messageSearchEmail.html", data, data.Messages)
 }
 
 func httpReturnJson(w http.ResponseWriter, obj interface{}) {
@@ -286,7 +271,6 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	row := Rdbms.QueryRow(`
 		SELECT m.session, m.date, COALESCE(m.body_size,0), CONCAT(m.sender_local, '@', m.sender_domain) sender,
 				m.rcpt_count, m.verdict, m.verdict_msg,
@@ -308,7 +292,7 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 		&msg.CertIssuer, &msg.CertSubject, &msg.CipherBits, &msg.Cipher, &msg.TlsVersion,
 		&msg.MtaHostname, &msg.MtaDaemonName)
 	if err != nil {
-		http.Error(w, "404? "+err.Error(), http.StatusNotFound)
+		http.Error(w, "Page Not Found: "+err.Error(), http.StatusNotFound)
 		return
 	}
 	msg.BodySizeStr = humanize.Bytes(uint64(msg.BodySize))
@@ -351,17 +335,6 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 		msg.CheckResults = append(msg.CheckResults, checkResult)
 	}
 
-	if r.FormValue("json") == "1" {
-		httpReturnJson(w, msg)
-		return
-	}
-
-	tplSkeleton, _ := assets.Asset("htmlTemplates/skeleton.html")
-	tplMsg, _ := assets.Asset("htmlTemplates/message.html")
-	tpl := template.New("skeleton.html")
-	tpl.Parse(string(tplMsg))
-	tpl.Parse(string(tplSkeleton))
-
 	data := struct {
 		*HttpViewData
 		Message *httpMessage
@@ -370,14 +343,15 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 		Message:      msg,
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := tpl.ExecuteTemplate(w, "skeleton.html", data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	httpRenderOutput(w, r, "message.html", data, msg)
 }
 
 func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
+	if r.URL.Path != "/" {
+		http.Error(w, "Page Not Found", http.StatusNotFound)
+		return
+	}
 	filter := "instance=" + strings.Join(r.Form["instance"], ",")
 
 	if r.FormValue("queueId") != "" {
@@ -400,12 +374,6 @@ func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tplIndex, _ := assets.Asset("htmlTemplates/index.html")
-	tplSkeleton, _ := assets.Asset("htmlTemplates/skeleton.html")
-	tpl := template.New("skeleton.html")
-	tpl.Parse(string(tplIndex))
-	tpl.Parse(string(tplSkeleton))
-
 	data := struct {
 		*HttpViewData
 		Instances []*httpInstance
@@ -414,10 +382,7 @@ func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 		Instances:    httpGetInstances(),
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := tpl.ExecuteTemplate(w, "skeleton.html", data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	httpRenderOutput(w, r, "index.html", data, nil)
 }
 
 type httpAbuserTop struct {
@@ -490,16 +455,7 @@ func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
 		data.SenderDomainTop = append(data.SenderDomainTop, result)
 	}
 
-	tplAbusers, _ := assets.Asset("htmlTemplates/abusers.html")
-	tplSkeleton, _ := assets.Asset("htmlTemplates/skeleton.html")
-	tpl := template.New("skeleton.html")
-	tpl.Parse(string(tplAbusers))
-	tpl.Parse(string(tplSkeleton))
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := tpl.ExecuteTemplate(w, "skeleton.html", data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	httpRenderOutput(w, r, "abusers.html", data, data.SenderDomainTop)
 }
 
 func httpGetInstances() []*httpInstance {
@@ -561,14 +517,18 @@ func httpSetSelectedInstances(instances []*httpInstance, selectedInstances []str
 
 func httpRenderOutput(w http.ResponseWriter, r *http.Request, templateFile string, data, jsonData interface{}) {
 	if r.FormValue("json") == "1" {
+		if jsonData == nil {
+			http.Error(w, "No parameter 'json' supported", http.StatusBadRequest)
+			return
+		}
 		httpReturnJson(w, jsonData)
 		return
 	}
 
-	tplMailQueue, _ := assets.Asset("htmlTemplates/" + templateFile)
+	tplPage, _ := assets.Asset("htmlTemplates/" + templateFile)
 	tplSkeleton, _ := assets.Asset("htmlTemplates/skeleton.html")
 	tpl := template.New("skeleton.html")
-	tpl.Parse(string(tplMailQueue))
+	tpl.Parse(string(tplPage))
 	tpl.Parse(string(tplSkeleton))
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
