@@ -347,13 +347,13 @@ func mailQueueParseEnvelopeString(envelopeStr string) (*mailQueueItem, error) {
 func mailQueueHttp(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	data := struct {
-		HttpViewData
+		*HttpViewData
 		Instances  []*httpInstance
 		QueueItems map[string][]*mailQueueItem
 		Sender     string
 		Recipient  string
 	}{
-		HttpViewData: HttpViewData{GoogleAnalytics: Config.Http.Google_Analytics},
+		HttpViewData: httpGetViewData(),
 		Instances:    httpGetInstances(),
 	}
 

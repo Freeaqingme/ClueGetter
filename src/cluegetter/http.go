@@ -67,7 +67,7 @@ func httpStart(done <-chan struct{}) {
 }
 
 type HttpViewData struct {
-	GoogleAnalytics string
+	Config *config
 }
 
 type httpInstance struct {
@@ -257,10 +257,10 @@ func httpProcessSearchResultRows(w http.ResponseWriter, r *http.Request, rows *s
 	tpl.Parse(string(tplSkeleton))
 
 	data := struct {
-		HttpViewData
+		*HttpViewData
 		Messages []*httpMessage
 	}{
-		HttpViewData: HttpViewData{GoogleAnalytics: Config.Http.Google_Analytics},
+		HttpViewData: httpGetViewData(),
 		Messages:     messages,
 	}
 
@@ -359,10 +359,10 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 	tpl.Parse(string(tplSkeleton))
 
 	data := struct {
-		HttpViewData
+		*HttpViewData
 		Message *httpMessage
 	}{
-		HttpViewData: HttpViewData{GoogleAnalytics: Config.Http.Google_Analytics},
+		HttpViewData: httpGetViewData(),
 		Message:      msg,
 	}
 
@@ -403,10 +403,10 @@ func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 	tpl.Parse(string(tplSkeleton))
 
 	data := struct {
-		HttpViewData
+		*HttpViewData
 		Instances []*httpInstance
 	}{
-		HttpViewData: HttpViewData{GoogleAnalytics: Config.Http.Google_Analytics},
+		HttpViewData: httpGetViewData(),
 		Instances:    httpGetInstances(),
 	}
 
@@ -421,17 +421,23 @@ type httpAbuserTop struct {
 	Count      int
 }
 
+func httpGetViewData() *HttpViewData {
+	return &HttpViewData{
+		Config: &Config,
+	}
+}
+
 func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 
 	data := struct {
-		HttpViewData
+		*HttpViewData
 		Instances       []*httpInstance
 		Period          string
 		Threshold       string
 		SenderDomainTop []*httpAbuserTop
 	}{
-		HttpViewData{GoogleAnalytics: Config.Http.Google_Analytics},
+		httpGetViewData(),
 		httpGetInstances(),
 		"4",
 		"5",
