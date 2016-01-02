@@ -42,6 +42,11 @@ least you've been warned.
 See the screenshots directory to get some ideas on what the HTTP interface
 looks like.
 
+## Screenshots
+
+[![Message Details](https://raw.githubusercontent.com/Freeaqingme/Cluegetter/master/screenshots/thumbs/200.MessageDetails.png)](https://raw.githubusercontent.com/Freeaqingme/Cluegetter/master/screenshots/MessageDetails.png)]
+
+
 ## Quick Setup
 Copy the example config file:
 ```cp cluegetter.conf.dist cluegetter.conf```
