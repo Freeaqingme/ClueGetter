@@ -1,5 +1,8 @@
 [cluegetter]
 
+# Socket to use for internal communication with the cluegetter daemon.
+ipc-socket = "/var/run/cluegetter/ipc.sock"
+
 # Cluegetter allows to use multiple configurations of ClueGetter
 # alongside each other sharing the same database. This allows for
 # easy correlation (e.g. track a message by message id). The quota

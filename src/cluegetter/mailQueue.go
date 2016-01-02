@@ -181,19 +181,8 @@ func mailQueueGetFromDataStore(options *mailQueueGetOptions) map[string][]*mailQ
 	return out
 }
 
-func mailQueueRecover(funcName string) {
-	if Config.ClueGetter.Exit_On_Panic {
-		return
-	}
-	r := recover()
-	if r == nil {
-		return
-	}
-	Log.Error("Panic caught in %s(). Recovering. Error: %s", funcName, r)
-}
-
 func mailQueueUpdate(queueName string) {
-	defer mailQueueRecover("mailQueueUpdate")
+	defer cluegetterRecover("mailQueueUpdate")
 	t0 := time.Now()
 
 	wg := &sync.WaitGroup{}
@@ -204,7 +193,7 @@ func mailQueueUpdate(queueName string) {
 	wg.Add(1)
 	go mailQueueProcessFileList(wg, files, path, envelopes)
 	go func() {
-		defer mailQueueRecover("mailQueueUpdate")
+		defer cluegetterRecover("mailQueueUpdate")
 		count := mailQueueAddToRedis(envelopes, queueName)
 		Log.Info("Imported %d items from the '%s' mailqueue into Redis in %.2f seconds",
 			count, queueName, time.Now().Sub(t0).Seconds())
@@ -253,7 +242,7 @@ func mailQueueAddToRedis(envelopes chan *mailQueueItem, queueName string) int {
 }
 
 func mailQueueProcessFileList(wg *sync.WaitGroup, files chan string, path string, envelopes chan *mailQueueItem) {
-	defer mailQueueRecover("mailQueueProcessFileList")
+	defer cluegetterRecover("mailQueueProcessFileList")
 
 	filesBatch := make([]string, 0, 256)
 	for file := range files {
@@ -274,7 +263,7 @@ func mailQueueProcessFileList(wg *sync.WaitGroup, files chan string, path string
 }
 
 func mailQueueProcessFiles(filesBatch []string, path string, envelopes chan *mailQueueItem) {
-	defer mailQueueRecover("mailQueueProcessFileList")
+	defer cluegetterRecover("mailQueueProcessFileList")
 
 	cmd := exec.Command("postcat", append([]string{"-e"}, filesBatch...)...)
 	cmd.Dir = path

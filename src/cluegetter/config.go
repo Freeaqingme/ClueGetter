@@ -13,6 +13,7 @@ import (
 
 type config struct {
 	ClueGetter struct {
+		IPC_Socket                       string
 		Instance                         string
 		Noop                             bool
 		Exit_On_Panic                    bool
@@ -109,6 +110,7 @@ func LoadConfig(cfgFile string, cfg *config) {
 }
 
 func DefaultConfig(cfg *config) {
+	cfg.ClueGetter.IPC_Socket = "/var/run/cluegetter/ipc.sock"
 	cfg.ClueGetter.Instance = "default"
 	cfg.ClueGetter.Noop = false
 	cfg.ClueGetter.Exit_On_Panic = false
