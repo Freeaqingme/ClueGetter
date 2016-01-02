@@ -1,5 +1,10 @@
 # Change Log
 
+### 2016-01-02 Version 0.5.0
+* New Feature: Manage MailQueue(s) through single web interface
+* New Feature: 'cluegetter log reopen' to facilitate in logrotation.
+* Lots of internal clean ups
+
 ### 2015-12-23 Version 0.4.4
 * New Feature: Initial abuser implementation
 * New Feature: Allow to filter on instance in web interface
