@@ -77,7 +77,7 @@ mysql cluegetter < mysql.sql
 Run ClueGetter:
 ```
 make
-./bin/cluegetter --config ./cluegetter.conf --loglevel=DEBUG
+./bin/cluegetter --config ./cluegetter.conf --loglevel=DEBUG daemon --foreground
 ```
 
 Once you got things up and running, consider setting up Redis. This will
