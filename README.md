@@ -46,10 +46,7 @@ looks like.
 
 | Message Details | Search for a message | Search results | Mail Queue |
 | ------------- | ------------- | ------------- | ------------- | 
-| [![Message Details](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/thumbs/200.MessageDetails.png)](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/MessageDetails.png) | 
-  [![Search for a message](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/thumbs/200.MessageDetails.png)](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/MessageDetails.png) |
-  [![Search Results](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/thumbs/200.MessageDetails.png)](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/MessageDetails.png) |
-  [![Mail Queue ](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/thumbs/200.MessageDetails.png)](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/MessageDetails.png) |
+| [![Message Details](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/thumbs/200.MessageDetails.png)](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/MessageDetails.png) | [![Search for a message](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/thumbs/200.MessageDetails.png)](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/MessageDetails.png) | [![Search Results](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/thumbs/200.MessageDetails.png)](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/MessageDetails.png) | [![Mail Queue ](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/thumbs/200.MessageDetails.png)](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/MessageDetails.png) |
 
 
 
