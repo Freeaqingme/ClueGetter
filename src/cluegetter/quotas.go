@@ -644,7 +644,7 @@ func quotasGetCountsRaw(msg *Message) (*sql.Rows, error) {
 	queryArgs[0] = interface{}(msg.QueueId)
 	queryArgs[1] = interface{}(msg.From)
 	i := 2
-	for i = i; i < len(msg.Rcpt)+2; i++ {
+	for ; i < len(msg.Rcpt)+2; i++ {
 		queryArgs[i] = interface{}(msg.Rcpt[i-2])
 	}
 	queryArgs[i] = interface{}(sess.getIp())

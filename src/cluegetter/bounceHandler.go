@@ -106,7 +106,7 @@ func bounceHandlerListen() {
 }
 
 func bounceHandlerParseReport(conn net.Conn) {
-	defer bounceHandlerHandleError()
+	defer cluegetterRecover("bounceHandlerParseReport")
 	defer conn.Close()
 
 	Log.Debug("Handling new connection from %s", conn.RemoteAddr())
@@ -222,12 +222,6 @@ func bounceHandlerParseReportMime(msg string) (bounceHdrs mail.Header, deliveryR
 
 		p.Close()
 	}
-
-	if deliveryReport == nil || notification == nil || msgHdrs == nil {
-		panic("Report was incomplete.")
-	}
-
-	return
 }
 
 func bounceHandlerSaveBounce(bounce *bounceHandlerBounce) {
@@ -253,16 +247,4 @@ func bounceHandlerSaveBounce(bounce *bounceHandlerBounce) {
 			panic("Could not execute BounceHandlerSaveBounceReportStmt. Error: " + err.Error())
 		}
 	}
-}
-
-func bounceHandlerHandleError() {
-	if Config.ClueGetter.Exit_On_Panic {
-		return
-	}
-	e := recover()
-	if e == nil {
-		return
-	}
-
-	Log.Error("Panic ocurred while handling a bounce report. Recovering. Error: %s", e)
 }

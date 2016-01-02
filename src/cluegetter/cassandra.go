@@ -95,7 +95,7 @@ func cqlQueryQueueExecutor(query *cqlQuery) {
 		if query.callbackFailure != nil {
 			query.callbackFailure(query)
 		} else {
-			Log.Error("Error while executing Cassandra query '%s'. Error: %s", query.query, err)
+			Log.Error("Error while executing Cassandra query '%s'. Error: %s", query.query, err.Error())
 		}
 		return
 	}

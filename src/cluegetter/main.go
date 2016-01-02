@@ -30,8 +30,8 @@ var (
 
 // Set by linker flags
 var (
-	version   string
-	buildDate string
+	buildTag  string
+	buildTime string
 )
 
 func main() {
@@ -116,14 +116,14 @@ func cluegetterRecover(funcName string) {
 func init() {
 	handover := func() {
 		fmt.Printf(
-			"ClueGetter - Does things with mail - v%s\n\n"+
+			"ClueGetter - Does things with mail - %s\n\n"+
 				"%s\nCopyright (c) 2015-2016, Dolf Schimmel\n"+
 				"License BSD-2 clause <%s>\n\n"+
-				"Date of Build: %s\n\n",
-			version,
+				"Time of Build: %s\n\n",
+			buildTag,
 			"https://github.com/Freeaqingme/ClueGetter",
 			"http://git.io/vuTAf",
-			buildDate)
+			buildTime)
 		os.Exit(0)
 	}
 

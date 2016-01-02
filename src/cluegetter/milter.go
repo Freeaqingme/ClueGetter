@@ -147,7 +147,7 @@ func (milter *milter) Connect(ctx uintptr, hostname string, ip net.IP) (sfsistat
 	sessId := sess.getId()
 	res := m.SetPriv(ctx, sessId)
 	if res != 0 {
-		panic(fmt.Sprintf("Session %d could not be stored in milterDataIndex"))
+		panic(fmt.Sprintf("Session could not be stored in milterDataIndex"))
 	}
 
 	StatsCounters["MilterCallbackConnect"].increase(1)
