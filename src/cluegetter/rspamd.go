@@ -1,6 +1,6 @@
 // ClueGetter - Does things with mail
 //
-// Copyright 2015 Dolf Schimmel, Freeaqingme.
+// Copyright 2016 Dolf Schimmel, Freeaqingme.
 //
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
@@ -38,23 +38,19 @@ type rspamdResponse struct {
 }
 
 func init() {
+	enable := func() bool { return Config.Rspamd.Enabled }
 	init := rspamdStart
 	milterCheck := rspamdGetResult
 
 	ModuleRegister(&module{
 		name:        "rspamd",
+		enable:      &enable,
 		init:        &init,
 		milterCheck: &milterCheck,
 	})
 }
 
 func rspamdStart() {
-	if Config.Rspamd.Enabled != true {
-		Log.Info("Skipping Rspamd module because it was not enabled in the config")
-		return
-	}
-
-	Log.Info("Rspamd module started successfully")
 }
 
 func rspamdGetResult(msg *Message, abort chan bool) *MessageCheckResult {

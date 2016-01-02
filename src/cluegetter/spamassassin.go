@@ -1,6 +1,6 @@
 // ClueGetter - Does things with mail
 //
-// Copyright 2015 Dolf Schimmel, Freeaqingme.
+// Copyright 2016 Dolf Schimmel, Freeaqingme.
 //
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
@@ -26,23 +26,14 @@ type saReportFact struct {
 }
 
 func init() {
-	init := saStart
+	enable := func() bool { return Config.SpamAssassin.Enabled }
 	milterCheck := saGetResult
 
 	ModuleRegister(&module{
 		name:        "spamassassin",
-		init:        &init,
+		enable:      &enable,
 		milterCheck: &milterCheck,
 	})
-}
-
-func saStart() {
-	if Config.SpamAssassin.Enabled != true {
-		Log.Info("Skipping SpamAssassin module because it was not enabled in the config")
-		return
-	}
-
-	Log.Info("SpamAssassin module started successfully")
 }
 
 func saGetResult(msg *Message, abort chan bool) *MessageCheckResult {

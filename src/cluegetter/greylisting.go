@@ -1,6 +1,6 @@
 // ClueGetter - Does things with mail
 //
-// Copyright 2015 Dolf Schimmel, Freeaqingme.
+// Copyright 2016 Dolf Schimmel, Freeaqingme.
 //
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
@@ -32,22 +32,19 @@ type greylistVerdict struct {
 }
 
 func init() {
+	enable := func() bool { return Config.Greylisting.Enabled }
 	init := greylistStart
 	milterCheck := greylistGetResult
 
 	ModuleRegister(&module{
 		name:        "greylisting",
+		enable:      &enable,
 		init:        &init,
 		milterCheck: &milterCheck,
 	})
 }
 
 func greylistStart() {
-	if Config.Greylisting.Enabled != true {
-		Log.Info("Skipping Greylist module because it was not enabled in the config")
-		return
-	}
-
 	greylistPrepStmt()
 	go func() {
 		ticker := time.NewTicker(time.Duration(5) * time.Minute)
@@ -59,8 +56,7 @@ func greylistStart() {
 		}
 	}()
 
-	greylistUpdateWhitelist()
-	Log.Info("Greylist module started")
+	go greylistUpdateWhitelist()
 }
 
 func greylistPrepStmt() {

@@ -9,12 +9,21 @@ Each message has a verdict of one of the following values:
 * Tempfail: Deny delivery, but expect the delivering MTA to deliver it at a later time.
 * Reject: Reject the message, indicating it will not be accepted a next time either.
 
-Available modules:
-* Quotas
-* SpamAssassin
-* Greylisting
-* Rspamd
-* Bounce Handling
+Features:
+* [Quotas](https://github.com/Freeaqingme/ClueGetter/wiki/Quotas) - Limit the number of emails
+  (per ip, sasl user, recipient, sender) over an arbitrary amount of time. 
+* SpamAssassin - Determine whether an email is SPAM through [SpamAssassin](http://spamassassin.apache.org/).
+  Can be used alongside the Rspamd module.
+* Rspamd - Determine whether an email is SPAM through [Rspamd](http://www.rspamd.com).
+  Can be used alongside the SpamAssassin module.
+* Greylisting - Ask a server to try again in a bit if it wasn't seen before and the mail looks spammy.
+* [Bounce Handling](https://github.com/Freeaqingme/ClueGetter/wiki/Bounce-Handling) - Keep track of
+  what emails were rejected by remote MTAs and for what reasons.
+* Abusers - Present a list of users in the web interface who had an unusual amount of email rejected.
+  Usually these users have been hacked, or are otherwise malicious.
+* MailQueue - Display an aggregate of all mail queues that reside in your ClueGetter cluster.
+  Filter based on instance, recipient(/domain), sender(/domain) and delete or requeue selections
+  of items in the queue.
 
 Planned modules:
 * GeoIP - Detect anomalies in the countries used to send mail from
@@ -22,13 +31,22 @@ Planned modules:
 * Reputation - Incorporate previous verdicts in future verdicts.
 * SRS - Implement with proper support for virtual domains
 
+See the [Wiki](https://github.com/Freeaqingme/ClueGetter/wiki) for more documentation how to use
+these features.
+
 ClueGetter should be usable, but as long as no 1.0 release has been released,
 you should make sure to test it before using in production. Coming to think
 of it, you should always test anything you take into production. But at
 least you've been warned.
 
-See the screenshots directory to get some ideas on what the HTTP interface
-looks like.
+
+## Screenshots
+
+| Message Details | Searching for a message | Search results | Mail Queue |
+| ------------- | ------------- | ------------- | ------------- | 
+| [![Message Details](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/thumbs/200.MessageDetails.png)](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/MessageDetails.png) | [![Search for a message](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/thumbs/200.Search.png)](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/Search.png) | [![Search Results](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/thumbs/200.SearchResultsByEmail.png)](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/SearchResultsByEmail.png) | [![Mail Queue ](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/thumbs/200.MailQueue.png)](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/MailQueue.png) |
+
+
 
 ## Quick Setup
 Copy the example config file:
@@ -65,130 +83,12 @@ mysql cluegetter < mysql.sql
 Run ClueGetter:
 ```
 make
-./bin/cluegetter --config ./cluegetter.conf --loglevel=DEBUG
+./bin/cluegetter --config ./cluegetter.conf --loglevel=DEBUG daemon --foreground
 ```
 
 Once you got things up and running, consider setting up Redis. This will
 significantly improve performance and the ability to handle email while
 under load.
-
-## Quotas
-The quotas module allows to set arbitrary limits on various factors, where the
-limits can be different per (predefined) factor value.
-
-Currently supported factors:
-* Client Address: The IP of the connecting client.
-* Sender: The email address of the party sending the email.
-* Recipient: The email address of the recipient.
-* Sasl Username: The SASL Username that was used to connect to.
-
-Each combination of predefined factor and factor value (stored in the *quota*
-table) is assigned a quota profile. Next, a quota profile has one or more profile
-periods. These periods determine the maximum amount of messages accepted over
-that period.
-
-For example, say you're an ESP that has two offerings (packages *large* and
-*small*) and you're using SASL authentication. Your user *john@doe.com*
-has the small package, the *jane@doe.com* SASL user pays for the large
-package. With the *large* package you can send 500 emails per 5 minutes, and
-a total of 10.000 per 24 hours. The *small* package allows for a total of 150
-messages per 24 hours.
-
-To implement this scenario you'd make sure your database contains the following
-entries.
-```
-quota:
-+-----+----------------+----------------+----------+---------+------------+
-| id  | selector       | value          | is_regex | profile | instigator |
-+-----+----------------+----------------+----------+---------+------------+
-|   1 | sasl_username  | john@doe.com   |        0 |       1 |       NULL |
-|   2 | sasl_username  | jane@doe.com   |        0 |       2 |       NULL |
-+-----+----------------+----------------+----------+---------+------------+
-
-quota_profile:
-+----+----------------------------+
-| id | class | name               |
-+----+----------------------------+
-|  1 |     1 | small-sasl         |
-|  2 |     1 | large-sasl         |
-+----+----------------------------+
-
-quota_class:
-+----+-------------------------------+
-| id | instance | name               |
-+----+-------------------------------+
-|  1 |        1 | Paying Customers   |
-+----+-------------------------------+
-
-quota_profile_period:
-+----+---------+--------+-------+
-| id | profile | period | curb  |
-+----+---------+--------+-------+
-|  1 |       1 |  86400 |   150 |
-|  2 |       2 |    300 |   500 |
-|  3 |       2 |  86400 | 10000 |
-+----+---------+--------+-------+
-```
-
-The *quota_class* table allows to group multiple quota profiles together. In the
-future this will be used to (optionally) automatically move set quotas up (or
-down) to a different profile within that class.
-
-### Regexes
-Some times it's not possible to know all the factor values that you need a quota
-for in advance. For example, when you want to do rate limiting based on IP
-addresses. For this reason, you can use a regex in the quota table,
-
-That could look like this:
-```
-+-----+----------------+----------------+----------+---------+------------+
-| id  | selector       | value          | is_regex | profile | instigator |
-+-----+----------------+----------------+----------+---------+------------+
-|   1 | client_address | 127.0.0.1      |        0 |       3 |       NULL |
-|   2 | client_address | ^.*$           |        1 |       4 |       NULL |
-+-----+----------------+----------------+----------+---------+------------+
-```
-
-Now, assuming you also enabled *quotas.account-client-address* in the
-configuration. Whenever a message comes in, ClueGetter will first check if there
-is a row where
-```selector = 'client_address' AND value = '<IP>' AND is_regex = 0```
-
-If there is no such row, it will check for rows where
-```selector = 'client_address' AND is_regex = 1```
-
-In case there is a message from an IP not seen before, the quota table will look
-as follows after processing it:
-```
-+-----+----------------+----------------+----------+---------+------------+
-| id  | selector       | value          | is_regex | profile | instigator |
-+-----+----------------+----------------+----------+---------+------------+
-|   1 | client_address | 127.0.0.1      |        0 |       3 |       NULL |
-|   2 | client_address | ^.*$           |        1 |       4 |       NULL |
-|   3 | client_address | 127.0.0.128    |        0 |       4 |          2 |
-+-----+----------------+----------------+----------+---------+------------+
-```
-
-## Bounce Handling
-It's possible to track all bounces and deferred messages. To accomplish this,
-you need to add some configuration to Postfix.
-
-Main.cf:
-```
-notify_classes = resource, software, bounce, data, delay, protocol
-bounce_notice_recipient = bounce-processing
-```
-
-In your aliases file (don't forget to run *postalias* afterwards):
-```
-bounce-processing: |"/bin/nc cluegetter.host 10034"
-```
-
-Afterwards, all that needs to be done is update the ClueGetter config,
- set *enabled=true* in the bounceHandler section and give it a restart.
- 
-This feature can be used independently from any of the other modules. It does
-not rely on having an archive of your email.
 
 ## License
 

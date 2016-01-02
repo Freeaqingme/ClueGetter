@@ -35,7 +35,7 @@
 	{{ range $key, $senderDomain := .SenderDomainTop }}
 		<tr>
 <!--			<td><a href="/stats/sender-domain/{{ $senderDomain.Identifier }}" -->
-			<td><a href="/message/searchEmail/@e{{ $senderDomain.Identifier }}"
+			<td><a href="/message/searchEmail/@{{ $senderDomain.Identifier }}"
 				>{{ $senderDomain.Identifier }}</td>
 			<td>{{ $senderDomain.Count }}</td>
 		</tr>

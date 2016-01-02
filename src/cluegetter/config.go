@@ -1,6 +1,6 @@
 // ClueGetter - Does things with mail
 //
-// Copyright 2015 Dolf Schimmel, Freeaqingme.
+// Copyright 2016 Dolf Schimmel, Freeaqingme.
 //
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
@@ -13,6 +13,7 @@ import (
 
 type config struct {
 	ClueGetter struct {
+		IPC_Socket                       string
 		Instance                         string
 		Noop                             bool
 		Exit_On_Panic                    bool
@@ -67,6 +68,10 @@ type config struct {
 		Listen_Port string
 		Listen_Host string
 	}
+	MailQueue struct {
+		Enabled   bool
+		Spool_Dir string
+	}
 	Greylisting struct {
 		Enabled        bool
 		Initial_Score  float64
@@ -105,6 +110,7 @@ func LoadConfig(cfgFile string, cfg *config) {
 }
 
 func DefaultConfig(cfg *config) {
+	cfg.ClueGetter.IPC_Socket = "/var/run/cluegetter/ipc.sock"
 	cfg.ClueGetter.Instance = "default"
 	cfg.ClueGetter.Noop = false
 	cfg.ClueGetter.Exit_On_Panic = false
@@ -151,6 +157,9 @@ func DefaultConfig(cfg *config) {
 	cfg.BounceHandler.Enabled = false
 	cfg.BounceHandler.Listen_Port = "10034"
 	cfg.BounceHandler.Listen_Host = "127.0.0.1"
+
+	cfg.MailQueue.Enabled = false
+	cfg.MailQueue.Spool_Dir = "/var/spool/postfix"
 
 	cfg.Greylisting.Enabled = false
 	cfg.Greylisting.Initial_Score = 7.0

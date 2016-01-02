@@ -1,6 +1,6 @@
 // ClueGetter - Does things with mail
 //
-// Copyright 2015 Dolf Schimmel, Freeaqingme.
+// Copyright 2016 Dolf Schimmel, Freeaqingme.
 //
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
@@ -10,139 +10,125 @@ package main
 import (
 	"flag"
 	"fmt"
-	logging "github.com/op/go-logging"
-	"log"
-	"log/syslog"
 	"os"
-	"os/signal"
+	"strings"
 	"sync"
-	"syscall"
 )
 
-var (
-	modulesMu sync.Mutex
-	modules   = make([]*module, 0)
-	Config    = *new(config)
-	Log       = logging.MustGetLogger("cluegetter")
-	instance  uint
-)
-
-type module struct {
-	name        string
-	init        *func()
-	stop        *func()
-	milterCheck *func(*Message, chan bool) *MessageCheckResult
+type subApp struct {
+	name     string
+	handover *func()
 }
 
-func main() {
+var (
+	subAppsMu         sync.Mutex
+	subApps           = make([]*subApp, 0)
+	defaultConfigFile = "/etc/cluegetter/cluegetter.conf"
+	Config            = *new(config)
+	hostname, _       = os.Hostname()
+)
 
-	configFile := flag.String("config", "", "Path to Config File")
-	logFile := flag.String("logfile", "", "Log file to use. Will use STDOUT/STDERR otherwise.")
+// Set by linker flags
+var (
+	buildTag  string
+	buildTime string
+)
+
+func main() {
+	subAppNames := func() []string {
+		out := []string{}
+		for _, subApp := range subApps {
+			out = append(out, subApp.name)
+		}
+
+		return out
+	}
+
+	if len(os.Args) < 2 {
+		fmt.Fprintf(os.Stderr, "No Sub-App specified. Must be one of: %s\n", strings.Join(subAppNames(), " "))
+		os.Exit(1)
+	}
+
+	var subAppArgs []string
+	var subApp *subApp
+OuterLoop:
+	for i, arg := range os.Args[1:] {
+		for _, subAppTemp := range subApps {
+			if arg == subAppTemp.name {
+				subApp = subAppTemp
+				subAppArgs = os.Args[i+2:]
+				os.Args = os.Args[:i+1]
+				break OuterLoop
+			}
+		}
+	}
+
+	if subApp == nil {
+		fmt.Fprintf(os.Stderr, "No Sub-App specified. Must be one of: %s\n", strings.Join(subAppNames(), " "))
+		os.Exit(1)
+	} else if subApp.name == "version" {
+		// We don't want to require config stuff for merely displaying the version
+		(*subApp.handover)()
+		return
+	}
+
+	configFile := flag.String("config", defaultConfigFile, "Path to Config File")
 	logLevel := flag.String("loglevel", "NOTICE",
 		"Log Level. One of: CRITICAL, ERROR, WARNING, NOTICE, INFO, DEBUG)")
 	flag.Parse()
 
-	initLogging(*logLevel, *logFile)
-	Log.Notice("Starting ClueGetter...")
-
-	ch := make(chan os.Signal)
-	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
+	logSetupGlobal(*logLevel)
 
 	DefaultConfig(&Config)
 	if *configFile != "" {
 		LoadConfig(*configFile, &Config)
 	}
 
-	done := make(chan struct{})
-	statsStart()
-	rdbmsStart()
-	persistStart()
-	cqlStart()
-	setInstance()
-
-	milterSessionStart()
-	httpStart(done)
-	messageStart()
-	for _, module := range modules {
-		if module.init != nil {
-			(*module.init)()
-		}
-	}
-	milterStart()
-
-	s := <-ch
-	Log.Notice(fmt.Sprintf("Received '%s', exiting...", s.String()))
-
-	close(done)
-	milterStop()
-	for _, module := range modules {
-		if module.stop != nil {
-			(*module.stop)()
-		}
-	}
-	messageStop()
-	cqlStop()
-	rdbmsStop()
-	statsStop()
-
-	Log.Notice("Successfully ceased all operations.")
-	os.Exit(0)
+	os.Args = append([]string{os.Args[0]}, subAppArgs...)
+	(*subApp.handover)()
 }
 
-func initLogging(logLevelStr string, logPath string) {
-	logLevel, err := logging.LogLevel(logLevelStr)
-	if err != nil {
-		log.Fatal("Invalid log level specified")
+func subAppRegister(subApp *subApp) {
+	subAppsMu.Lock()
+	defer subAppsMu.Unlock()
+	if subApp == nil {
+		panic("nil subapp supplied")
 	}
-
-	var formatStdout = logging.MustStringFormatter(
-		"%{color}%{time:2006-01-02T15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{color:reset} %{message}",
-	)
-	stdout := logging.NewLogBackend(os.Stdout, "", 0)
-	formatter := logging.NewBackendFormatter(stdout, formatStdout)
-	stdoutLeveled := logging.AddModuleLevel(formatter)
-	stdoutLeveled.SetLevel(logLevel, "")
-	syslogBackend, err := logging.NewSyslogBackendPriority("cluegetter", syslog.LOG_MAIL)
-	if err != nil {
-		Log.Fatal(err)
-	}
-
-	if logPath != "" {
-		logFile, err := os.OpenFile(logPath, os.O_WRONLY|os.O_APPEND, 0644)
-		if err != nil {
-			Log.Fatal(err)
-		}
-		syscall.Dup2(int(logFile.Fd()), 1)
-		syscall.Dup2(int(logFile.Fd()), 2)
-	}
-
-	logging.SetBackend(syslogBackend, stdoutLeveled)
-}
-
-func setInstance() {
-	if Config.ClueGetter.Instance == "" {
-		Log.Fatal("No instance was set")
-	}
-
-	err := Rdbms.QueryRow("SELECT id from instance WHERE name = ?", Config.ClueGetter.Instance).Scan(&instance)
-	if err != nil {
-		Log.Fatal(fmt.Sprintf("Could not retrieve instance '%s' from database: %s",
-			Config.ClueGetter.Instance, err))
-	}
-
-	Log.Notice("Instance name: %s. Id: %d", Config.ClueGetter.Instance, instance)
-}
-
-func ModuleRegister(module *module) {
-	modulesMu.Lock()
-	defer modulesMu.Unlock()
-	if module == nil {
-		panic("Module: Register module is nil")
-	}
-	for _, dup := range modules {
-		if dup.name == module.name {
-			panic("Module: Register called twice for module " + module.name)
+	for _, dup := range subApps {
+		if dup.name == subApp.name {
+			panic("Register called twice for subApp " + subApp.name)
 		}
 	}
-	modules = append(modules, module)
+	subApps = append(subApps, subApp)
+}
+
+func cluegetterRecover(funcName string) {
+	if Config.ClueGetter.Exit_On_Panic {
+		return
+	}
+	r := recover()
+	if r == nil {
+		return
+	}
+	Log.Error("Panic caught in %s(). Recovering. Error: %s", funcName, r)
+}
+
+func init() {
+	handover := func() {
+		fmt.Printf(
+			"ClueGetter - Does things with mail - %s\n\n"+
+				"%s\nCopyright (c) 2015-2016, Dolf Schimmel\n"+
+				"License BSD-2 clause <%s>\n\n"+
+				"Time of Build: %s\n\n",
+			buildTag,
+			"https://github.com/Freeaqingme/ClueGetter",
+			"http://git.io/vuTAf",
+			buildTime)
+		os.Exit(0)
+	}
+
+	subAppRegister(&subApp{
+		name:     "version",
+		handover: &handover,
+	})
 }

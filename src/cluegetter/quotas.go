@@ -1,6 +1,6 @@
 // ClueGetter - Does things with mail
 //
-// Copyright 2015 Dolf Schimmel, Freeaqingme.
+// Copyright 2016 Dolf Schimmel, Freeaqingme.
 //
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
@@ -55,12 +55,14 @@ var quotasRegexes *[]*quotasRegex
 var quotasRegexesLock *sync.RWMutex
 
 func init() {
+	enable := func() bool { return Config.Quotas.Enabled }
 	init := quotasStart
 	stop := quotasStop
 	milterCheck := quotasIsAllowed
 
 	ModuleRegister(&module{
 		name:        "quotas",
+		enable:      &enable,
 		init:        &init,
 		stop:        &stop,
 		milterCheck: &milterCheck,
@@ -68,18 +70,11 @@ func init() {
 }
 
 func quotasStart() {
-	if Config.Quotas.Enabled != true {
-		Log.Info("Skipping Quota module because it was not enabled in the config")
-		return
-	}
-
 	quotasPrepStmt()
 	if Config.Redis.Enabled {
 		quotasRedisStart()
 		quotasRegexesStart()
 	}
-
-	Log.Info("Quotas module started successfully")
 }
 
 func quotasRegexesStart() {
@@ -649,7 +644,7 @@ func quotasGetCountsRaw(msg *Message) (*sql.Rows, error) {
 	queryArgs[0] = interface{}(msg.QueueId)
 	queryArgs[1] = interface{}(msg.From)
 	i := 2
-	for i = i; i < len(msg.Rcpt)+2; i++ {
+	for ; i < len(msg.Rcpt)+2; i++ {
 		queryArgs[i] = interface{}(msg.Rcpt[i-2])
 	}
 	queryArgs[i] = interface{}(sess.getIp())

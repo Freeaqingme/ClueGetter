@@ -1,6 +1,6 @@
 // ClueGetter - Does things with mail
 //
-// Copyright 2015 Dolf Schimmel, Freeaqingme.
+// Copyright 2016 Dolf Schimmel, Freeaqingme.
 //
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
@@ -551,4 +551,16 @@ func messageEnsureHasMessageId(msg *Message) {
 			Key: "Message-Id", Value: messageIdHdr,
 		})
 	}
+}
+
+func messageParseAddress(address string) (local, domain string) {
+	if strings.Index(address, "@") != -1 {
+		local = strings.SplitN(address, "@", 2)[0]
+		domain = strings.SplitN(address, "@", 2)[1]
+	} else {
+		local = ""
+		domain = address
+	}
+
+	return
 }

@@ -1,5 +1,8 @@
 [cluegetter]
 
+# Socket to use for internal communication with the cluegetter daemon.
+ipc-socket = "/var/run/cluegetter/ipc.sock"
+
 # Cluegetter allows to use multiple configurations of ClueGetter
 # alongside each other sharing the same database. This allows for
 # easy correlation (e.g. track a message by message id). The quota
@@ -172,6 +175,12 @@ host = "localhost:6379"
 enabled     = false
 listen-port = 10034
 listen-host = "127.0.0.1"
+
+[mailQueue]
+# Show and manipulate items currently in the (Postfix) queue.
+
+enabled = false
+spool-dir = /var/spool/postfix
 
 [greylisting]
 # When the greylisting module is enabled, hosts that haven not been seen

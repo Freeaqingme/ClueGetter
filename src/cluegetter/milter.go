@@ -1,6 +1,6 @@
 // ClueGetter - Does things with mail
 //
-// Copyright 2015 Dolf Schimmel, Freeaqingme.
+// Copyright 2016 Dolf Schimmel, Freeaqingme.
 //
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
@@ -11,7 +11,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	m "github.com/Freeaqingme/gomilter"
-	"github.com/bmatsuo/uuid"
+	"github.com/pborman/uuid"
 	"net"
 	"strconv"
 	"strings"
@@ -147,7 +147,7 @@ func (milter *milter) Connect(ctx uintptr, hostname string, ip net.IP) (sfsistat
 	sessId := sess.getId()
 	res := m.SetPriv(ctx, sessId)
 	if res != 0 {
-		panic(fmt.Sprintf("Session %d could not be stored in milterDataIndex"))
+		panic(fmt.Sprintf("Session could not be stored in milterDataIndex"))
 	}
 
 	StatsCounters["MilterCallbackConnect"].increase(1)

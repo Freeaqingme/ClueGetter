@@ -1,6 +1,6 @@
 // ClueGetter - Does things with mail
 //
-// Copyright 2015 Dolf Schimmel, Freeaqingme.
+// Copyright 2016 Dolf Schimmel, Freeaqingme.
 //
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
@@ -22,6 +22,8 @@ import (
 	"strings"
 	"time"
 )
+
+type httpCallback func(w http.ResponseWriter, r *http.Request)
 
 func httpStart(done <-chan struct{}) {
 	if !Config.Http.Enabled {
@@ -48,7 +50,17 @@ func httpStart(done <-chan struct{}) {
 	http.HandleFunc("/message/searchSaslUser/", httpHandleMessageSearchSaslUser)
 	http.HandleFunc("/", httpIndexHandler)
 
-	go http.Serve(listener, nil)
+	for _, module := range modules {
+		if module.enable != nil && !(*module.enable)() {
+			continue
+		}
+
+		for url, callback := range module.httpHandlers {
+			http.HandleFunc(url, callback)
+		}
+	}
+
+	go http.Serve(listener, httpLogRequest(http.DefaultServeMux))
 
 	go func() {
 		<-done
@@ -58,7 +70,7 @@ func httpStart(done <-chan struct{}) {
 }
 
 type HttpViewData struct {
-	GoogleAnalytics string
+	Config *config
 }
 
 type httpInstance struct {
@@ -122,6 +134,13 @@ type httpMessageCheckResult struct {
 	WeightedScore float64
 	Duration      float64
 	Determinants  string
+}
+
+func httpLogRequest(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		Log.Info("HTTP Request: %s %s %s \"%s\"", r.RemoteAddr, r.Method, r.URL, r.Header.Get("User-Agent"))
+		handler.ServeHTTP(w, r)
+	})
 }
 
 func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
@@ -236,29 +255,15 @@ func httpProcessSearchResultRows(w http.ResponseWriter, r *http.Request, rows *s
 		messages = append(messages, message)
 	}
 
-	if r.FormValue("json") == "1" {
-		httpReturnJson(w, messages)
-		return
-	}
-
-	tplMsgSearchEmail, _ := assets.Asset("htmlTemplates/messageSearchEmail.html")
-	tplSkeleton, _ := assets.Asset("htmlTemplates/skeleton.html")
-	tpl := template.New("skeleton.html")
-	tpl.Parse(string(tplMsgSearchEmail))
-	tpl.Parse(string(tplSkeleton))
-
 	data := struct {
-		HttpViewData
+		*HttpViewData
 		Messages []*httpMessage
 	}{
-		HttpViewData: HttpViewData{GoogleAnalytics: Config.Http.Google_Analytics},
+		HttpViewData: httpGetViewData(),
 		Messages:     messages,
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := tpl.ExecuteTemplate(w, "skeleton.html", data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	httpRenderOutput(w, r, "messageSearchEmail.html", data, data.Messages)
 }
 
 func httpReturnJson(w http.ResponseWriter, obj interface{}) {
@@ -273,7 +278,6 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	row := Rdbms.QueryRow(`
 		SELECT m.session, m.date, COALESCE(m.body_size,0), CONCAT(m.sender_local, '@', m.sender_domain) sender,
 				m.rcpt_count, m.verdict, m.verdict_msg,
@@ -295,7 +299,7 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 		&msg.CertIssuer, &msg.CertSubject, &msg.CipherBits, &msg.Cipher, &msg.TlsVersion,
 		&msg.MtaHostname, &msg.MtaDaemonName)
 	if err != nil {
-		http.Error(w, "404? "+err.Error(), http.StatusNotFound)
+		http.Error(w, "Page Not Found: "+err.Error(), http.StatusNotFound)
 		return
 	}
 	msg.BodySizeStr = humanize.Bytes(uint64(msg.BodySize))
@@ -338,33 +342,23 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 		msg.CheckResults = append(msg.CheckResults, checkResult)
 	}
 
-	if r.FormValue("json") == "1" {
-		httpReturnJson(w, msg)
-		return
-	}
-
-	tplSkeleton, _ := assets.Asset("htmlTemplates/skeleton.html")
-	tplMsg, _ := assets.Asset("htmlTemplates/message.html")
-	tpl := template.New("skeleton.html")
-	tpl.Parse(string(tplMsg))
-	tpl.Parse(string(tplSkeleton))
-
 	data := struct {
-		HttpViewData
+		*HttpViewData
 		Message *httpMessage
 	}{
-		HttpViewData: HttpViewData{GoogleAnalytics: Config.Http.Google_Analytics},
+		HttpViewData: httpGetViewData(),
 		Message:      msg,
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := tpl.ExecuteTemplate(w, "skeleton.html", data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	httpRenderOutput(w, r, "message.html", data, msg)
 }
 
 func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
+	if r.URL.Path != "/" {
+		http.Error(w, "Page Not Found", http.StatusNotFound)
+		return
+	}
 	filter := "instance=" + strings.Join(r.Form["instance"], ",")
 
 	if r.FormValue("queueId") != "" {
@@ -387,24 +381,15 @@ func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tplIndex, _ := assets.Asset("htmlTemplates/index.html")
-	tplSkeleton, _ := assets.Asset("htmlTemplates/skeleton.html")
-	tpl := template.New("skeleton.html")
-	tpl.Parse(string(tplIndex))
-	tpl.Parse(string(tplSkeleton))
-
 	data := struct {
-		HttpViewData
+		*HttpViewData
 		Instances []*httpInstance
 	}{
-		HttpViewData: HttpViewData{GoogleAnalytics: Config.Http.Google_Analytics},
+		HttpViewData: httpGetViewData(),
 		Instances:    httpGetInstances(),
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := tpl.ExecuteTemplate(w, "skeleton.html", data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	httpRenderOutput(w, r, "index.html", data, nil)
 }
 
 type httpAbuserTop struct {
@@ -412,17 +397,23 @@ type httpAbuserTop struct {
 	Count      int
 }
 
+func httpGetViewData() *HttpViewData {
+	return &HttpViewData{
+		Config: &Config,
+	}
+}
+
 func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 
 	data := struct {
-		HttpViewData
+		*HttpViewData
 		Instances       []*httpInstance
 		Period          string
 		Threshold       string
 		SenderDomainTop []*httpAbuserTop
 	}{
-		HttpViewData{GoogleAnalytics: Config.Http.Google_Analytics},
+		httpGetViewData(),
 		httpGetInstances(),
 		"4",
 		"5",
@@ -434,19 +425,7 @@ func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if len(selectedInstances) == 0 {
-		for _, instance := range data.Instances {
-			instance.Selected = true
-		}
-	} else {
-		for _, selectedInstance := range selectedInstances {
-			for _, instance := range data.Instances {
-				if instance.Id == selectedInstance {
-					instance.Selected = true
-				}
-			}
-		}
-	}
+	httpSetSelectedInstances(data.Instances, selectedInstances)
 
 	period := r.FormValue("period")
 	if _, err := strconv.ParseFloat(period, 64); err != nil || period == "" {
@@ -483,16 +462,7 @@ func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
 		data.SenderDomainTop = append(data.SenderDomainTop, result)
 	}
 
-	tplAbusers, _ := assets.Asset("htmlTemplates/abusers.html")
-	tplSkeleton, _ := assets.Asset("htmlTemplates/skeleton.html")
-	tpl := template.New("skeleton.html")
-	tpl.Parse(string(tplAbusers))
-	tpl.Parse(string(tplSkeleton))
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := tpl.ExecuteTemplate(w, "skeleton.html", data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	httpRenderOutput(w, r, "abusers.html", data, data.SenderDomainTop)
 }
 
 func httpGetInstances() []*httpInstance {
@@ -522,6 +492,10 @@ func httpParseFilterInstance(r *http.Request) (out []string, err error) {
 		}
 	}
 
+	if strings.Index(instanceIds[0], ",") != -1 {
+		instanceIds = strings.Split(instanceIds[0], ",")
+	}
+
 	for _, instance := range instanceIds {
 		i, err := strconv.ParseInt(instance, 10, 64)
 		if err != nil {
@@ -530,4 +504,42 @@ func httpParseFilterInstance(r *http.Request) (out []string, err error) {
 		out = append(out, strconv.Itoa(int(i)))
 	}
 	return
+}
+
+func httpSetSelectedInstances(instances []*httpInstance, selectedInstances []string) {
+	if len(selectedInstances) == 0 {
+		for _, instance := range instances {
+			instance.Selected = true
+		}
+	} else {
+		for _, selectedInstance := range selectedInstances {
+			for _, instance := range instances {
+				if instance.Id == selectedInstance {
+					instance.Selected = true
+				}
+			}
+		}
+	}
+}
+
+func httpRenderOutput(w http.ResponseWriter, r *http.Request, templateFile string, data, jsonData interface{}) {
+	if r.FormValue("json") == "1" {
+		if jsonData == nil {
+			http.Error(w, "No parameter 'json' supported", http.StatusBadRequest)
+			return
+		}
+		httpReturnJson(w, jsonData)
+		return
+	}
+
+	tplPage, _ := assets.Asset("htmlTemplates/" + templateFile)
+	tplSkeleton, _ := assets.Asset("htmlTemplates/skeleton.html")
+	tpl := template.New("skeleton.html")
+	tpl.Parse(string(tplPage))
+	tpl.Parse(string(tplSkeleton))
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := tpl.ExecuteTemplate(w, "skeleton.html", data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
