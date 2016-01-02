@@ -9,8 +9,15 @@ deps: assets
 	go get github.com/robfig/glock
 	git diff /dev/null GLOCKFILE | ./bin/glock apply .
 
-cluegetter: deps
-	go install -tags '$(BUILDTAGS)' cluegetter
+cluegetter: deps binary
+
+binary:
+	go install \
+		-tags '$(BUILDTAGS)' \
+		-ldflags " \
+		    -X main.version=`cat VERSION` \
+		    -X main.buildDate=`date -u +%Y-%m-%d`" \
+		cluegetter
 
 release: BUILDTAGS=release
 release: cluegetter

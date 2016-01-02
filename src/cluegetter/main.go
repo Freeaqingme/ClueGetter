@@ -28,6 +28,12 @@ var (
 	hostname, _       = os.Hostname()
 )
 
+// Set by linker flags
+var (
+	version   string
+	buildDate string
+)
+
 func main() {
 	subAppNames := func() []string {
 		out := []string{}
@@ -60,6 +66,10 @@ OuterLoop:
 	if subApp == nil {
 		fmt.Fprintf(os.Stderr, "No Sub-App specified. Must be one of: %s\n", strings.Join(subAppNames(), " "))
 		os.Exit(1)
+	} else if subApp.name == "version" {
+		// We don't want to require config stuff for merely displaying the version
+		(*subApp.handover)()
+		return
 	}
 
 	configFile := flag.String("config", defaultConfigFile, "Path to Config File")
@@ -101,4 +111,24 @@ func cluegetterRecover(funcName string) {
 		return
 	}
 	Log.Error("Panic caught in %s(). Recovering. Error: %s", funcName, r)
+}
+
+func init() {
+	handover := func() {
+		fmt.Printf(
+			"ClueGetter - Does things with mail - v%s\n\n"+
+				"%s\nCopyright (c) 2015-2016, Dolf Schimmel\n"+
+				"License BSD-2 clause <%s>\n\n"+
+				"Date of Build: %s\n\n",
+			version,
+			"https://github.com/Freeaqingme/ClueGetter",
+			"http://git.io/vuTAf",
+			buildDate)
+		os.Exit(0)
+	}
+
+	subAppRegister(&subApp{
+		name:     "version",
+		handover: &handover,
+	})
 }

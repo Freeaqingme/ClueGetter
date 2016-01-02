@@ -11,7 +11,6 @@ import (
 	logging "github.com/op/go-logging"
 	"log"
 	"log/syslog"
-	"net"
 	"os"
 	"syscall"
 )
