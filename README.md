@@ -44,7 +44,7 @@ looks like.
 
 ## Screenshots
 
-[![Message Details](https://raw.githubusercontent.com/Freeaqingme/Cluegetter/master/screenshots/thumbs/200.MessageDetails.png)](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/master/screenshots/MessageDetails.png)]
+[![Message Details](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/master/screenshots/thumbs/200.MessageDetails.png)](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/master/screenshots/MessageDetails.png)]
 
 
 ## Quick Setup
