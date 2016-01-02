@@ -9,12 +9,19 @@ Each message has a verdict of one of the following values:
 * Tempfail: Deny delivery, but expect the delivering MTA to deliver it at a later time.
 * Reject: Reject the message, indicating it will not be accepted a next time either.
 
-Available modules:
-* Quotas
-* SpamAssassin
-* Greylisting
-* Rspamd
-* Bounce Handling
+Features:
+* Quotas - Limit the number of emails (per ip, sasl user, recipient, sender) over an arbitrary amount of time. 
+* SpamAssassin - Determine whether an email is SPAM through [SpamAssassin](http://spamassassin.apache.org/).
+  Can be used alongside the Rspamd module.
+* Rspamd - Determine whether an email is SPAM through [Rspamd](http://www.rspamd.com).
+  Can be used alongside the SpamAssassin module.
+* Greylisting - Ask a server to try again in a bit if it wasn't seen before and the mail looks spammy.
+* Bounce Handling - Keep track of what emails were rejected by remote MTAs and for what reasons.
+* Abusers - Present a list of users in the web interface who had an unusual amount of email rejected.
+  Usually these users have been hacked, or are otherwise malicious.
+* MailQueue - Display an aggregate of all mail queues that reside in your ClueGetter cluster.
+  Filter based on instance, recipeint(/domain), sender(/domain) and delete or requeue selections
+  of items in the queue.
 
 Planned modules:
 * GeoIP - Detect anomalies in the countries used to send mail from
