@@ -208,7 +208,9 @@ func daemonIpcHandleConn(conn *net.UnixConn) {
 func daemonIpcSend(handle string, message string) {
 	c, err := net.Dial("unix", Config.ClueGetter.IPC_Socket)
 	if err != nil {
-		panic(err)
+		// TODO: Why does log.fatal not write to stderr?
+		os.Stderr.WriteString("Could not connect to ICP socket: " + err.Error() + "\n")
+		os.Exit(1)
 	}
 	defer c.Close()
 
