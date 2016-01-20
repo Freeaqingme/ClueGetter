@@ -50,6 +50,9 @@ clean:
 	rm -rf src/cluegetter/assets/
 	go clean -i -r cluegetter
 
+.PHONY: deb
+deb: release
+
 .PHONY: check
 check:
 	@echo "checking for forbidden imports"
