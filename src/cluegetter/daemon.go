@@ -142,12 +142,11 @@ func ModuleRegister(module *module) {
 
 func daemonIpc(done <-chan struct{}) {
 	if _, err := os.Stat(Config.ClueGetter.IPC_Socket); !os.IsNotExist(err) {
-		// Is this ideal? Can we do this any better? Need moar resilliency
-		Log.Fatal(fmt.Sprintf(
-			"IPC Socket %s already exists. Can be the result of an unclean shut down "+
-				"or because Cluegetter is already running. Manual intervention required.",
-			Config.ClueGetter.IPC_Socket,
-		))
+		err = os.Remove(Config.ClueGetter.IPC_Socket)
+		if err != nil {
+			Log.Fatal(fmt.Sprintf("IPC Socket %s already exists and could not be removed: %s",
+				Config.ClueGetter.IPC_Socket, err.Error()))
+		}
 	}
 
 	l, err := net.ListenUnix("unix", &net.UnixAddr{Config.ClueGetter.IPC_Socket, "unix"})
