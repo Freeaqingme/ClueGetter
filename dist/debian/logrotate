@@ -1,0 +1,13 @@
+
+/var/log/cluegetter.log
+{
+        rotate 7
+        daily
+        missingok
+        notifempty
+        delaycompress
+        compress
+        postrotate
+		/usr/bin/cluegetter log reopen
+        endscript
+}
