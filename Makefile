@@ -54,7 +54,6 @@ clean:
 .PHONY: deb
 deb: release
 	rm -rf pkg_root/
-	mkdir -p pkg_root/var/run/cluegetter
 	mkdir -p pkg_root/lib/systemd/system/
 	cp dist/cluegetter.service pkg_root/lib/systemd/system/cluegetter.service
 	mkdir -p pkg_root/etc/default
@@ -92,6 +91,7 @@ deb: release
 		 verdicts are stored in a database allowing for auditing." \
 		--category mail \
 		--config-files /etc/cluegetter/cluegetter.conf \
+		--directories /var/run/cluegetter \
 		.
 
 
