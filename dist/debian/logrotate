@@ -7,6 +7,7 @@
         notifempty
         delaycompress
         compress
+        create 0644 root root
         postrotate
 		/usr/bin/cluegetter log reopen
         endscript
