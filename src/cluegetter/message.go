@@ -478,9 +478,18 @@ func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (a
 		}
 	}
 
-	for k, v := range add {
-		if v.Value == "" {
+	deleted := 0
+	for k := range add {
+		k -= deleted
+		if add[k].Value != "" {
+			continue
+		}
+
+		deleted += 1
+		if len(add) > k {
 			add = append(add[:k], add[k+1:]...)
+		} else {
+			add = add[:k]
 		}
 	}
 
