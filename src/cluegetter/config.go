@@ -69,8 +69,10 @@ type config struct {
 		Listen_Host string
 	}
 	MailQueue struct {
-		Enabled   bool
-		Spool_Dir string
+		Enabled             bool
+		Spool_Dir           string
+		PostsuperExecutable string
+		PostcatExecutable   string
 	}
 	Greylisting struct {
 		Enabled        bool
