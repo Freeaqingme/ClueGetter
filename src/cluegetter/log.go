@@ -48,6 +48,7 @@ func logReopen(args string) {
 		Log.Notice("Asked to reopen logs but running in foreground. Ignoring.")
 		return
 	}
+	Log.Notice("Reopening log file per IPC request...")
 	logRedirectStdOutToFile(logFile)
 	Log.Notice("Reopened log file per IPC request")
 }
