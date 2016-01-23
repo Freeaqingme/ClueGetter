@@ -66,7 +66,6 @@ func daemonStart() {
 	rdbmsStart()
 	setInstance()
 	persistStart()
-	cqlStart()
 
 	milterSessionStart()
 	httpStart(done)
@@ -95,7 +94,6 @@ func daemonStart() {
 		}
 	}
 	messageStop()
-	cqlStop()
 	rdbmsStop()
 
 	Log.Notice("Successfully ceased all operations.")

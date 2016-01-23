@@ -34,20 +34,12 @@ type config struct {
 		Add_Header                       []string
 		Add_Header_X_Spam_Score          bool
 		Insert_Missing_Message_Id        bool
-		Archive_Retention_Cassandra      float64
 		Archive_Prune_Interval           int
 		Archive_Retention_Body           float64
 		Archive_Retention_Header         float64
 		Archive_Retention_Message_Result float64
 		Archive_Retention_Message        float64
 		Archive_Retention_Safeguard      float64
-	}
-	Cassandra struct {
-		Enabled  bool
-		Host     []string
-		Keyspace string
-		Username string
-		Password string
 	}
 	Redis struct {
 		Enabled bool
@@ -133,19 +125,12 @@ func DefaultConfig(cfg *config) {
 	cfg.ClueGetter.Add_Header = []string{}
 	cfg.ClueGetter.Add_Header_X_Spam_Score = true
 	cfg.ClueGetter.Insert_Missing_Message_Id = true
-	cfg.ClueGetter.Archive_Retention_Cassandra = 4
 	cfg.ClueGetter.Archive_Prune_Interval = 21600
 	cfg.ClueGetter.Archive_Retention_Safeguard = 1.01
 	cfg.ClueGetter.Archive_Retention_Body = 2
 	cfg.ClueGetter.Archive_Retention_Header = 26
 	cfg.ClueGetter.Archive_Retention_Message_Result = 2
 	cfg.ClueGetter.Archive_Retention_Message = 52
-
-	cfg.Cassandra.Enabled = false
-	cfg.Cassandra.Keyspace = "cluegetter"
-	cfg.Cassandra.Host = []string{}
-	cfg.Cassandra.Username = ""
-	cfg.Cassandra.Password = ""
 
 	cfg.Redis.Enabled = false
 	cfg.Redis.Host = []string{}

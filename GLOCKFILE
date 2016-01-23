@@ -15,7 +15,6 @@ github.com/Freeaqingme/go-libspf2 b6690e62a7ecafbe84c3a722351015563089de1a
 github.com/Freeaqingme/gomilter ec6c4f311354d82c74260255dbe8a0ab6705939a
 github.com/Freeaqingme/go-spamc cb8a8ab4355e50516cd493266ccbe2fb02482ddf
 github.com/glenn-brown/golang-pkg-pcre 48bb82a8b8ceea98f4e97825b43870f6ba1970d6
-github.com/gocql/gocql 87cc1854b57c7a4d8f4ae1d0cc358ed6ecb0f8c3
 github.com/golang/protobuf 221834dcb89c96e4b057ed8bb878bfe569dfacf4
 github.com/golang/snappy 723cc1e459b8eea2dea4583200fd60757d40097a
 github.com/hailocab/go-hostpool 0637eae892be221164aff5fcbccc57171aea6406
