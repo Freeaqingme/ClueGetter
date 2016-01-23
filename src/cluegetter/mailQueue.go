@@ -327,6 +327,11 @@ func mailQueueParseEnvelopeString(envelopeStr string) (*mailQueueItem, error) {
 		item.Kv[strings.Trim(kv[0], " ")] = strings.Trim(kv[1], " ")
 	}
 
+	// Not all queue items have a log_ident entry denoting the queue id.
+	if _, ok := item.Kv["log_ident"]; !ok {
+		item.Kv["log_ident"] = queueId
+	}
+
 	if _, ok := item.Kv["create_time"]; !ok {
 		Log.Notice("Item %s has no field 'create_time'", queueId)
 		return item, nil
