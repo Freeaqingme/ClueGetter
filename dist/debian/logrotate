@@ -1,14 +1,14 @@
-
 /var/log/cluegetter.log
 {
-        rotate 7
-        daily
-        missingok
-        notifempty
-        delaycompress
-        compress
-        create 0644 root root
-        postrotate
-		/usr/bin/cluegetter log reopen
-        endscript
+	rotate 7
+	missingok
+	notifempty
+	compress
+	delaycompress
+
+	create 0644 root root
+	sharedscripts
+	postrotate
+		/usr/bin/cluegetter log reopen || true
+	endscript
 }
