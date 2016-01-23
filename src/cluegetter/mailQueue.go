@@ -211,6 +211,10 @@ func mailQueueUpdate(queueName string) {
 
 	pathLen := len(path)
 	err := filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
+		if f == nil {
+			return nil
+		}
+
 		if !f.IsDir() {
 			files <- path[pathLen:]
 		}
@@ -283,10 +287,12 @@ func mailQueueProcessFiles(filesBatch []string, path string, envelopes chan *mai
 	cmd := exec.Command(execPath, append([]string{"-e"}, filesBatch...)...)
 	cmd.Dir = path
 	var out bytes.Buffer
+	var stderr bytes.Buffer
 	cmd.Stdout = &out
+	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if err != nil {
-		Log.Error("Error ocurred while running postcat: %s", err)
+		Log.Error("Error ocurred while running postcat: %s. Stderr: %s", err, stderr.String())
 		return
 	}
 

@@ -164,6 +164,8 @@ listen-host = "127.0.0.1"
 # Show and manipulate items currently in the (Postfix) queue.
 
 enabled = false
+
+# Postfix spool dir. Make sure to leave out any trailing slashes.
 spool-dir = /var/spool/postfix
 
 # postcat-executable = /usr/sbin/postcat
