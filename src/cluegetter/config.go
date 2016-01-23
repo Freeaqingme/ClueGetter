@@ -59,6 +59,7 @@ type config struct {
 		Enabled     bool
 		Listen_Port string
 		Listen_Host string
+		Dump_Dir    string
 	}
 	MailQueue struct {
 		Enabled             bool

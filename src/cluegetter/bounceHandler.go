@@ -122,6 +122,8 @@ func bounceHandlerParseReport(conn net.Conn) {
 		body = append(body, buf[:nr]...)
 	}
 
+	bounceHandlerPersistRawCopy(body)
+
 	hdrs, deliveryReports, _, _ := bounceHandlerParseReportMime(string(body))
 	bounceReasons, rcptReportsHdrs := bounceHandlerGetBounceReasons(deliveryReports)
 
@@ -247,4 +249,27 @@ func bounceHandlerSaveBounce(bounce *bounceHandlerBounce) {
 			panic("Could not execute BounceHandlerSaveBounceReportStmt. Error: " + err.Error())
 		}
 	}
+}
+
+func bounceHandlerPersistRawCopy(body []byte) {
+	defer cluegetterRecover("bounceHandlerPersistRawCopy")
+
+	if Config.BounceHandler.Dump_Dir == "" {
+		return
+	}
+
+	f, err := ioutil.TempFile(Config.BounceHandler.Dump_Dir, "cluegetter-deliveryreport-")
+	if err != nil {
+		Log.Error("Could not open file for delivery report: %s", err.Error())
+		return
+	}
+
+	defer f.Close()
+	count, err := f.Write(body)
+	if err != nil {
+		Log.Error("Wrote %d bytes to %s, then got error: %s", count, f.Name(), err.Error())
+		return
+	}
+
+	Log.Debug("Wrote %d bytes to %s", count, f.Name())
 }

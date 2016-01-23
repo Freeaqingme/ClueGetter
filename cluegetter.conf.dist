@@ -160,6 +160,10 @@ enabled     = false
 listen-port = 10034
 listen-host = "127.0.0.1"
 
+# For debugging purposes a directory can be specified to persist a copy
+# of all incoming delivery reports.
+# dump-dir = "/var/cache/cluegetter/deliveryreports"
+
 [mailQueue]
 # Show and manipulate items currently in the (Postfix) queue.
 
