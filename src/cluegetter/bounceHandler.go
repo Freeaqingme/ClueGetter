@@ -7,12 +7,10 @@
 //
 package main
 
-/**
-@TODO: Implement REDIS stuff?
-*/
-
 import (
+	"bufio"
 	"database/sql"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -20,6 +18,7 @@ import (
 	"mime/multipart"
 	"net"
 	"net/mail"
+	"os"
 	"strings"
 	"time"
 )
@@ -49,12 +48,22 @@ func init() {
 	enable := func() bool { return Config.BounceHandler.Enabled }
 	init := bounceHandlerStart
 	stop := bounceHandlerStop
+	handleIpc := bounceHandlerHandleIpc
 
 	ModuleRegister(&module{
 		name:   "bouncehandler",
 		enable: &enable,
 		init:   &init,
 		stop:   &stop,
+		ipc: map[string]func(string){
+			"bouncehandler!submit": handleIpc,
+		},
+	})
+
+	submitCli := bounceHandlerSubmitCli
+	subAppRegister(&subApp{
+		name:     "bouncehandler",
+		handover: &submitCli,
 	})
 }
 
@@ -65,6 +74,27 @@ func bounceHandlerStart() {
 
 func bounceHandlerStop() {
 	Log.Info("BounceHandler module stopped successfully")
+}
+
+// Submit a new report to the bounce handler through the CLI.
+func bounceHandlerSubmitCli() {
+	if len(os.Args) < 2 || os.Args[1] != "submit" {
+		Log.Fatal("Missing argument for 'bouncehandler'. Must be one of: submit")
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+	body := make([]byte, 0)
+	for {
+		buf := make([]byte, 512)
+		nr, err := reader.Read(buf)
+		if err != nil {
+			break
+		}
+		body = append(body, buf[:nr]...)
+	}
+
+	bodyB64 := base64.StdEncoding.EncodeToString(body)
+	daemonIpcSend("bouncehandler!submit", bodyB64)
 }
 
 func bounceHandlerPrepStmt() {
@@ -101,16 +131,15 @@ func bounceHandlerListen() {
 			Log.Error("Could not accept new connection: ", err.Error())
 			continue
 		}
-		go bounceHandlerParseReport(conn)
+		go bounceHandlerHandleConn(conn)
 	}
 }
 
-func bounceHandlerParseReport(conn net.Conn) {
+func bounceHandlerHandleConn(conn net.Conn) {
 	defer cluegetterRecover("bounceHandlerParseReport")
 	defer conn.Close()
 
 	Log.Debug("Handling new connection from %s", conn.RemoteAddr())
-
 	body := make([]byte, 0)
 	for {
 		buf := make([]byte, 512)
@@ -122,6 +151,22 @@ func bounceHandlerParseReport(conn net.Conn) {
 		body = append(body, buf[:nr]...)
 	}
 
+	bounceHandlerParseReport(body, conn.RemoteAddr().String())
+}
+
+func bounceHandlerHandleIpc(bodyB64 string) {
+	Log.Debug("Received new report through IPC")
+
+	body, err := base64.StdEncoding.DecodeString(bodyB64)
+	if err != nil {
+		Log.Error("Could not base64 decode report received over IPC: %s", err.Error())
+		return
+	}
+
+	bounceHandlerParseReport(body, "IPC")
+}
+
+func bounceHandlerParseReport(body []byte, remoteAddr string) {
 	bounceHandlerPersistRawCopy(body)
 
 	hdrs, deliveryReports, _, _ := bounceHandlerParseReportMime(string(body))
@@ -148,9 +193,9 @@ func bounceHandlerParseReport(conn net.Conn) {
 		rcptReports: rcptReports,
 	}
 
-	Log.Debug("Successfully parsed %d reports from %s", len(rcptReports), conn.RemoteAddr())
+	Log.Debug("Successfully parsed %d reports from %s", len(rcptReports), remoteAddr)
 	bounceHandlerSaveBounce(bounce)
-	Log.Info("Successfully saved %d reports from %s", len(rcptReports), conn.RemoteAddr())
+	Log.Info("Successfully saved %d reports from %s", len(rcptReports), remoteAddr)
 }
 
 func bounceHandlerGetBounceReasons(notification []byte) (mail.Header, []mail.Header) {

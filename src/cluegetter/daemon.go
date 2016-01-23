@@ -190,7 +190,7 @@ func daemonIpcHandleConn(conn *net.UnixConn) {
 		callback := ipcHandlers[handle]
 		v := ""
 		if len(kv) > 1 {
-			v = kv[1]
+			v = strings.TrimRightFunc(kv[1], func(v rune) bool { return v == '\x00' })
 		}
 		if callback == nil {
 			Log.Debug("Received IPC message but no such pattern was registered, ignoring: <%s>%s", handle, v)
@@ -198,7 +198,6 @@ func daemonIpcHandleConn(conn *net.UnixConn) {
 		}
 
 		callback(v)
-		// conn.Write([]byte(message))
 	}
 }
 
