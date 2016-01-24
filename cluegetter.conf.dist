@@ -127,10 +127,6 @@ archive-retention-header = 26
 archive-retention-message-result = 2
 archive-retention-message = 52
 
-# If Cassandra support is enabled, this is the TTL (in weeks) to use
-# for storing messages in Cassandra.
-archive-retention-cassandra = 4
-
 [moduleGroup "spam"]
 module = 0.9 spamassassin
 module = 0.1 rspamd
@@ -149,18 +145,6 @@ listen-host = "127.0.0.1"
 # Your Google Analytics ID
 google-analytics = ""
 
-[cassandra]
-# If you want to archive messages (including their body), but don't want
-# to do so in your RDBMS.
-
-enabled  = false
-keyspace = "cluegetter"
-#host     = "node1"
-#host     = "node2"
-#host     = "node3"
-#username = ""
-#password = ""
-
 [redis]
 # Redis can be used as a cache so that ClueGetter will continue functioning
 # even when the RDBMS becomes unavailable. The '''host''' directive can be
@@ -176,11 +160,20 @@ enabled     = false
 listen-port = 10034
 listen-host = "127.0.0.1"
 
+# For debugging purposes a directory can be specified to persist a copy
+# of all incoming delivery reports.
+# dump-dir = "/var/cache/cluegetter/deliveryreports"
+
 [mailQueue]
 # Show and manipulate items currently in the (Postfix) queue.
 
 enabled = false
+
+# Postfix spool dir. Make sure to leave out any trailing slashes.
 spool-dir = /var/spool/postfix
+
+# postcat-executable = /usr/sbin/postcat
+# postsuper-executable = /usr/sbin/postsuper
 
 [greylisting]
 # When the greylisting module is enabled, hosts that haven not been seen

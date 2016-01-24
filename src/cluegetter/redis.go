@@ -235,7 +235,7 @@ func redisGetServices() []*service {
 func redisRpc() {
 	pubsub, err := redisClient.PSubscribe("cluegetter!*")
 	if err != nil {
-		panic(err)
+		Log.Fatal("Could not connect to Redis or subscribe to the RPC channels: ", err.Error())
 	}
 	defer pubsub.Close()
 

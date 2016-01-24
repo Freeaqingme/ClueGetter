@@ -66,7 +66,6 @@ func daemonStart() {
 	rdbmsStart()
 	setInstance()
 	persistStart()
-	cqlStart()
 
 	milterSessionStart()
 	httpStart(done)
@@ -95,7 +94,6 @@ func daemonStart() {
 		}
 	}
 	messageStop()
-	cqlStop()
 	rdbmsStop()
 
 	Log.Notice("Successfully ceased all operations.")
@@ -142,12 +140,11 @@ func ModuleRegister(module *module) {
 
 func daemonIpc(done <-chan struct{}) {
 	if _, err := os.Stat(Config.ClueGetter.IPC_Socket); !os.IsNotExist(err) {
-		// Is this ideal? Can we do this any better? Need moar resilliency
-		Log.Fatal(fmt.Sprintf(
-			"IPC Socket %s already exists. Can be the result of an unclean shut down "+
-				"or because Cluegetter is already running. Manual intervention required.",
-			Config.ClueGetter.IPC_Socket,
-		))
+		err = os.Remove(Config.ClueGetter.IPC_Socket)
+		if err != nil {
+			Log.Fatal(fmt.Sprintf("IPC Socket %s already exists and could not be removed: %s",
+				Config.ClueGetter.IPC_Socket, err.Error()))
+		}
 	}
 
 	l, err := net.ListenUnix("unix", &net.UnixAddr{Config.ClueGetter.IPC_Socket, "unix"})
@@ -193,7 +190,7 @@ func daemonIpcHandleConn(conn *net.UnixConn) {
 		callback := ipcHandlers[handle]
 		v := ""
 		if len(kv) > 1 {
-			v = kv[1]
+			v = strings.TrimRightFunc(kv[1], func(v rune) bool { return v == '\x00' })
 		}
 		if callback == nil {
 			Log.Debug("Received IPC message but no such pattern was registered, ignoring: <%s>%s", handle, v)
@@ -201,14 +198,15 @@ func daemonIpcHandleConn(conn *net.UnixConn) {
 		}
 
 		callback(v)
-		// conn.Write([]byte(message))
 	}
 }
 
 func daemonIpcSend(handle string, message string) {
 	c, err := net.Dial("unix", Config.ClueGetter.IPC_Socket)
 	if err != nil {
-		panic(err)
+		// TODO: Why does log.fatal not write to stderr?
+		os.Stderr.WriteString("Could not connect to ICP socket: " + err.Error() + "\n")
+		os.Exit(1)
 	}
 	defer c.Close()
 

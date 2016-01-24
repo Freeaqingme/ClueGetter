@@ -1,0 +1,9 @@
+[Unit]
+Description=Access and Auditing Milter
+After=nss-lookup.target
+
+[Service]
+Restart=always
+RestartSec=30
+EnvironmentFile=/etc/default/cluegetter
+ExecStart=/usr/bin/cluegetter --config /etc/cluegetter/cluegetter.conf --loglevel $LOGLEVEL daemon

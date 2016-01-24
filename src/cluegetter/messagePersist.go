@@ -316,9 +316,6 @@ func messagePersist(msg *Proto_MessageV1) {
 		messageSaveHeaders(msg)
 	}
 
-	if Config.Cassandra.Enabled {
-		messageSaveCassandra(msg)
-	}
 }
 
 func messageSaveCheckResults(msg *Proto_MessageV1) {
@@ -332,21 +329,6 @@ func messageSaveCheckResults(msg *Proto_MessageV1) {
 			StatsCounters["RdbmsErrors"].increase(1)
 			Log.Error(err.Error())
 		}
-	}
-}
-
-func messageSaveCassandra(msg *Proto_MessageV1) {
-	if Config.ClueGetter.Archive_Retention_Cassandra == 0 {
-		return
-	}
-	cqlQueryQueue <- &cqlQuery{
-		query: `INSERT INTO message (message, body, date, instance)
-					VALUES (?, ?, ?, ?) USING TTL ?`,
-		args: []interface{}{
-			msg.Id, string(msg.Body),
-			time.Now(), Config.ClueGetter.Instance,
-			int(Config.ClueGetter.Archive_Retention_Cassandra * 86400 * 7),
-		},
 	}
 }
 

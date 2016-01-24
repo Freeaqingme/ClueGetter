@@ -48,6 +48,7 @@ func logReopen(args string) {
 		Log.Notice("Asked to reopen logs but running in foreground. Ignoring.")
 		return
 	}
+	Log.Notice("Reopening log file per IPC request...")
 	logRedirectStdOutToFile(logFile)
 	Log.Notice("Reopened log file per IPC request")
 }
@@ -78,7 +79,7 @@ func logRedirectStdOutToFile(logPath string) {
 		Log.Fatal("Log Path not set")
 	}
 
-	logFile, err := os.OpenFile(logPath, os.O_WRONLY|os.O_APPEND, 0644)
+	logFile, err := os.OpenFile(logPath, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 	if err != nil {
 		Log.Fatal(err)
 	}
