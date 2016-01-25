@@ -46,6 +46,7 @@ CREATE TABLE session (
   PRIMARY KEY (id),
   KEY cluegetter_instance (cluegetter_instance),
   KEY session_date (cluegetter_instance,date_connect),
+  KEY sasl_username (sasl_username),
   CONSTRAINT session_ibfk_1 FOREIGN KEY (cluegetter_instance) REFERENCES instance (id),
   CONSTRAINT session_ibfk_2 FOREIGN KEY (cluegetter_client) REFERENCES cluegetter_client (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;

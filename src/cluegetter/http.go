@@ -161,6 +161,8 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := Rdbms.Query(`
 	SELECT m.id, m.date, CONCAT(m.sender_local, '@', m.sender_domain) sender, m.rcpt_count, m.verdict,
+           s.ip, s.reverse_dns, s.helo, s.sasl_username, s.sasl_method, s.cert_issuer, s.cert_subject,
+           s.cipher_bits, s.cipher, s.tls_version,
 		GROUP_CONCAT(DISTINCT IF(r.domain = '', r.local, (CONCAT(r.local, '@', r.domain)))) recipients
 		FROM message m
 			LEFT JOIN session s ON s.id = m.session
@@ -247,8 +249,25 @@ func httpProcessSearchResultRows(w http.ResponseWriter, r *http.Request, rows *s
 	for rows.Next() {
 		message := &httpMessage{Recipients: make([]*httpMessageRecipient, 0)}
 		var rcptsStr string
-		rows.Scan(&message.Id, &message.Date, &message.Sender, &message.RcptCount,
-			&message.Verdict, &rcptsStr)
+		rows.Scan(
+			&message.Id,
+			&message.Date,
+			&message.Sender,
+			&message.RcptCount,
+			&message.Verdict,
+			&message.Ip,
+			&message.ReverseDns,
+			&message.Helo,
+			&message.SaslUsername,
+			&message.SaslMethod,
+			&message.CertIssuer,
+			&message.CertSubject,
+			&message.CipherBits,
+			&message.Cipher,
+			&message.TlsVersion,
+			&rcptsStr,
+		)
+
 		for _, rcpt := range strings.Split(rcptsStr, ",") {
 			message.Recipients = append(message.Recipients, &httpMessageRecipient{Email: rcpt})
 		}
@@ -434,6 +453,11 @@ func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
 		data.Period = period
 	}
 
+	selector := "sender_domain"
+	if "sasl_username" == r.FormValue("selector") {
+		selector = "sasl_username"
+	}
+
 	threshold := r.FormValue("threshold")
 	if _, err := strconv.Atoi(threshold); err != nil || threshold == "" {
 		threshold = data.Threshold
@@ -442,12 +466,12 @@ func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rows, err := Rdbms.Query(`
-		SELECT sender_domain, count(*) amount
+		SELECT `+selector+`, count(*) amount
 			FROM session s JOIN message m ON m.session = s.id
 			WHERE m.date > (? - INTERVAL ? HOUR)
 				AND s.cluegetter_instance IN(`+strings.Join(selectedInstances, ",")+`)
 				AND (verdict = 'tempfail' or verdict = 'reject')
-			GROUP BY sender_domain
+			GROUP BY `+selector+`
 			HAVING amount >= ?
 			ORDER BY amount DESC
 	`, time.Now(), period, threshold)
