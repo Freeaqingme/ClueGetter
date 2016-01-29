@@ -44,6 +44,7 @@ CREATE TABLE session (
   cipher varchar(255) charset ascii NOT NULL DEFAULT '',
   tls_version varchar(31) charset ascii NOT NULL DEFAULT '',
   PRIMARY KEY (id),
+  KEY sasl_username (sasl_username),
   KEY cluegetter_instance (cluegetter_instance),
   KEY session_date (cluegetter_instance,date_connect),
   CONSTRAINT session_ibfk_1 FOREIGN KEY (cluegetter_instance) REFERENCES instance (id),
