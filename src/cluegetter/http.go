@@ -392,9 +392,16 @@ func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 	httpRenderOutput(w, r, "index.html", data, nil)
 }
 
+type httpAbuserSelector struct {
+	Name     string
+	Text     string
+	Selected bool
+}
+
 type httpAbuserTop struct {
-	Identifier string
-	Count      int
+	SenderDomain string
+	SaslUsername string
+	Count        int
 }
 
 func httpGetViewData() *HttpViewData {
@@ -412,13 +419,27 @@ func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
 		Period          string
 		Threshold       string
 		SenderDomainTop []*httpAbuserTop
+		Selectors       []httpAbuserSelector
 	}{
 		httpGetViewData(),
 		httpGetInstances(),
 		"4",
 		"5",
 		make([]*httpAbuserTop, 0),
+		make([]httpAbuserSelector, 0),
 	}
+
+	data.Selectors = append(data.Selectors, httpAbuserSelector{
+		Name:     "sasl_username",
+		Text:     "Sasl Username",
+		Selected: r.FormValue("selector") == "sasl_username",
+	})
+
+	data.Selectors = append(data.Selectors, httpAbuserSelector{
+		Name:     "sender_domain",
+		Text:     "Sender domain",
+		Selected: r.FormValue("selector") != "sasl_username",
+	})
 
 	selectedInstances, err := httpParseFilterInstance(r)
 	if err != nil {
@@ -441,13 +462,18 @@ func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
 		data.Threshold = threshold
 	}
 
+	selector := "m.sender_domain"
+	if r.FormValue("selector") == "sasl_username" {
+		selector = "s.sasl_username"
+	}
+
 	rows, err := Rdbms.Query(`
-		SELECT sender_domain, count(*) amount
+		SELECT m.sender_domain, s.sasl_username, count(*) amount
 			FROM session s JOIN message m ON m.session = s.id
 			WHERE m.date > (? - INTERVAL ? HOUR)
 				AND s.cluegetter_instance IN(`+strings.Join(selectedInstances, ",")+`)
 				AND (verdict = 'tempfail' or verdict = 'reject')
-			GROUP BY sender_domain
+			GROUP BY `+selector+`
 			HAVING amount >= ?
 			ORDER BY amount DESC
 	`, time.Now(), period, threshold)
@@ -458,7 +484,7 @@ func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
 
 	for rows.Next() {
 		result := &httpAbuserTop{}
-		rows.Scan(&result.Identifier, &result.Count)
+		rows.Scan(&result.SenderDomain, &result.SaslUsername, &result.Count)
 		data.SenderDomainTop = append(data.SenderDomainTop, result)
 	}
 
