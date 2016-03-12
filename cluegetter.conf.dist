@@ -91,7 +91,7 @@ whitelist = "::1"
 # Insert headers into each message. Can be repeated multiple times.
 # Key and value are separated by a ':'.
 # The following symbols can be used:
-# %h                hostname
+# %{hostname}       hostname
 # %{rejectScore}    The reject score
 # %{spamFlag}       YES/NO - Is higher than spam flag score, or not.
 #

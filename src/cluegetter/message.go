@@ -465,9 +465,6 @@ func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (a
 			delete = append(delete, msg.GetHeader(v.getKey(), false)...)
 		}
 
-		// DEPRECATED: Remove me soonishly
-		add[k].Value = strings.Replace(v.Value, "%h", sess.getMtaHostName(), -1)
-
 		add[k].Value = strings.Replace(v.Value, "%{hostname}", sess.getMtaHostName(), -1)
 		add[k].Value = strings.Replace(v.Value, "%{rejectScore}", fmt.Sprintf("%.2f", rejectscore), -1)
 
