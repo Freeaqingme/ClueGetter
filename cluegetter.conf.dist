@@ -182,6 +182,9 @@ listen-host = "127.0.0.1"
 enabled = false
 spool-dir = /var/spool/postfix
 
+# The interval (in seconds) with which to fetch the mail queue.
+update-interval = 5
+
 [greylisting]
 # When the greylisting module is enabled, hosts that haven not been seen
 # before and that seem a little spammy are temporarily rejected until

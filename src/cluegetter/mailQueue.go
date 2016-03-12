@@ -71,7 +71,7 @@ func mailQueueStart(deleteQueue chan string) {
 	for _, queueName := range mailQueueNames {
 		go mailQueueUpdate(queueName)
 		go func(queueName string) {
-			ticker := time.NewTicker(time.Duration(30) * time.Second)
+			ticker := time.NewTicker(time.Duration(Config.MailQueue.Update_Interval) * time.Second)
 			for {
 				select {
 				case <-ticker.C:
@@ -201,6 +201,15 @@ func mailQueueUpdate(queueName string) {
 
 	pathLen := len(path)
 	err := filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
+		if f == nil {
+			Log.Debug("File %s has gone. Skipping...", path)
+			return nil
+		}
+		if err != nil {
+			Log.Debug("Got error: %s", err)
+			return nil
+		}
+
 		if !f.IsDir() {
 			files <- path[pathLen:]
 		}
@@ -263,7 +272,7 @@ func mailQueueProcessFileList(wg *sync.WaitGroup, files chan string, path string
 }
 
 func mailQueueProcessFiles(filesBatch []string, path string, envelopes chan *mailQueueItem) {
-	defer cluegetterRecover("mailQueueProcessFileList")
+	defer cluegetterRecover("mailQueueProcessFiles")
 
 	cmd := exec.Command("postcat", append([]string{"-e"}, filesBatch...)...)
 	cmd.Dir = path

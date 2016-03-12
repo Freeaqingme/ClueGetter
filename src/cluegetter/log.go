@@ -73,6 +73,8 @@ func logSetupGlobal(logLevelStr string) {
 	logging.SetBackend(syslogBackend, stdoutLeveled)
 }
 
+// If there are any existing fd's (e.g. we're reopening logs), we rely
+// on garbage collection to clean them up for us.
 func logRedirectStdOutToFile(logPath string) {
 	if logPath == "" {
 		Log.Fatal("Log Path not set")

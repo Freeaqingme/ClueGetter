@@ -69,8 +69,9 @@ type config struct {
 		Listen_Host string
 	}
 	MailQueue struct {
-		Enabled   bool
-		Spool_Dir string
+		Enabled         bool
+		Spool_Dir       string
+		Update_Interval int
 	}
 	Greylisting struct {
 		Enabled        bool
@@ -160,6 +161,7 @@ func DefaultConfig(cfg *config) {
 
 	cfg.MailQueue.Enabled = false
 	cfg.MailQueue.Spool_Dir = "/var/spool/postfix"
+	cfg.MailQueue.Update_Interval = 5
 
 	cfg.Greylisting.Enabled = false
 	cfg.Greylisting.Initial_Score = 7.0
