@@ -5,3 +5,5 @@ src/gopkg.in
 src/golang.org
 bin
 pkg
+pkg_root
+*.deb

@@ -1,5 +1,16 @@
 # Change Log
 
+### 2016-01-24 Version 0.5.1
+* New Feature: Implement 'cluegetter bouncehandler submit'
+* New Feature: Include Debian packaging in makefile.
+* Improvement: Not all queue items have a log_ident field in mailqueue module.
+* Improvement: Allow to persist a raw copy of all delivery reports in BounceHandler.
+* Improvement: Log that we're about to reopen log files, rather than only afterwards
+* Improvement: Don't rely on PATH for postcat & postsuper commands.
+* Bugfix: Don't panic if IPC socket can not be connected to.
+* Bugfix: Deleting headers could lead to panics if add-headers were given in 'wrong' order.
+* Change: Removed Cassandra support. It was still (too) experimental.
+
 ### 2016-01-02 Version 0.5.0
 * New Feature: Manage MailQueue(s) through single web interface
 * New Feature: 'cluegetter log reopen' to facilitate in logrotation.

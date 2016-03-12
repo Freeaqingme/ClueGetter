@@ -21,7 +21,12 @@ import (
 	"time"
 )
 
-var mailQueueNames = []string{"incoming", "active", "deferred", "corrupt", "hold"}
+var (
+	mailQueueDefaultPostsuperExecutable = "/usr/sbin/postsuper"
+	mailQueueDefaultPostcatExecutable   = "/usr/sbin/postcat"
+
+	mailQueueNames = []string{"incoming", "active", "deferred", "corrupt", "hold"}
+)
 
 func init() {
 	deleteQueue := make(chan string)
@@ -104,7 +109,12 @@ func mailQueueDeleteItems(queueIds []string) {
 		args = append(args, "-d", queueId)
 	}
 
-	cmd := exec.Command("postsuper", args...)
+	execPath := Config.MailQueue.PostsuperExecutable
+	if execPath == "" {
+		execPath = mailQueueDefaultPostsuperExecutable
+	}
+
+	cmd := exec.Command(execPath, args...)
 	cmd.Dir = "/"
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -274,13 +284,20 @@ func mailQueueProcessFileList(wg *sync.WaitGroup, files chan string, path string
 func mailQueueProcessFiles(filesBatch []string, path string, envelopes chan *mailQueueItem) {
 	defer cluegetterRecover("mailQueueProcessFiles")
 
-	cmd := exec.Command("postcat", append([]string{"-e"}, filesBatch...)...)
+	execPath := Config.MailQueue.PostcatExecutable
+	if execPath == "" {
+		execPath = mailQueueDefaultPostcatExecutable
+	}
+
+	cmd := exec.Command(execPath, append([]string{"-e"}, filesBatch...)...)
 	cmd.Dir = path
 	var out bytes.Buffer
+	var stderr bytes.Buffer
 	cmd.Stdout = &out
+	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if err != nil {
-		Log.Error("Error ocurred while running postcat: %s", err)
+		Log.Error("Error ocurred while running postcat: %s. Stderr: %s", err, stderr.String())
 		return
 	}
 
@@ -319,6 +336,11 @@ func mailQueueParseEnvelopeString(envelopeStr string) (*mailQueueItem, error) {
 		}
 
 		item.Kv[strings.Trim(kv[0], " ")] = strings.Trim(kv[1], " ")
+	}
+
+	// Not all queue items have a log_ident entry denoting the queue id.
+	if _, ok := item.Kv["log_ident"]; !ok {
+		item.Kv["log_ident"] = queueId
 	}
 
 	if _, ok := item.Kv["create_time"]; !ok {
