@@ -178,10 +178,11 @@ func mailQueueGetFromDataStore(options *mailQueueGetOptions) map[string][]*mailQ
 				itemSenderLocal, itemSenderDomain := messageParseAddress(item.Kv["sender"])
 				itemRcptLocal, itemRcptDomain := messageParseAddress(item.Kv["recipient"])
 
-				if ((senderLocal == "" || itemSenderLocal == senderLocal) &&
-					itemSenderDomain == senderDomain) || options.Sender == "" {
-					if ((rcptLocal == "" || itemRcptLocal == rcptLocal) &&
-						itemRcptDomain == rcptDomain) || options.Recipient == "" {
+				if ((senderLocal == "" || strings.EqualFold(itemSenderLocal, senderLocal)) &&
+					strings.EqualFold(itemSenderDomain, senderDomain)) || options.Sender == "" {
+
+					if ((rcptLocal == "" || strings.EqualFold(itemRcptLocal, rcptLocal)) &&
+						strings.EqualFold(itemRcptDomain, rcptDomain)) || options.Recipient == "" {
 						out[queueName] = append(out[queueName], item)
 					}
 				}
