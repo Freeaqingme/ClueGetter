@@ -32,7 +32,6 @@ type config struct {
 		Milter_Socket                    string
 		Whitelist                        []string
 		Add_Header                       []string
-		Add_Header_X_Spam_Score          bool
 		Insert_Missing_Message_Id        bool
 		Archive_Prune_Interval           int
 		Archive_Retention_Body           float64
@@ -182,7 +181,6 @@ func DefaultConfig(cfg *config) {
 	cfg.ClueGetter.Milter_Socket = "inet:10033@127.0.0.1"
 	cfg.ClueGetter.Whitelist = []string{} // "127.0.0.0/8", "::1" }
 	cfg.ClueGetter.Add_Header = []string{}
-	cfg.ClueGetter.Add_Header_X_Spam_Score = true
 	cfg.ClueGetter.Insert_Missing_Message_Id = true
 	cfg.ClueGetter.Archive_Prune_Interval = 21600
 	cfg.ClueGetter.Archive_Retention_Safeguard = 1.01

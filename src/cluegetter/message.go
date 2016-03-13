@@ -452,11 +452,6 @@ func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (a
 		rejectscore += result.score
 	}
 
-	if Config.ClueGetter.Add_Header_X_Spam_Score {
-		// DEPRECATED: Remove me soonishly
-		add = append(add, &MessageHeader{Key: "X-Spam-Score", Value: fmt.Sprintf("%.2f", rejectscore)})
-	}
-
 	if msg.session.config.ClueGetter.Insert_Missing_Message_Id == true && msg.injectMessageId != "" {
 		add = append(add, &MessageHeader{Key: "Message-Id", Value: msg.injectMessageId})
 	}
