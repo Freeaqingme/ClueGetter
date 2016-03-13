@@ -54,14 +54,14 @@ func rspamdStart() {
 }
 
 func rspamdGetResult(msg *Message, abort chan bool) *MessageCheckResult {
-	if !Config.Rspamd.Enabled {
+	if !Config.Rspamd.Enabled || !msg.session.config.Rspamd.Enabled {
 		return nil
 	}
 
 	rawResult := rspamdGetRawResult(msg)
 	parsedResponse := rspamdParseRawResult(rawResult)
 
-	score := parsedResponse.Default.Score * Config.Rspamd.Multiplier
+	score := parsedResponse.Default.Score * msg.session.config.Rspamd.Multiplier
 
 	return &MessageCheckResult{
 		module:          "rspamd",

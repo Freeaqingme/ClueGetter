@@ -153,13 +153,14 @@ func greylistUpdateWhitelist() {
 }
 
 func greylistGetResult(msg *Message, done chan bool) *MessageCheckResult {
-	if !Config.Greylisting.Enabled {
+	if !Config.Greylisting.Enabled || !msg.session.config.Greylisting.Enabled {
 		return nil
 	}
 
 	ip := (*msg.session).getIp()
 
-	res, spfDomain, spfWhitelistErr := greylistIsSpfWhitelisted(net.ParseIP(ip), done)
+	whitelist := msg.session.config.Greylisting.Whitelist_Spf
+	res, spfDomain, spfWhitelistErr := greylistIsSpfWhitelisted(net.ParseIP(ip), done, whitelist)
 	if res {
 		Log.Debug("Found %s in %s SPF record", ip, spfDomain)
 		return &MessageCheckResult{
@@ -212,7 +213,7 @@ func greylistGetVerdictRedis(msg *Message, spfWhitelistErr error, spfDomain stri
 	res, err := redisClient.Get(key).Int64()
 	if err == nil {
 		determinants["time_diff"] = time.Now().Unix() - res
-		if (res + (int64(Config.Greylisting.Initial_Period) * 60)) < time.Now().Unix() {
+		if (res + (int64(sess.config.Greylisting.Initial_Period) * 60)) < time.Now().Unix() {
 			return &MessageCheckResult{
 				module:          "greylisting",
 				suggestedAction: messagePermit,
@@ -229,7 +230,7 @@ func greylistGetVerdictRedis(msg *Message, spfWhitelistErr error, spfDomain stri
 		module:          "greylisting",
 		suggestedAction: messageTempFail,
 		message:         "Greylisting in effect, please come back later",
-		score:           Config.Greylisting.Initial_Score,
+		score:           sess.config.Greylisting.Initial_Score,
 		determinants:    determinants,
 	}
 }
@@ -264,7 +265,7 @@ func greylistGetVerdictRdbms(msg *Message, spfWhitelistErr error, spfDomain stri
 	Log.Debug("%s Got %d allow verdicts, %d disallow verdicts in greylist module. First verdict was %.2f minutes ago",
 		(*msg.session).milterGetDisplayId(), allowCount, disallowCount, timeDiff)
 
-	if allowCount > 0 || timeDiff > float64(Config.Greylisting.Initial_Period) {
+	if allowCount > 0 || timeDiff > float64(msg.session.config.Greylisting.Initial_Period) {
 		return &MessageCheckResult{
 			module:          "greylisting",
 			suggestedAction: messagePermit,
@@ -278,7 +279,7 @@ func greylistGetVerdictRdbms(msg *Message, spfWhitelistErr error, spfDomain stri
 		module:          "greylisting",
 		suggestedAction: messageTempFail,
 		message:         "Greylisting in effect, please come back later",
-		score:           Config.Greylisting.Initial_Score,
+		score:           msg.session.config.Greylisting.Initial_Score,
 		determinants:    determinants,
 	}
 }
@@ -312,9 +313,9 @@ func greylistIsWhitelistedRdbms(ip *string) bool {
 	return false
 }
 
-func greylistIsSpfWhitelisted(ip net.IP, done chan bool) (bool, string, error) {
+func greylistIsSpfWhitelisted(ip net.IP, done chan bool, whitelist []string) (bool, string, error) {
 	var error error
-	for _, whitelistDomain := range Config.Greylisting.Whitelist_Spf {
+	for _, whitelistDomain := range whitelist {
 		res, err := greylistSpf2.Query(whitelistDomain, ip)
 		if err != nil {
 			error = err

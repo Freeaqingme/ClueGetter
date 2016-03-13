@@ -40,6 +40,7 @@ type milterSession struct {
 	MtaHostName   string
 	MtaDaemonName string
 
+	config    *SessionConfig
 	persisted bool
 }
 

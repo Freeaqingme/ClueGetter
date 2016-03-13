@@ -217,11 +217,11 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 
 		if result.suggestedAction == messageError {
 			errorCount = errorCount + 1
-		} else if breakerScore[result.suggestedAction] >= Config.ClueGetter.Breaker_Score {
+		} else if breakerScore[result.suggestedAction] >= msg.session.config.ClueGetter.Breaker_Score {
 			Log.Debug(
 				"Breaker score %.2f/%.2f reached. Aborting all running modules",
 				breakerScore[result.suggestedAction],
-				Config.ClueGetter.Breaker_Score,
+				msg.session.config.ClueGetter.Breaker_Score,
 			)
 
 			go func() {
@@ -278,14 +278,15 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 	verdict = messagePermit
 	statusMsg := ""
 
-	if totalScores[messageReject] >= Config.ClueGetter.Message_Reject_Score {
+	sconf := msg.session.config
+	if totalScores[messageReject] >= sconf.ClueGetter.Message_Reject_Score {
 		StatsCounters["MessageVerdictReject"].increase(1)
 		verdict = messageReject
 		statusMsg = getDecidingResultWithMessage(results[messageReject]).message
 	} else if errorCount > 0 {
 		statusMsg = "An internal server error ocurred"
 		verdict = messageTempFail
-	} else if (totalScores[messageTempFail] + totalScores[messageReject]) >= Config.ClueGetter.Message_Tempfail_Score {
+	} else if (totalScores[messageTempFail] + totalScores[messageReject]) >= sconf.ClueGetter.Message_Tempfail_Score {
 		StatsCounters["MessageVerdictTempfail"].increase(1)
 		verdict = messageTempFail
 		statusMsg = getDecidingResultWithMessage(results[messageTempFail]).message
@@ -426,9 +427,9 @@ func messageSave(msg *Message, checkResults []*Proto_MessageV1_CheckResult, verd
 		Verdict:                &verdictEnum,
 		VerdictMsg:             &verdictMsg,
 		RejectScore:            &rejectScore,
-		RejectScoreThreshold:   &Config.ClueGetter.Message_Reject_Score,
+		RejectScoreThreshold:   &msg.session.config.ClueGetter.Message_Reject_Score,
 		TempfailScore:          &tempfailScore,
-		TempfailScoreThreshold: &Config.ClueGetter.Message_Tempfail_Score,
+		TempfailScoreThreshold: &msg.session.config.ClueGetter.Message_Tempfail_Score,
 		CheckResults:           checkResults,
 		Session:                msg.session.getProtoBufStruct(),
 	}
@@ -456,7 +457,7 @@ func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (a
 		add = append(add, &MessageHeader{Key: "X-Spam-Score", Value: fmt.Sprintf("%.2f", rejectscore)})
 	}
 
-	if Config.ClueGetter.Insert_Missing_Message_Id == true && msg.injectMessageId != "" {
+	if msg.session.config.ClueGetter.Insert_Missing_Message_Id == true && msg.injectMessageId != "" {
 		add = append(add, &MessageHeader{Key: "Message-Id", Value: msg.injectMessageId})
 	}
 
@@ -468,7 +469,7 @@ func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (a
 		add[k].Value = strings.Replace(v.Value, "%{hostname}", sess.getMtaHostName(), -1)
 		add[k].Value = strings.Replace(v.Value, "%{rejectScore}", fmt.Sprintf("%.2f", rejectscore), -1)
 
-		if rejectscore >= Config.ClueGetter.Message_Spamflag_Score {
+		if rejectscore >= msg.session.config.ClueGetter.Message_Spamflag_Score {
 			add[k].Value = strings.Replace(v.Value, "%{spamFlag}", "YES", -1)
 		} else {
 			add[k].Value = strings.Replace(v.Value, "%{spamFlag}", "NO", -1)
