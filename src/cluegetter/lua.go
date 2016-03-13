@@ -10,7 +10,6 @@ package main
 import (
 	"github.com/yuin/gopher-lua"
 
-	//"fmt"
 	"io/ioutil"
 )
 
@@ -89,7 +88,6 @@ func luaMilterCheck(luaModuleName string, msg *Message, done chan bool) *Message
 		message:         resMsg.String(),
 		score:           float64(lua.LVAsNumber(resScore)),
 	}
-	return nil
 }
 
 func luaCanParse(script string) (bool, error) {
@@ -176,8 +174,6 @@ func luaMessageFuncHeaders(L *lua.LState) int {
 		ud := L.NewUserData()
 		ud.Value = v
 		L.SetMetatable(ud, L.GetTypeMetatable("messageHeader"))
-		L.Push(ud)
-
 		t.Append(ud)
 	}
 
