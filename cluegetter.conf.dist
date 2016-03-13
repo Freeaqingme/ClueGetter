@@ -108,10 +108,6 @@ add-header = [U] X-Report-Abuse-To: abuse@example.com
 add-header = [U] X-Spam-Score: %{rejectScore}
 add-header = [U] X-Spam-Flag: %{spamFlag}
 
-# Add a header named 'X-Spam-Score' indicating the total reject score.
-# DEPRECATED
-add-header-x-spam-score = true
-
 # Sometimes an email does not have a message-id header. Because it's a
 # convenient way to track messages across MTAs.
 insert-missing-message-id = true
@@ -238,3 +234,8 @@ timeout = 10.0
 
 # The max message size (in bytes) to send to SpamAssassin.
 max-size = 8388608
+
+# You can script your own modules using Lua.
+# [luaModule "something"]
+# enabled = true
+# script = ./lua/something.lua

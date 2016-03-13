@@ -52,6 +52,7 @@ type config struct {
 		Listen_Host      string
 		Google_Analytics string
 	}
+	LuaModule     map[string]*ConfigLuaModule
 	BounceHandler struct {
 		Enabled     bool
 		Listen_Port string
@@ -92,6 +93,10 @@ type config struct {
 		Connect_Timeout float64
 		Max_Size        int
 	}
+}
+type ConfigLuaModule struct {
+	Enabled bool
+	Script  string
 }
 
 type SessionConfig struct {
