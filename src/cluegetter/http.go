@@ -419,27 +419,23 @@ func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
 		Period          string
 		Threshold       string
 		SenderDomainTop []*httpAbuserTop
-		Selectors       []httpAbuserSelector
+		Selectors       []*httpAbuserSelector
 	}{
 		httpGetViewData(),
 		httpGetInstances(),
 		"4",
 		"5",
 		make([]*httpAbuserTop, 0),
-		make([]httpAbuserSelector, 0),
+		make([]*httpAbuserSelector, 0),
 	}
 
-	data.Selectors = append(data.Selectors, httpAbuserSelector{
-		Name:     "sasl_username",
-		Text:     "Sasl Username",
-		Selected: r.FormValue("selector") == "sasl_username",
-	})
+	selectors, err := httpGetSelectors(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-	data.Selectors = append(data.Selectors, httpAbuserSelector{
-		Name:     "sender_domain",
-		Text:     "Sender domain",
-		Selected: r.FormValue("selector") != "sasl_username",
-	})
+	data.Selectors = selectors
 
 	selectedInstances, err := httpParseFilterInstance(r)
 	if err != nil {
@@ -489,6 +485,36 @@ func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpRenderOutput(w, r, "abusers.html", data, data.SenderDomainTop)
+}
+
+func httpGetSelectors(r *http.Request) (out []*httpAbuserSelector, err error) {
+	var selectors []*httpAbuserSelector
+
+	selectors = append(selectors, &httpAbuserSelector{
+		Name:     "sasl_username",
+		Text:     "Sasl Username",
+		Selected: r.FormValue("selector") == "sasl_username",
+	})
+
+	selectors = append(selectors, &httpAbuserSelector{
+		Name:     "sender_domain",
+		Text:     "Sender domain",
+		Selected: r.FormValue("selector") == "sender_domain",
+	})
+
+	hasSelectedSelector := false
+	for _, selector := range selectors {
+		if selector.Selected {
+			hasSelectedSelector = true
+			break
+		}
+	}
+
+	if !hasSelectedSelector && r.FormValue("selector") != "" {
+		return nil, errors.New("'" + r.FormValue("selector") + "' is not a valid value for parameter selector")
+	}
+
+	return selectors, nil
 }
 
 func httpGetInstances() []*httpInstance {
