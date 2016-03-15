@@ -1,3 +1,6 @@
+-- v0.5.2
+ALTER TABLE session ADD KEY sasl_username (sasl_username);
+
 -- v0.4.3
 ALTER TABLE message_header CHANGE name name varbinary(74) not null,
                             CHANGE body body blob not null;
