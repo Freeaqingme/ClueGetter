@@ -32,6 +32,7 @@ type config struct {
 		Milter_Socket                    string
 		Whitelist                        []string
 		Add_Header                       []string
+		Add_Header_X_Spam_Score          bool
 		Insert_Missing_Message_Id        bool
 		Archive_Prune_Interval           int
 		Archive_Retention_Body           float64
