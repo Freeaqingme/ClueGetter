@@ -500,7 +500,7 @@ func (msg *Message) GetHeader(key string, includeDeleted bool) []*MessageHeader 
 	return out
 }
 
-func (msg Message) String() []byte {
+func (msg *Message) String() []byte {
 	sess := *msg.session
 	fqdn, err := os.Hostname()
 	if err != nil {
@@ -515,13 +515,12 @@ func (msg Message) String() []byte {
 
 	body := make([]string, 0)
 
-	body = append(body, fmt.Sprintf("Received: from %s (%s [%s])\r\n\tby %s with SMTP id %d@%s; %s\r\n",
+	body = append(body, fmt.Sprintf("Received: from %s (%s [%s])\r\n\tby %s with SMTP id %s; %s\r\n",
 		sess.getHelo(),
 		revdnsStr,
 		sess.getIp(),
 		fqdn,
-		sess.getId(),
-		fqdn,
+		messageGetMessageId(msg),
 		time.Now().Format(time.RFC1123Z)))
 
 	for _, header := range msg.Headers {
@@ -535,24 +534,30 @@ func (msg Message) String() []byte {
 }
 
 func messageEnsureHasMessageId(msg *Message) {
+	id := messageGetMessageId(msg)
+
+	msg.Headers = append(msg.Headers, &MessageHeader{
+		Key: "Message-Id", Value: id,
+	})
+}
+
+func messageGetMessageId(msg *Message) string {
 	sess := msg.session
 
 	messageIdHdr := ""
 	for _, v := range msg.Headers {
 		if strings.EqualFold((*v).getKey(), "Message-Id") {
-			messageIdHdr = (*v).getValue()
-			break
+			return (*v).getValue()
 		}
 	}
 
-	if messageIdHdr == "" {
+	if msg.injectMessageId == "" {
 		messageIdHdr = fmt.Sprintf("<%d.%s.cluegetter@%s>",
 			time.Now().Unix(), msg.QueueId, sess.getMtaHostName())
 		msg.injectMessageId = messageIdHdr
-		msg.Headers = append(msg.Headers, &MessageHeader{
-			Key: "Message-Id", Value: messageIdHdr,
-		})
 	}
+
+	return msg.injectMessageId
 }
 
 func messageParseAddress(address string) (local, domain string) {
