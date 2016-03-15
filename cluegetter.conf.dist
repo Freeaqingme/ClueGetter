@@ -91,7 +91,7 @@ whitelist = "::1"
 # Insert headers into each message. Can be repeated multiple times.
 # Key and value are separated by a ':'.
 # The following symbols can be used:
-# %h                hostname
+# %{hostname}       hostname
 # %{rejectScore}    The reject score
 # %{spamFlag}       YES/NO - Is higher than spam flag score, or not.
 #
@@ -107,10 +107,6 @@ add-header = X-Scanned: ClueGetter at %{hostname}
 add-header = [U] X-Report-Abuse-To: abuse@example.com
 add-header = [U] X-Spam-Score: %{rejectScore}
 add-header = [U] X-Spam-Flag: %{spamFlag}
-
-# Add a header named 'X-Spam-Score' indicating the total reject score.
-# DEPRECATED
-add-header-x-spam-score = true
 
 # Sometimes an email does not have a message-id header. Because it's a
 # convenient way to track messages across MTAs.
@@ -171,6 +167,9 @@ enabled = false
 
 # Postfix spool dir. Make sure to leave out any trailing slashes.
 spool-dir = /var/spool/postfix
+
+# The interval (in seconds) with which to fetch the mail queue.
+# update-interval = 5
 
 # postcat-executable = /usr/sbin/postcat
 # postsuper-executable = /usr/sbin/postsuper
@@ -235,3 +234,8 @@ timeout = 10.0
 
 # The max message size (in bytes) to send to SpamAssassin.
 max-size = 8388608
+
+# You can script your own modules using Lua.
+# [luaModule "something"]
+# enabled = true
+# script = ./lua/something.lua

@@ -28,20 +28,20 @@ const (
 	Proto_MessageV1_PERMIT   Proto_MessageV1_Verdict = 0
 	Proto_MessageV1_TEMPFAIL Proto_MessageV1_Verdict = 1
 	Proto_MessageV1_REJECT   Proto_MessageV1_Verdict = 2
-	Proto_MessageV1_ERROR    Proto_MessageV1_Verdict = 4
+	Proto_MessageV1_ERROR    Proto_MessageV1_Verdict = 3
 )
 
 var Proto_MessageV1_Verdict_name = map[int32]string{
 	0: "PERMIT",
 	1: "TEMPFAIL",
 	2: "REJECT",
-	4: "ERROR",
+	3: "ERROR",
 }
 var Proto_MessageV1_Verdict_value = map[string]int32{
 	"PERMIT":   0,
 	"TEMPFAIL": 1,
 	"REJECT":   2,
-	"ERROR":    4,
+	"ERROR":    3,
 }
 
 func (x Proto_MessageV1_Verdict) Enum() *Proto_MessageV1_Verdict {

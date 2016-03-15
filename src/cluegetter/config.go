@@ -46,15 +46,14 @@ type config struct {
 		Host    []string
 		Method  string
 	}
-	ModuleGroup map[string]*struct {
-		Module []string
-	}
-	Http struct {
+	ModuleGroup map[string]*ConfigModuleGroup
+	Http        struct {
 		Enabled          bool
 		Listen_Port      string
 		Listen_Host      string
 		Google_Analytics string
 	}
+	LuaModule     map[string]*ConfigLuaModule
 	BounceHandler struct {
 		Enabled     bool
 		Listen_Port string
@@ -64,6 +63,7 @@ type config struct {
 	MailQueue struct {
 		Enabled             bool
 		Spool_Dir           string
+		Update_Interval     int
 		PostsuperExecutable string
 		PostcatExecutable   string
 	}
@@ -95,6 +95,69 @@ type config struct {
 		Max_Size        int
 	}
 }
+type ConfigLuaModule struct {
+	Enabled bool
+	Script  string
+}
+
+type SessionConfig struct {
+	ClueGetter struct {
+		Message_Reject_Score      float64
+		Message_Tempfail_Score    float64
+		Message_Spamflag_Score    float64
+		Breaker_Score             float64
+		Insert_Missing_Message_Id bool
+	}
+	Greylisting struct {
+		Enabled        bool
+		Initial_Score  float64
+		Initial_Period uint16
+		Whitelist_Spf  []string
+	}
+	Quotas struct {
+		Enabled bool
+	}
+	Rspamd struct {
+		Enabled    bool
+		Multiplier float64
+	}
+	SpamAssassin struct {
+		Enabled         bool
+		Timeout         float64
+		Connect_Timeout float64
+		Max_Size        int
+	}
+}
+
+type ConfigModuleGroup struct {
+	Module []string
+}
+
+func (conf *config) sessionConfig() (sconf *SessionConfig) {
+	sconf = &SessionConfig{}
+	sconf.ClueGetter.Message_Reject_Score = conf.ClueGetter.Message_Reject_Score
+	sconf.ClueGetter.Message_Tempfail_Score = conf.ClueGetter.Message_Tempfail_Score
+	sconf.ClueGetter.Message_Spamflag_Score = conf.ClueGetter.Message_Spamflag_Score
+	sconf.ClueGetter.Breaker_Score = conf.ClueGetter.Breaker_Score
+	sconf.ClueGetter.Insert_Missing_Message_Id = conf.ClueGetter.Insert_Missing_Message_Id
+
+	sconf.Greylisting.Enabled = conf.Greylisting.Enabled
+	sconf.Greylisting.Initial_Score = conf.Greylisting.Initial_Score
+	sconf.Greylisting.Initial_Period = conf.Greylisting.Initial_Period
+	sconf.Greylisting.Whitelist_Spf = conf.Greylisting.Whitelist_Spf
+
+	sconf.Quotas.Enabled = conf.Quotas.Enabled
+
+	sconf.Rspamd.Enabled = conf.Rspamd.Enabled
+	sconf.Rspamd.Multiplier = conf.Rspamd.Multiplier
+
+	sconf.SpamAssassin.Enabled = conf.SpamAssassin.Enabled
+	sconf.SpamAssassin.Timeout = conf.SpamAssassin.Timeout
+	sconf.SpamAssassin.Connect_Timeout = conf.SpamAssassin.Connect_Timeout
+	sconf.SpamAssassin.Max_Size = conf.SpamAssassin.Max_Size
+
+	return
+}
 
 func LoadConfig(cfgFile string, cfg *config) {
 	err := gcfg.ReadFileInto(cfg, cfgFile)
@@ -124,7 +187,6 @@ func DefaultConfig(cfg *config) {
 	cfg.ClueGetter.Milter_Socket = "inet:10033@127.0.0.1"
 	cfg.ClueGetter.Whitelist = []string{} // "127.0.0.0/8", "::1" }
 	cfg.ClueGetter.Add_Header = []string{}
-	cfg.ClueGetter.Add_Header_X_Spam_Score = true
 	cfg.ClueGetter.Insert_Missing_Message_Id = true
 	cfg.ClueGetter.Archive_Prune_Interval = 21600
 	cfg.ClueGetter.Archive_Retention_Safeguard = 1.01
@@ -148,6 +210,7 @@ func DefaultConfig(cfg *config) {
 
 	cfg.MailQueue.Enabled = false
 	cfg.MailQueue.Spool_Dir = "/var/spool/postfix"
+	cfg.MailQueue.Update_Interval = 5
 
 	cfg.Greylisting.Enabled = false
 	cfg.Greylisting.Initial_Score = 7.0

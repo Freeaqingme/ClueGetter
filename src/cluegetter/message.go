@@ -217,11 +217,11 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 
 		if result.suggestedAction == messageError {
 			errorCount = errorCount + 1
-		} else if breakerScore[result.suggestedAction] >= Config.ClueGetter.Breaker_Score {
+		} else if breakerScore[result.suggestedAction] >= msg.session.config.ClueGetter.Breaker_Score {
 			Log.Debug(
 				"Breaker score %.2f/%.2f reached. Aborting all running modules",
 				breakerScore[result.suggestedAction],
-				Config.ClueGetter.Breaker_Score,
+				msg.session.config.ClueGetter.Breaker_Score,
 			)
 
 			go func() {
@@ -278,14 +278,15 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 	verdict = messagePermit
 	statusMsg := ""
 
-	if totalScores[messageReject] >= Config.ClueGetter.Message_Reject_Score {
+	sconf := msg.session.config
+	if totalScores[messageReject] >= sconf.ClueGetter.Message_Reject_Score {
 		StatsCounters["MessageVerdictReject"].increase(1)
 		verdict = messageReject
 		statusMsg = getDecidingResultWithMessage(results[messageReject]).message
 	} else if errorCount > 0 {
 		statusMsg = "An internal server error ocurred"
 		verdict = messageTempFail
-	} else if (totalScores[messageTempFail] + totalScores[messageReject]) >= Config.ClueGetter.Message_Tempfail_Score {
+	} else if (totalScores[messageTempFail] + totalScores[messageReject]) >= sconf.ClueGetter.Message_Tempfail_Score {
 		StatsCounters["MessageVerdictTempfail"].increase(1)
 		verdict = messageTempFail
 		statusMsg = getDecidingResultWithMessage(results[messageTempFail]).message
@@ -426,9 +427,9 @@ func messageSave(msg *Message, checkResults []*Proto_MessageV1_CheckResult, verd
 		Verdict:                &verdictEnum,
 		VerdictMsg:             &verdictMsg,
 		RejectScore:            &rejectScore,
-		RejectScoreThreshold:   &Config.ClueGetter.Message_Reject_Score,
+		RejectScoreThreshold:   &msg.session.config.ClueGetter.Message_Reject_Score,
 		TempfailScore:          &tempfailScore,
-		TempfailScoreThreshold: &Config.ClueGetter.Message_Tempfail_Score,
+		TempfailScoreThreshold: &msg.session.config.ClueGetter.Message_Tempfail_Score,
 		CheckResults:           checkResults,
 		Session:                msg.session.getProtoBufStruct(),
 	}
@@ -451,12 +452,7 @@ func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (a
 		rejectscore += result.score
 	}
 
-	if Config.ClueGetter.Add_Header_X_Spam_Score {
-		// DEPRECATED: Remove me soonishly
-		add = append(add, &MessageHeader{Key: "X-Spam-Score", Value: fmt.Sprintf("%.2f", rejectscore)})
-	}
-
-	if Config.ClueGetter.Insert_Missing_Message_Id == true && msg.injectMessageId != "" {
+	if msg.session.config.ClueGetter.Insert_Missing_Message_Id == true && msg.injectMessageId != "" {
 		add = append(add, &MessageHeader{Key: "Message-Id", Value: msg.injectMessageId})
 	}
 
@@ -465,13 +461,10 @@ func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (a
 			delete = append(delete, msg.GetHeader(v.getKey(), false)...)
 		}
 
-		// DEPRECATED: Remove me soonishly
-		add[k].Value = strings.Replace(v.Value, "%h", sess.getMtaHostName(), -1)
-
 		add[k].Value = strings.Replace(v.Value, "%{hostname}", sess.getMtaHostName(), -1)
 		add[k].Value = strings.Replace(v.Value, "%{rejectScore}", fmt.Sprintf("%.2f", rejectscore), -1)
 
-		if rejectscore >= Config.ClueGetter.Message_Spamflag_Score {
+		if rejectscore >= msg.session.config.ClueGetter.Message_Spamflag_Score {
 			add[k].Value = strings.Replace(v.Value, "%{spamFlag}", "YES", -1)
 		} else {
 			add[k].Value = strings.Replace(v.Value, "%{spamFlag}", "NO", -1)
@@ -507,7 +500,7 @@ func (msg *Message) GetHeader(key string, includeDeleted bool) []*MessageHeader 
 	return out
 }
 
-func (msg Message) String() []byte {
+func (msg *Message) String() []byte {
 	sess := *msg.session
 	fqdn, err := os.Hostname()
 	if err != nil {
@@ -522,13 +515,12 @@ func (msg Message) String() []byte {
 
 	body := make([]string, 0)
 
-	body = append(body, fmt.Sprintf("Received: from %s (%s [%s])\r\n\tby %s with SMTP id %d@%s; %s\r\n",
+	body = append(body, fmt.Sprintf("Received: from %s (%s [%s])\r\n\tby %s with SMTP id %s; %s\r\n",
 		sess.getHelo(),
 		revdnsStr,
 		sess.getIp(),
 		fqdn,
-		sess.getId(),
-		fqdn,
+		msg.QueueId,
 		time.Now().Format(time.RFC1123Z)))
 
 	for _, header := range msg.Headers {
@@ -542,24 +534,30 @@ func (msg Message) String() []byte {
 }
 
 func messageEnsureHasMessageId(msg *Message) {
+	id := messageGetMessageId(msg)
+
+	msg.Headers = append(msg.Headers, &MessageHeader{
+		Key: "Message-Id", Value: id,
+	})
+}
+
+func messageGetMessageId(msg *Message) string {
 	sess := msg.session
 
 	messageIdHdr := ""
 	for _, v := range msg.Headers {
 		if strings.EqualFold((*v).getKey(), "Message-Id") {
-			messageIdHdr = (*v).getValue()
-			break
+			return (*v).getValue()
 		}
 	}
 
-	if messageIdHdr == "" {
+	if msg.injectMessageId == "" {
 		messageIdHdr = fmt.Sprintf("<%d.%s.cluegetter@%s>",
 			time.Now().Unix(), msg.QueueId, sess.getMtaHostName())
 		msg.injectMessageId = messageIdHdr
-		msg.Headers = append(msg.Headers, &MessageHeader{
-			Key: "Message-Id", Value: messageIdHdr,
-		})
 	}
+
+	return msg.injectMessageId
 }
 
 func messageParseAddress(address string) (local, domain string) {

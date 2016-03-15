@@ -37,7 +37,7 @@ func init() {
 }
 
 func saGetResult(msg *Message, abort chan bool) *MessageCheckResult {
-	if !Config.SpamAssassin.Enabled {
+	if !Config.SpamAssassin.Enabled || !msg.session.config.SpamAssassin.Enabled {
 		return nil
 	}
 
@@ -78,10 +78,11 @@ func saGetRawReply(msg *Message, abort chan bool) (*spamc.SpamDOut, error) {
 	bodyStr := string(msg.String())
 
 	host := Config.SpamAssassin.Host + ":" + strconv.Itoa(Config.SpamAssassin.Port)
-	client := spamc.New(host, Config.SpamAssassin.Timeout, Config.SpamAssassin.Connect_Timeout)
+	sconf := msg.session.config.SpamAssassin
+	client := spamc.New(host, sconf.Timeout, sconf.Connect_Timeout)
 
 	if len(bodyStr) > Config.SpamAssassin.Max_Size {
-		bodyStr = bodyStr[:Config.SpamAssassin.Max_Size]
+		bodyStr = bodyStr[:sconf.Max_Size]
 	}
 
 	return client.Report(abort, bodyStr, msg.Rcpt[0])

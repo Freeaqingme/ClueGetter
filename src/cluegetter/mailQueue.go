@@ -76,7 +76,7 @@ func mailQueueStart(deleteQueue chan string) {
 	for _, queueName := range mailQueueNames {
 		go mailQueueUpdate(queueName)
 		go func(queueName string) {
-			ticker := time.NewTicker(time.Duration(30) * time.Second)
+			ticker := time.NewTicker(time.Duration(Config.MailQueue.Update_Interval) * time.Second)
 			for {
 				select {
 				case <-ticker.C:
@@ -178,10 +178,11 @@ func mailQueueGetFromDataStore(options *mailQueueGetOptions) map[string][]*mailQ
 				itemSenderLocal, itemSenderDomain := messageParseAddress(item.Kv["sender"])
 				itemRcptLocal, itemRcptDomain := messageParseAddress(item.Kv["recipient"])
 
-				if ((senderLocal == "" || itemSenderLocal == senderLocal) &&
-					itemSenderDomain == senderDomain) || options.Sender == "" {
-					if ((rcptLocal == "" || itemRcptLocal == rcptLocal) &&
-						itemRcptDomain == rcptDomain) || options.Recipient == "" {
+				if ((senderLocal == "" || strings.EqualFold(itemSenderLocal, senderLocal)) &&
+					strings.EqualFold(itemSenderDomain, senderDomain)) || options.Sender == "" {
+
+					if ((rcptLocal == "" || strings.EqualFold(itemRcptLocal, rcptLocal)) &&
+						strings.EqualFold(itemRcptDomain, rcptDomain)) || options.Recipient == "" {
 						out[queueName] = append(out[queueName], item)
 					}
 				}
@@ -212,6 +213,11 @@ func mailQueueUpdate(queueName string) {
 	pathLen := len(path)
 	err := filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
 		if f == nil {
+			Log.Debug("File %s has gone. Skipping...", path)
+			return nil
+		}
+		if err != nil {
+			Log.Debug("Got error: %s", err)
 			return nil
 		}
 
@@ -277,7 +283,7 @@ func mailQueueProcessFileList(wg *sync.WaitGroup, files chan string, path string
 }
 
 func mailQueueProcessFiles(filesBatch []string, path string, envelopes chan *mailQueueItem) {
-	defer cluegetterRecover("mailQueueProcessFileList")
+	defer cluegetterRecover("mailQueueProcessFiles")
 
 	execPath := Config.MailQueue.PostcatExecutable
 	if execPath == "" {

@@ -23,24 +23,46 @@
                 {{ end }}
             </select>
         </div>
+        <div class="form-group">
+            <label for="selector">Selector</label><br />
+            <select name="selector">
+                {{ range $key, $selector := .Selectors }}
+                    {{ if $selector.Selected }}
+                    <option selected="selected" value="{{ $selector.Name }}">{{ $selector.Text }}</option>
+                    {{ else }}
+                    <option value="{{ $selector.Name }}">{{ $selector.Text }}</option>
+                    {{ end }}
+                {{ end }}
+            </select>
+        </div>
        <button type="submit" class="btn btn-default">Show Abusers</button>
    </form>
 
     <table class="table table-striped">
-        <tr>
-            <th>Sender Domain</th>
-            <th title="Sum of messages with status tempfail and status reject">Not accepted</th>
-        </tr>
-
-	{{ range $key, $senderDomain := .SenderDomainTop }}
-		<tr>
-<!--			<td><a href="/stats/sender-domain/{{ $senderDomain.Identifier }}" -->
-			<td><a href="/message/searchEmail/@{{ $senderDomain.Identifier }}"
-				>{{ $senderDomain.Identifier }}</td>
-			<td>{{ $senderDomain.Count }}</td>
-		</tr>
-	{{ end }}
-
+        <thead>
+            <tr>
+                <th>Sender Domain</th>
+                <th>Sasl Username</th>
+                <th title="Sum of messages with status tempfail and status reject">Not accepted</th>
+            </tr>
+        </thead>
+        <tbody>
+        {{ range $key, $senderDomain := .SenderDomainTop }}
+            <tr>
+                <td>
+                    <a href="/message/searchEmail/@{{ $senderDomain.SenderDomain }}">
+                        {{ $senderDomain.SenderDomain }}
+                    </a>
+                </td>
+                <td>
+                    <a href="/message/searchSaslUser/{{ $senderDomain.SaslUsername }}">
+                        {{ $senderDomain.SaslUsername }}
+                    </a>
+                </td>
+                <td>{{ $senderDomain.Count }}</td>
+            </tr>
+        {{ end }}
+        </tbody>
     </table>
 
 {{ end }}
