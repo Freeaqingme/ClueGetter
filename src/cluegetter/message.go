@@ -520,7 +520,7 @@ func (msg *Message) String() []byte {
 		revdnsStr,
 		sess.getIp(),
 		fqdn,
-		messageGetMessageId(msg),
+		msg.QueueId,
 		time.Now().Format(time.RFC1123Z)))
 
 	for _, header := range msg.Headers {
