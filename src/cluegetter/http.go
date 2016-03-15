@@ -511,7 +511,7 @@ func httpGetSelectors(r *http.Request) (out []*httpAbuserSelector, err error) {
 	}
 
 	if !hasSelectedSelector && r.FormValue("selector") != "" {
-		return nil, errors.New("'" + r.FormValue("selector") + "' is not a valid value for parameter selector")
+		return nil, errors.New("Invalid selector specified: " + r.FormValue("selector"))
 	}
 
 	return selectors, nil
