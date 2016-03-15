@@ -168,18 +168,14 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 			LEFT JOIN recipient r ON r.id = mr.recipient
 			INNER JOIN (
 				SELECT DISTINCT id FROM (
-					(
 						SELECT m.id
 							FROM message m
 							WHERE (m.sender_domain = ? AND (m.sender_local = ? OR ? = ''))
-							ORDER BY date DESC
-							LIMIT 0,250
-					) UNION (
+					UNION
 						SELECT mr.message
 							FROM message_recipient mr
 								LEFT JOIN recipient r ON r.id = mr.recipient
 							WHERE (r.domain = ? AND (r.local = ? OR ? = ''))
-					)
 				) t2
 			) t1 ON t1.id = m.id
                         WHERE s.cluegetter_instance IN (`+strings.Join(instances, ",")+`)
