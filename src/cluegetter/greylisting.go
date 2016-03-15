@@ -47,7 +47,7 @@ func init() {
 func greylistStart() {
 	greylistPrepStmt()
 	go func() {
-		ticker := time.NewTicker(time.Duration(5) * time.Minute)
+		ticker := time.NewTicker(time.Duration(15) * time.Minute)
 		for {
 			select {
 			case <-ticker.C:
