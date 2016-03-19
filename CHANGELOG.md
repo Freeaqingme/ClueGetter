@@ -2,16 +2,16 @@
 
 ### 2016-03-15 Version 0.5.2
 * New Feature: Group abusers not just by sender, but also allow to do so using SASL username
+* New Feature: Initial Lua support
 * Improvement: Allow custom run interval for mail queue scanning
 * Improvement: Searching in mail queues is now case insensitive
 * Improvement: Include creation of /var/run/cluegetter in systemd service definition
-* Bugfix: If an error ocurred in a single check, its result was not registered correctly
-* Change: Remove already deprecated add-header %h
 * Improvement: Implement per-session config, allowing for future per-user config settings
-* Change: Remove deprecated Add_Header_X_Spam_Score
-* New Feature: Initial Lua support
+* Bugfix: If an error ocurred in a single check, its result was not registered correctly
 * Bugfix: send proper queue id to rspamd
-* Change: Update RDBMS greylist entries every 15 mins instead of every 5
+* Change: Remove already deprecated add-header %h
+* Change: Remove deprecated Add_Header_X_Spam_Score
+* Change: Update RDBMS greylist entries every 15 mins instead of every 5 minutes
 
 ### 2016-01-24 Version 0.5.1
 * New Feature: Implement 'cluegetter bouncehandler submit'
