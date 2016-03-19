@@ -8,6 +8,7 @@
 package main
 
 import (
+	cg_lua "cluegetter/lua"
 	"github.com/yuin/gopher-lua"
 
 	"io/ioutil"
@@ -53,12 +54,10 @@ func luaStartModule(name string, conf *ConfigLuaModule) {
 }
 
 func luaMilterCheck(luaModuleName string, msg *Message, done chan bool) *MessageCheckResult {
-	L := lua.NewState()
-	defer L.Close()
-	luaMessageRegisterType(L)
-	luaMessageHeaderRegisterType(L)
+	L := luaGetState()
+
 	if err := L.DoString(luaModules[luaModuleName]); err != nil {
-		panic(err)
+		panic("Could not execute lua module " + luaModuleName + ": " + err.Error())
 	}
 
 	err := L.CallByParam(lua.P{
@@ -88,6 +87,18 @@ func luaMilterCheck(luaModuleName string, msg *Message, done chan bool) *Message
 		message:         resMsg.String(),
 		score:           float64(lua.LVAsNumber(resScore)),
 	}
+}
+
+func luaGetState() *lua.LState {
+	L := lua.NewState()
+	defer L.Close()
+
+	L.PreloadModule("spf", cg_lua.SpfLoader)
+
+	luaMessageRegisterType(L)
+	luaMessageHeaderRegisterType(L)
+
+	return L
 }
 
 func luaCanParse(script string) (bool, error) {
