@@ -6,5 +6,5 @@ After=nss-lookup.target
 Restart=always
 RestartSec=30
 EnvironmentFile=/etc/default/cluegetter
-ExecStartPre=-/bin/mkdir /var/run/cluegetter/
+ExecStartPre=-/bin/mkdir -p /var/run/cluegetter/
 ExecStart=/usr/bin/cluegetter --config /etc/cluegetter/cluegetter.conf --loglevel $LOGLEVEL daemon
