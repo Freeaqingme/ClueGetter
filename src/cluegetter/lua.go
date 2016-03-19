@@ -60,13 +60,18 @@ func luaMilterCheck(luaModuleName string, msg *Message, done chan bool) *Message
 		panic("Could not execute lua module " + luaModuleName + ": " + err.Error())
 	}
 
+	callback := L.GetField(L.Get(-1), "milterCheck")
+	if callback == nil {
+		return nil
+	}
+
 	err := L.CallByParam(lua.P{
-		Fn:      L.GetGlobal("milterCheck"),
+		Fn:      callback,
 		NRet:    3,
 		Protect: true,
 	}, luaGetMessage(L, msg))
 	if err != nil {
-		panic(err)
+		panic("Error in lua module '" + luaModuleName + "': " + err.Error())
 	}
 	resScore := L.Get(-1)
 	L.Pop(1)
