@@ -24,7 +24,8 @@ func DnsLoader(L *lua.LState) int {
 }
 
 var dnsExports = map[string]lua.LGFunction{
-	"queryTxt": dnsQueryTxt,
+	"queryCname": dnsQueryCname,
+	"queryTxt":   dnsQueryTxt,
 }
 
 func dnsQuery(L *lua.LState, query string, qType uint16) ([]dns.RR, error) {
@@ -46,6 +47,25 @@ func dnsQuery(L *lua.LState, query string, qType uint16) ([]dns.RR, error) {
 	}
 
 	return r.Answer, nil
+}
+
+func dnsQueryCname(L *lua.LState) int {
+	query := L.ToString(1)
+
+	res, err := dnsQuery(L, query, dns.TypeCNAME)
+	if err != nil {
+		L.Push(lua.LNil)
+		L.Push(lua.LString(err.Error()))
+		return 2
+	}
+
+	ret := L.NewTable()
+	for _, a := range res {
+		ret.Append(lua.LString(a.(*dns.CNAME).Target))
+	}
+
+	L.Push(ret)
+	return 1
 }
 
 func dnsQueryTxt(L *lua.LState) int {
