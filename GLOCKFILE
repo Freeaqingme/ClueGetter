@@ -18,6 +18,7 @@ github.com/glenn-brown/golang-pkg-pcre 48bb82a8b8ceea98f4e97825b43870f6ba1970d6
 github.com/golang/protobuf 221834dcb89c96e4b057ed8bb878bfe569dfacf4
 github.com/golang/snappy 723cc1e459b8eea2dea4583200fd60757d40097a
 github.com/hailocab/go-hostpool 0637eae892be221164aff5fcbccc57171aea6406
+github.com/miekg/dns f8964231a81dcbe9fc5f13a228c7f10a933acc50
 github.com/op/go-logging f2de3fa73ede49624df5ca7467011ac4fcd43635
 github.com/pborman/uuid dee7705ef7b324f27ceb85a121c61f2c2e8ce988
 github.com/scalingdata/gcfg 37aabad69cfd3d20b8390d902a8b10e245c615ff

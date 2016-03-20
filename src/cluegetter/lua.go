@@ -98,8 +98,11 @@ func luaGetState() *lua.LState {
 	L := lua.NewState()
 	defer L.Close()
 
+	L.PreloadModule("crypto", cg_lua.CryptoLoader)
+	L.PreloadModule("dns", cg_lua.DnsLoader)
 	L.PreloadModule("spf", cg_lua.SpfLoader)
 
+	luaSessionRegisterType(L)
 	luaMessageRegisterType(L)
 	luaMessageHeaderRegisterType(L)
 
@@ -117,6 +120,126 @@ func luaCanParse(script string) (bool, error) {
 //////////////////////
 ////// VM state //////
 //////////////////////
+
+/* Session */
+
+func luaGetSession(L *lua.LState, msg *Message) lua.LValue {
+	ud := L.NewUserData()
+	ud.Value = msg.session
+	L.SetMetatable(ud, L.GetTypeMetatable("session"))
+	L.Push(ud)
+
+	return ud
+}
+
+func luaSessionRegisterType(L *lua.LState) {
+	mt := L.NewTypeMetatable("session")
+	L.SetGlobal("session", mt)
+	L.SetField(mt, "__index", L.SetFuncs(L.NewTable(), luaSessionMethods))
+}
+
+var luaSessionMethods = map[string]lua.LGFunction{
+	"getSaslUsername":  luaSessionFuncSaslUsername,
+	"getSaslMethod":    luaSessionFuncSaslMethod,
+	"getCertIssuer":    luaSessionFuncCertIssuer,
+	"getCertSubject":   luaSessionFuncCertSubject,
+	"getCipherBits":    luaSessionFuncCipherBits,
+	"getCipher":        luaSessionFuncCipher,
+	"getTlsVersion":    luaSessionFuncTlsVersion,
+	"getIp":            luaSessionFuncIp,
+	"getReverseDns":    luaSessionFuncReverseDns,
+	"getHostname":      luaSessionFuncHostname,
+	"getHelo":          luaSessionFuncHelo,
+	"getMtaHostName":   luaSessionFuncMtaDaemonName,
+	"getMtaDaemonName": luaSessionFuncMtaDaemonName,
+}
+
+func luaSessionGetFromVM(L *lua.LState) *milterSession {
+	ud := L.CheckUserData(1)
+	if v, ok := ud.Value.(*milterSession); ok {
+		return v
+	}
+	L.ArgError(1, "Session expected")
+	return nil
+}
+
+func luaSessionFuncSaslUsername(L *lua.LState) int {
+	s := luaSessionGetFromVM(L)
+	L.Push(lua.LString(s.SaslUsername))
+	return 1
+}
+
+func luaSessionFuncSaslMethod(L *lua.LState) int {
+	s := luaSessionGetFromVM(L)
+	L.Push(lua.LString(s.SaslMethod))
+	return 1
+}
+
+func luaSessionFuncCertIssuer(L *lua.LState) int {
+	s := luaSessionGetFromVM(L)
+	L.Push(lua.LString(s.CertIssuer))
+	return 1
+}
+
+func luaSessionFuncCertSubject(L *lua.LState) int {
+	s := luaSessionGetFromVM(L)
+	L.Push(lua.LString(s.CertSubject))
+	return 1
+}
+
+func luaSessionFuncCipherBits(L *lua.LState) int {
+	s := luaSessionGetFromVM(L)
+	L.Push(lua.LString(s.CipherBits))
+	return 1
+}
+
+func luaSessionFuncCipher(L *lua.LState) int {
+	s := luaSessionGetFromVM(L)
+	L.Push(lua.LString(s.Cipher))
+	return 1
+}
+
+func luaSessionFuncTlsVersion(L *lua.LState) int {
+	s := luaSessionGetFromVM(L)
+	L.Push(lua.LString(s.TlsVersion))
+	return 1
+}
+
+func luaSessionFuncIp(L *lua.LState) int {
+	s := luaSessionGetFromVM(L)
+	L.Push(lua.LString(s.Ip))
+	return 1
+}
+
+func luaSessionFuncReverseDns(L *lua.LState) int {
+	s := luaSessionGetFromVM(L)
+	L.Push(lua.LString(s.ReverseDns))
+	return 1
+}
+
+func luaSessionFuncHostname(L *lua.LState) int {
+	s := luaSessionGetFromVM(L)
+	L.Push(lua.LString(s.Hostname))
+	return 1
+}
+
+func luaSessionFuncHelo(L *lua.LState) int {
+	s := luaSessionGetFromVM(L)
+	L.Push(lua.LString(s.Helo))
+	return 1
+}
+
+func luaSessionFuncMtaHostName(L *lua.LState) int {
+	s := luaSessionGetFromVM(L)
+	L.Push(lua.LString(s.MtaHostName))
+	return 1
+}
+
+func luaSessionFuncMtaDaemonName(L *lua.LState) int {
+	s := luaSessionGetFromVM(L)
+	L.Push(lua.LString(s.MtaDaemonName))
+	return 1
+}
 
 /* Message */
 
@@ -136,6 +259,7 @@ func luaMessageRegisterType(L *lua.LState) {
 }
 
 var luaMessageMethods = map[string]lua.LGFunction{
+	"getSession": luaMessageFuncSession,
 	"getQueueId": luaMessageFuncQueueId,
 	"getFrom":    luaMessageFuncFrom,
 	"getRcpt":    luaMessageFuncRcpt,
@@ -150,6 +274,12 @@ func luaMessageGetFromVM(L *lua.LState) *Message {
 	}
 	L.ArgError(1, "Message expected")
 	return nil
+}
+
+func luaMessageFuncSession(L *lua.LState) int {
+	m := luaMessageGetFromVM(L)
+	L.Push(luaGetSession(L, m))
+	return 1
 }
 
 func luaMessageFuncQueueId(L *lua.LState) int {

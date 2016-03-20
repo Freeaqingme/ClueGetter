@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package spf
+package lua
 
 import (
 	spf "github.com/Freeaqingme/go-libspf2"
@@ -17,12 +17,12 @@ import (
 var spfClient = spf.NewClient()
 
 func SpfLoader(L *lua.LState) int {
-	mod := L.SetFuncs(L.NewTable(), exports)
+	mod := L.SetFuncs(L.NewTable(), spfExports)
 	L.Push(mod)
 	return 1
 }
 
-var exports = map[string]lua.LGFunction{
+var spfExports = map[string]lua.LGFunction{
 	"query": spfQuery,
 }
 
