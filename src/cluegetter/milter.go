@@ -212,7 +212,7 @@ func (milter *milter) Header(ctx uintptr, headerf, headerv string) (sfsistat int
 	sess := milterGetSession(ctx, true, false)
 	msg := sess.getLastMessage()
 
-	msg.Headers = append(msg.Headers, &MessageHeader{
+	msg.Headers = append(msg.Headers, MessageHeader{
 		Key:       headerf,
 		Value:     headerv,
 		milterIdx: len(msg.GetHeader(headerf, false)) + 1},

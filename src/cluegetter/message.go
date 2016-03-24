@@ -32,7 +32,7 @@ type Message struct {
 	QueueId string
 	From    string
 	Rcpt    []string
-	Headers []*MessageHeader
+	Headers []MessageHeader
 	Body    []byte
 
 	injectMessageId string
@@ -76,7 +76,7 @@ type MessageModuleGroupMember struct {
 	weight float64
 }
 
-var MessageInsertHeaders = make([]*MessageHeader, 0)
+var MessageInsertHeaders = make([]MessageHeader, 0)
 var MessageModuleGroups = make([]*MessageModuleGroup, 0)
 
 func messageStart() {
@@ -85,7 +85,7 @@ func messageStart() {
 			Log.Fatal("Invalid header specified: ", hdrString)
 		}
 
-		header := &MessageHeader{
+		header := MessageHeader{
 			Key:   strings.Trim(strings.SplitN(hdrString, ":", 2)[0], " "),
 			Value: strings.Trim(strings.SplitN(hdrString, ":", 2)[1], " "),
 		}
@@ -442,9 +442,9 @@ func messageSave(msg *Message, checkResults []*Proto_MessageV1_CheckResult, verd
 	messagePersistQueue <- protoMsg
 }
 
-func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (add, delete []*MessageHeader) {
+func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (add, delete []MessageHeader) {
 	sess := *msg.session
-	add = make([]*MessageHeader, len(MessageInsertHeaders))
+	add = make([]MessageHeader, len(MessageInsertHeaders))
 	copy(add, MessageInsertHeaders)
 
 	rejectscore := 0.0
@@ -453,7 +453,7 @@ func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (a
 	}
 
 	if msg.session.config.ClueGetter.Insert_Missing_Message_Id == true && msg.injectMessageId != "" {
-		add = append(add, &MessageHeader{Key: "Message-Id", Value: msg.injectMessageId})
+		add = append(add, MessageHeader{Key: "Message-Id", Value: msg.injectMessageId})
 	}
 
 	for k, v := range add {
@@ -461,13 +461,13 @@ func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (a
 			delete = append(delete, msg.GetHeader(v.getKey(), false)...)
 		}
 
-		add[k].Value = strings.Replace(v.Value, "%{hostname}", sess.getMtaHostName(), -1)
-		add[k].Value = strings.Replace(v.Value, "%{rejectScore}", fmt.Sprintf("%.2f", rejectscore), -1)
+		add[k].Value = strings.Replace(add[k].Value, "%{hostname}", sess.getMtaHostName(), -1)
+		add[k].Value = strings.Replace(add[k].Value, "%{rejectScore}", fmt.Sprintf("%.2f", rejectscore), -1)
 
 		if rejectscore >= msg.session.config.ClueGetter.Message_Spamflag_Score {
-			add[k].Value = strings.Replace(v.Value, "%{spamFlag}", "YES", -1)
+			add[k].Value = strings.Replace(add[k].Value, "%{spamFlag}", "YES", -1)
 		} else {
-			add[k].Value = strings.Replace(v.Value, "%{spamFlag}", "NO", -1)
+			add[k].Value = strings.Replace(add[k].Value, "%{spamFlag}", "NO", -1)
 		}
 	}
 
@@ -489,8 +489,8 @@ func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (a
 	return add, delete
 }
 
-func (msg *Message) GetHeader(key string, includeDeleted bool) []*MessageHeader {
-	out := make([]*MessageHeader, 0)
+func (msg *Message) GetHeader(key string, includeDeleted bool) []MessageHeader {
+	out := make([]MessageHeader, 0)
 	for _, hdr := range msg.Headers {
 		if strings.EqualFold(hdr.Key, key) && (includeDeleted || !hdr.deleted) {
 			out = append(out, hdr)
@@ -524,7 +524,7 @@ func (msg *Message) String() []byte {
 		time.Now().Format(time.RFC1123Z)))
 
 	for _, header := range msg.Headers {
-		body = append(body, (*header).getKey()+": "+(*header).getValue()+"\r\n")
+		body = append(body, (header).getKey()+": "+(header).getValue()+"\r\n")
 	}
 
 	body = append(body, "\r\n")
@@ -536,7 +536,7 @@ func (msg *Message) String() []byte {
 func messageEnsureHasMessageId(msg *Message) {
 	id := messageGetMessageId(msg)
 
-	msg.Headers = append(msg.Headers, &MessageHeader{
+	msg.Headers = append(msg.Headers, MessageHeader{
 		Key: "Message-Id", Value: id,
 	})
 }
@@ -546,8 +546,8 @@ func messageGetMessageId(msg *Message) string {
 
 	messageIdHdr := ""
 	for _, v := range msg.Headers {
-		if strings.EqualFold((*v).getKey(), "Message-Id") {
-			return (*v).getValue()
+		if strings.EqualFold((v).getKey(), "Message-Id") {
+			return (v).getValue()
 		}
 	}
 
