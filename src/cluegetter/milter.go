@@ -133,6 +133,7 @@ func (milter *milter) Connect(ctx uintptr, hostname string, ip net.IP) (sfsistat
 		id:        milterGetNewSessionId(),
 		timeStart: time.Now(),
 		persisted: false,
+		config:    Config.sessionConfig(),
 	}
 	sess.Hostname = hostname
 	sess.Ip = ip.String()
@@ -211,7 +212,7 @@ func (milter *milter) Header(ctx uintptr, headerf, headerv string) (sfsistat int
 	sess := milterGetSession(ctx, true, false)
 	msg := sess.getLastMessage()
 
-	msg.Headers = append(msg.Headers, &MessageHeader{
+	msg.Headers = append(msg.Headers, MessageHeader{
 		Key:       headerf,
 		Value:     headerv,
 		milterIdx: len(msg.GetHeader(headerf, false)) + 1},
@@ -350,10 +351,6 @@ func milterHandleError(ctx uintptr, sfsistat *int8) {
 	m.SetReply(ctx, "421", "4.7.0", "An internal error ocurred")
 	*sfsistat = m.Tempfail
 	return
-}
-
-func milterLog(i ...interface{}) {
-	Log.Debug(fmt.Sprintf("%s", i[:1]), i[1:]...)
 }
 
 func milterGetSession(ctx uintptr, keep bool, returnNil bool) *milterSession {

@@ -61,7 +61,7 @@ message Proto_Message_v1 {
         PERMIT   = 0;
         TEMPFAIL = 1;
         REJECT   = 2;
-        ERROR    = 4;
+        ERROR    = 3;
     }
 
 }
