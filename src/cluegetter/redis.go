@@ -33,6 +33,7 @@ type RedisClientBase interface {
 	SAdd(key string, members ...string) *redis.IntCmd
 	SMembers(key string) *redis.StringSliceCmd
 	Set(key string, value interface{}, expiration time.Duration) *redis.StatusCmd
+	SetNX(key string, value interface{}, expiration time.Duration) *redis.BoolCmd
 	ZAdd(key string, members ...redis.Z) *redis.IntCmd
 	ZCount(key, min, max string) *redis.IntCmd
 	ZRemRangeByScore(key, min, max string) *redis.IntCmd
