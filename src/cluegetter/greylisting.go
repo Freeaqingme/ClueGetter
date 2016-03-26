@@ -137,7 +137,7 @@ func greylistUpdateWhitelist() {
 		key := fmt.Sprintf("cluegetter-%d-greylisting-schedule-greylistUpdateWhitelist", instance)
 		set, err := redisClient.SetNX(key, hostname, 5*time.Minute).Result()
 		if err != nil {
-			Log.Error("Could not schedule greylist whitelisst: %s", err.Error())
+			Log.Error("Could not update greylist whitelist schedule: %s", err.Error())
 		} else if !set {
 			Log.Debug("Greylist whitelist update was run recently. Sipping")
 			return
