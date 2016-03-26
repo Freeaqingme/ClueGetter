@@ -1,5 +1,10 @@
 # Change Log
 
+### 2016-03-25 Version 0.5.3
+* New Feature: Initial LUA support
+* Improvement: Various changes to cluegetter.service
+* Bugfix: Insert headers was broken after first message
+
 ### 2016-03-15 Version 0.5.2
 * New Feature: Group abusers not just by sender, but also allow to do so using SASL username
 * New Feature: Initial Lua support

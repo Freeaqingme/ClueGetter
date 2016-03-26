@@ -449,7 +449,7 @@ func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (a
 
 	rejectscore := 0.0
 	for _, result := range results[messageReject] {
-		rejectscore += result.score
+		rejectscore += result.weightedScore
 	}
 
 	if msg.session.config.ClueGetter.Insert_Missing_Message_Id == true && msg.injectMessageId != "" {
