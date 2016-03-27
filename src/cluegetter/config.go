@@ -53,6 +53,7 @@ type config struct {
 		Listen_Host      string
 		Google_Analytics string
 	}
+	HttpFrontend  map[string]*ConfigHttpFrontend
 	LuaModule     map[string]*ConfigLuaModule
 	BounceHandler struct {
 		Enabled     bool
@@ -94,6 +95,11 @@ type config struct {
 		Connect_Timeout float64
 		Max_Size        int
 	}
+}
+type ConfigHttpFrontend struct {
+	Enabled     bool
+	Listen_Port string
+	Listen_Host string
 }
 type ConfigLuaModule struct {
 	Enabled bool
@@ -200,7 +206,7 @@ func DefaultConfig(cfg *config) {
 	cfg.Redis.Method = "standalone"
 
 	cfg.Http.Enabled = true
-	cfg.Http.Listen_Port = "1937"
+	cfg.Http.Listen_Port = "0"
 	cfg.Http.Listen_Host = "127.0.0.1"
 	cfg.Http.Google_Analytics = ""
 

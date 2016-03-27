@@ -135,11 +135,14 @@ module = 0.1 rspamd
 # whatsoever.
 
 enabled = true
-listen-port = 1937
-listen-host = "127.0.0.1"
 
 # Your Google Analytics ID
 google-analytics = ""
+
+[httpFrontend "default"]
+enabled     = true
+listen-port = 1937
+listen-host = "0.0.0.0"
 
 [redis]
 # Redis can be used as a cache so that ClueGetter will continue functioning
