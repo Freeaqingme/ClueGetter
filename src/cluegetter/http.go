@@ -9,11 +9,13 @@ package main
 
 import (
 	"cluegetter/assets"
+	proxyproto "github.com/Freeaqingme/go-proxyproto"
+	humanize "github.com/dustin/go-humanize"
+
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
-	humanize "github.com/dustin/go-humanize"
 	"html/template"
 	"net"
 	"net/http"
@@ -135,6 +137,22 @@ func httpStartFrontend(done <-chan struct{}, name string, httpConfig *ConfigHttp
 		return
 	}
 
+	listener := httpListen(name, httpConfig)
+	if httpConfig.Enable_Proxy_Protocol {
+		proxyListener := &proxyproto.Listener{listener}
+		go http.Serve(proxyListener, httpLogRequest(name, http.DefaultServeMux))
+	} else {
+		go http.Serve(listener, httpLogRequest(name, http.DefaultServeMux))
+	}
+
+	go func() {
+		<-done
+		listener.Close()
+		Log.Info("HTTP frontend '%s' closed", name)
+	}()
+}
+
+func httpListen(name string, httpConfig *ConfigHttpFrontend) *net.TCPListener {
 	listen_host := httpConfig.Listen_Host
 	listen_port := httpConfig.Listen_Port
 
@@ -148,18 +166,13 @@ func httpStartFrontend(done <-chan struct{}, name string, httpConfig *ConfigHttp
 	}
 	Log.Info("HTTP frontend '%s' now listening on %s", name, listener.Addr())
 
-	go http.Serve(listener, httpLogRequest(http.DefaultServeMux))
-
-	go func() {
-		<-done
-		listener.Close()
-		Log.Info("HTTP frontend '%s' closed", name)
-	}()
+	return listener
 }
 
-func httpLogRequest(handler http.Handler) http.Handler {
+func httpLogRequest(frontend string, handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		Log.Info("HTTP Request: %s %s %s \"%s\"", r.RemoteAddr, r.Method, r.URL, r.Header.Get("User-Agent"))
+		Log.Info("HTTP Request '%s': %s %s %s \"%s\"",
+			frontend, r.RemoteAddr, r.Method, r.URL, r.Header.Get("User-Agent"))
 		handler.ServeHTTP(w, r)
 	})
 }

@@ -96,11 +96,14 @@ type config struct {
 		Max_Size        int
 	}
 }
+
 type ConfigHttpFrontend struct {
-	Enabled     bool
-	Listen_Port string
-	Listen_Host string
+	Enabled               bool
+	Listen_Port           string
+	Listen_Host           string
+	Enable_Proxy_Protocol bool
 }
+
 type ConfigLuaModule struct {
 	Enabled bool
 	Script  string

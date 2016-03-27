@@ -140,9 +140,10 @@ enabled = true
 google-analytics = ""
 
 [httpFrontend "default"]
-enabled     = true
-listen-port = 1937
-listen-host = "0.0.0.0"
+enabled               = true
+listen-port           = 1937
+listen-host           = "0.0.0.0"
+enable-proxy-protocol = false
 
 [redis]
 # Redis can be used as a cache so that ClueGetter will continue functioning
