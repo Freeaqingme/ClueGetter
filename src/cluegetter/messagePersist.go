@@ -20,7 +20,6 @@ var (
 	MessageStmtInsertRcpt            = *new(*sql.Stmt)
 	MessageStmtInsertMsgRcpt         = *new(*sql.Stmt)
 	MessageStmtInsertMsgHdr          = *new(*sql.Stmt)
-	MessageStmtSetVerdict            = *new(*sql.Stmt)
 	MessageStmtInsertModuleResult    = *new(*sql.Stmt)
 	MessageStmtPruneBody             = *new(*sql.Stmt)
 	MessageStmtPruneHeader           = *new(*sql.Stmt)
@@ -116,13 +115,6 @@ func messagePersistStmtPrepare() {
 	}
 
 	MessageStmtInsertMsgHdr, err = Rdbms.Prepare(`INSERT INTO message_header(message, name, body) VALUES(?, ?, ?)`)
-	if err != nil {
-		Log.Fatal(err)
-	}
-
-	MessageStmtSetVerdict, err = Rdbms.Prepare(`
-		UPDATE message SET verdict=?, verdict_msg=?, rejectScore=?, rejectScoreThreshold=?,
-			tempfailScore=?, tempfailScoreThreshold=? WHERE id=?`)
 	if err != nil {
 		Log.Fatal(err)
 	}
@@ -512,8 +504,7 @@ func (c *messageCache) _del(id string) {
 	delete(c.age, id)
 	atomic.AddUint64(&c.size, ^uint64(size-1))
 
-	msgId := c.msgIdRevIdx[id]
-	delete(c.msgIdIdx, msgId)
+	delete(c.msgIdIdx, c.msgIdRevIdx[id])
 	delete(c.msgIdRevIdx, id)
 }
 
