@@ -440,6 +440,7 @@ func messageSave(msg *Message, checkResults []*Proto_MessageV1_CheckResult, verd
 	}
 
 	messagePersistQueue <- protoMsg
+	go messagePersistInCache(msg.QueueId, messageGetMessageId(msg), protoMsg)
 }
 
 func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (add, delete []MessageHeader) {
