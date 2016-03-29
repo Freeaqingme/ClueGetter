@@ -542,7 +542,6 @@ func messageEnsureHasMessageId(msg *Message) {
 	}
 
 	id := messageGetMessageId(msg)
-
 	msg.Headers = append(msg.Headers, MessageHeader{
 		Key: "Message-Id", Value: id,
 	})

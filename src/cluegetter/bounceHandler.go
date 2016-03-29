@@ -174,6 +174,7 @@ func bounceHandlerParseReport(body []byte, remoteAddr string) {
 	bounceReasons, rcptReportsHdrs := bounceHandlerGetBounceReasons(deliveryReports)
 
 	rcptReports := make([]*bounceHandlerRcptReport, len(rcptReportsHdrs))
+	bayes := false
 	for i, rcptReport := range rcptReportsHdrs {
 		rcptReports[i] = &bounceHandlerRcptReport{
 			rcptReport.Get("Status"),
@@ -182,6 +183,14 @@ func bounceHandlerParseReport(body []byte, remoteAddr string) {
 			rcptReport.Get("Remote-Mta"),
 			rcptReport.Get("Diagnostic-Code"),
 		}
+
+		if bounceHandlerShouldReportBayes(rcptReports[i].diagCode) {
+			bayes = true
+		}
+	}
+
+	if bayes {
+		go bayesReportMessageId()
 	}
 
 	date, _ := hdrs.Date()
@@ -332,4 +341,23 @@ func bounceHandlerPersistRawCopy(body []byte) {
 	}
 
 	Log.Debug("Wrote %d bytes to %s", count, f.Name())
+}
+
+// We only want to add emails to our bayes corpus if the remote
+// side deems there's something wrong with the contents. Not if
+// there's e.g. something wrong with the recipient's mailbox.
+func bounceHandlerShouldReportBayes(diagCode string) bool {
+	matches := []string{
+		"spam",
+		"unsolicited",
+		"contained unsafe content",
+	}
+
+	for _, match := range matches {
+		if strings.Contains(diagCode, match) {
+			return true
+		}
+	}
+
+	return false
 }
