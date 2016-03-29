@@ -553,12 +553,20 @@ func messageGetMessageId(msg *Message) string {
 	}
 
 	if msg.injectMessageId == "" {
-		messageIdHdr = fmt.Sprintf("<%d.%s.cluegetter@%s>",
-			time.Now().Unix(), msg.QueueId, sess.getMtaHostName())
+		messageIdHdr = messageGenerateMessageId(msg.QueueId, sess.getMtaHostName())
 		msg.injectMessageId = messageIdHdr
 	}
 
 	return msg.injectMessageId
+}
+
+func messageGenerateMessageId(queueId, hostname string) string {
+	if hostname != "" {
+		hostname, _ = os.Hostname()
+	}
+
+	return fmt.Sprintf("<%d.%s.cluegetter@%s>",
+		time.Now().Unix(), queueId, hostname)
 }
 
 func messageParseAddress(address string) (local, domain string) {

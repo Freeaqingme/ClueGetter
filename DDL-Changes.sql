@@ -1,3 +1,7 @@
+-- v0.5.3
+ALTER TABLE bounce ADD messageId varchar(255) NOT NULL COMMENT 'Value of Message-ID header' AFTER queueId;
+ALTER TABLE bounce ADD KEY messageId (messageId);
+
 -- v0.5.2
 ALTER TABLE session ADD KEY sasl_username (sasl_username);
 
