@@ -535,6 +535,12 @@ func (msg *Message) String() []byte {
 }
 
 func messageEnsureHasMessageId(msg *Message) {
+	for _, v := range msg.Headers {
+		if strings.EqualFold((v).getKey(), "Message-Id") {
+			return
+		}
+	}
+
 	id := messageGetMessageId(msg)
 
 	msg.Headers = append(msg.Headers, MessageHeader{
