@@ -76,13 +76,22 @@ func messagePersistProtoBuf(protoBuf []byte) {
 		return
 	}()
 
-	msg := &Proto_MessageV1{}
-	err := proto.Unmarshal(protoBuf, msg)
+	msg, err := messagePersistUnmarshalProto(protoBuf)
 	if err != nil {
 		panic("unmarshaling error: " + err.Error())
 	}
 
 	messagePersist(msg)
+}
+
+func messagePersistUnmarshalProto(protoBuf []byte) (*Proto_MessageV1, error) {
+	msg := &Proto_MessageV1{}
+	err := proto.Unmarshal(protoBuf, msg)
+	if err != nil {
+		return nil, errors.New("Error unmarshalling message: " + err.Error())
+	}
+
+	return msg, nil
 }
 
 func messagePersistStmtPrepare() {
@@ -454,10 +463,11 @@ func (c *messageCache) getByQueueId(queueId string) []byte {
 
 func (c *messageCache) getByMessageId(msgId string) []byte {
 	c.RLock()
-	defer c.RUnlock()
-
 	queueId := c.msgIdIdx[msgId]
-	return c.cache[queueId]
+	protoBuf := c.cache[queueId]
+	c.RUnlock()
+
+	return protoBuf
 }
 
 func (c *messageCache) Set(queueId, msgId string, msg []byte) (bool, error) {

@@ -174,7 +174,7 @@ func bounceHandlerParseReport(body []byte, remoteAddr string) {
 	bounceReasons, rcptReportsHdrs := bounceHandlerGetBounceReasons(deliveryReports)
 
 	rcptReports := make([]*bounceHandlerRcptReport, len(rcptReportsHdrs))
-	bayes := false
+	bayesReason := ""
 	for i, rcptReport := range rcptReportsHdrs {
 		rcptReports[i] = &bounceHandlerRcptReport{
 			rcptReport.Get("Status"),
@@ -185,12 +185,8 @@ func bounceHandlerParseReport(body []byte, remoteAddr string) {
 		}
 
 		if bounceHandlerShouldReportBayes(rcptReports[i].diagCode) {
-			bayes = true
+			bayesReason = rcptReport.Get("Diagnostic-Code")
 		}
-	}
-
-	if bayes {
-		go bayesReportMessageId()
 	}
 
 	date, _ := hdrs.Date()
@@ -202,6 +198,10 @@ func bounceHandlerParseReport(body []byte, remoteAddr string) {
 		sender:      bounceReasons.Get("X-Postfix-Sender"),
 		messageId:   bounceHandlerGetMessageId(msgHdrs, bounceReasons.Get("X-Postfix-Queue-Id")),
 		rcptReports: rcptReports,
+	}
+
+	if bayesReason != "" {
+		go bayesReportMessageId(true, bounce.messageId, bounce.mta, "__MTA", bayesReason)
 	}
 
 	Log.Debug("Successfully parsed %d reports from %s", len(rcptReports), remoteAddr)
@@ -351,6 +351,8 @@ func bounceHandlerShouldReportBayes(diagCode string) bool {
 		"spam",
 		"unsolicited",
 		"contained unsafe content",
+
+		//"x-unix", // DEBUG
 	}
 
 	for _, match := range matches {

@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"net"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -503,11 +502,7 @@ func (msg *Message) GetHeader(key string, includeDeleted bool) []MessageHeader {
 
 func (msg *Message) String() []byte {
 	sess := *msg.session
-	fqdn, err := os.Hostname()
-	if err != nil {
-		Log.Error("Could not determine FQDN")
-		fqdn = sess.getMtaHostName()
-	}
+	fqdn := hostname
 	revdns, err := net.LookupAddr(sess.getIp())
 	revdnsStr := "unknown"
 	if err == nil {
@@ -565,9 +560,9 @@ func messageGetMessageId(msg *Message) string {
 	return msg.injectMessageId
 }
 
-func messageGenerateMessageId(queueId, hostname string) string {
-	if hostname != "" {
-		hostname, _ = os.Hostname()
+func messageGenerateMessageId(queueId, host string) string {
+	if host != "" {
+		host = hostname
 	}
 
 	return fmt.Sprintf("<%d.%s.cluegetter@%s>",

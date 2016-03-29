@@ -164,6 +164,9 @@ listen-host = "127.0.0.1"
 # of all incoming delivery reports.
 # dump-dir = "/var/cache/cluegetter/deliveryreports"
 
+[bayes]
+enabled = true
+
 [mailQueue]
 # Show and manipulate items currently in the (Postfix) queue.
 

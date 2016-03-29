@@ -61,6 +61,9 @@ type config struct {
 		Listen_Host string
 		Dump_Dir    string
 	}
+	Bayes struct {
+		Enabled bool
+	}
 	MailQueue struct {
 		Enabled             bool
 		Spool_Dir           string
