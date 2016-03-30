@@ -165,7 +165,13 @@ listen-host = "127.0.0.1"
 # dump-dir = "/var/cache/cluegetter/deliveryreports"
 
 [bayes]
+# Attempt to learn from feedback from various sources by feeding our
+# bayesian and other fuzzy learning algorithms.
 enabled = true
+
+# Currently supported:
+#  - SpamAssassin: make sure it's enabled, and that you
+#    run spamd with the --allow-tell option.
 
 [mailQueue]
 # Show and manipulate items currently in the (Postfix) queue.

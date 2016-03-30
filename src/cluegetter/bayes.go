@@ -10,6 +10,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net"
+	"strings"
+	"time"
 )
 
 func init() {
@@ -114,7 +117,38 @@ func bayesLearn(item string) {
 	dat["message"] = string(msgBytes)
 
 	msg, _ := messagePersistUnmarshalProto(msgBytes)
-	fmt.Println("Learning...", msg)
 
-	// TODO
+	saLearn(msg, dat["spam"] == "spam")
+}
+
+// This shows the disadvantage of having both a Message and Proto_MessageV1
+// object. We really should look into merging the Message and Proto_ objects
+// and subsequently merge this with: func (msg *Message) String() []byte
+func bayesRenderProtoMsg(msg *Proto_MessageV1) []byte {
+	sess := *msg.Session
+	fqdn := sess.Hostname
+	revdns, err := net.LookupAddr(*sess.Ip)
+	revdnsStr := "unknown"
+	if err == nil {
+		revdnsStr = strings.Join(revdns, "")
+	}
+
+	body := make([]string, 0)
+
+	body = append(body, fmt.Sprintf("Received: from %s (%s [%s])\r\n\tby %s with SMTP id %s; %s\r\n",
+		*sess.Helo,
+		revdnsStr,
+		*sess.Ip,
+		*fqdn,
+		*msg.Id,
+		time.Now().Format(time.RFC1123Z)))
+
+	for _, header := range msg.Headers {
+		body = append(body, *(header).Key+": "+*(header).Value+"\r\n")
+	}
+
+	body = append(body, "\r\n")
+	body = append(body, string(msg.Body))
+
+	return []byte(strings.Join(body, ""))
 }

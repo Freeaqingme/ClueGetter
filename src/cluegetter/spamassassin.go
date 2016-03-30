@@ -126,3 +126,23 @@ func saParseReplyReportVar(reportFactRaw map[string]interface{}) *saReportFact {
 
 	return reportFact
 }
+
+func saLearn(msg *Proto_MessageV1, spam bool) {
+	if !Config.SpamAssassin.Enabled {
+		return
+	}
+
+	bodyStr := string(bayesRenderProtoMsg(msg))
+
+	host := Config.SpamAssassin.Host + ":" + strconv.Itoa(Config.SpamAssassin.Port)
+	sconf := Config.SpamAssassin
+	client := spamc.New(host, sconf.Timeout, sconf.Connect_Timeout)
+
+	abort := make(chan bool) // unused really. To implement or not to implement. That's the question
+	if spam {
+		client.Learn(abort, spamc.LEARN_SPAM, bodyStr)
+	} else {
+		client.Learn(abort, spamc.LEARN_HAM, bodyStr)
+	}
+	close(abort)
+}
