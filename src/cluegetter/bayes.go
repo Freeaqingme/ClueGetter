@@ -99,8 +99,9 @@ func bayesReportMessageId(spam bool, messageId, host, reporter, reason string) {
 	}
 
 	payloadJson, _ := json.Marshal(payload)
-	err := redisClient.Publish(fmt.Sprintf("cluegetter!%d!bayes!reportMessageId", instance),
-		string(payloadJson)).Err()
+	key := fmt.Sprintf("cluegetter!%d!bayes!reportMessageId", instance)
+	Log.Info("Reporting MessageId to fellow nodes on %s", key)
+	err := redisClient.Publish(key, string(payloadJson)).Err()
 
 	if err != nil {
 		Log.Error("Error while reporting bayes message id: %s", err.Error())

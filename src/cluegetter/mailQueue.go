@@ -97,6 +97,10 @@ func mailQueueHandleDeleteChannel(deleteQueue chan string) {
 }
 
 func mailQueueDeleteItems(queueIds []string) {
+	if !Config.MailQueue.Enabled {
+		return
+	}
+
 	args := make([]string, 0, len(queueIds)*2)
 	for _, queueId := range queueIds {
 		if queueId == "" {

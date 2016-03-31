@@ -185,7 +185,7 @@ func bounceHandlerParseReport(body []byte, remoteAddr string) {
 		}
 
 		if bounceHandlerShouldReportBayes(rcptReports[i].diagCode) {
-			bayesReason = rcptReport.Get("Diagnostic-Code")
+			bayesReason = rcptReports[i].diagCode
 		}
 	}
 
@@ -200,12 +200,13 @@ func bounceHandlerParseReport(body []byte, remoteAddr string) {
 		rcptReports: rcptReports,
 	}
 
+	bounceHandlerSaveBounce(bounce)
 	if bayesReason != "" {
 		go bayesReportMessageId(true, bounce.messageId, bounce.mta, "__MTA", bayesReason)
-	}
 
-	Log.Debug("Successfully parsed %d reports from %s", len(rcptReports), remoteAddr)
-	bounceHandlerSaveBounce(bounce)
+		queueId := bounceHandlerGetHeaderFromBytes(deliveryReports, "X-Postfix-Queue-ID")
+		mailQueueDeleteItems([]string{queueId})
+	}
 	Log.Info("Successfully saved %d reports from %s", len(rcptReports), remoteAddr)
 }
 
@@ -220,6 +221,16 @@ func bounceHandlerGetMessageId(msg []byte, queueId string) string {
 		return id
 	}
 	return messageGenerateMessageId(queueId, "")
+}
+
+func bounceHandlerGetHeaderFromBytes(msg []byte, header string) string {
+	r := strings.NewReader(string(msg) + "\r\n\r\n")
+	m, err := mail.ReadMessage(r)
+	if err != nil {
+		return ""
+	}
+
+	return m.Header.Get(header)
 }
 
 func bounceHandlerGetBounceReasons(notification []byte) (mail.Header, []mail.Header) {
@@ -352,7 +363,7 @@ func bounceHandlerShouldReportBayes(diagCode string) bool {
 		"unsolicited",
 		"contained unsafe content",
 
-		//"x-unix", // DEBUG
+		//		"x-unix", // DEBUG
 	}
 
 	for _, match := range matches {
