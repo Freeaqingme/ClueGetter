@@ -25,7 +25,7 @@ var cryptoExports = map[string]lua.LGFunction{
 }
 
 func cryptoSha256(L *lua.LState) int {
-	data := L.ToString(1)
+	data := L.ToString(2)
 
 	h := sha256.New()
 	h.Write([]byte(data))
