@@ -117,7 +117,11 @@ func bayesLearn(item string) {
 	msgBytes := messagePersistCache.getByMessageId(dat["messageId"])
 	dat["message"] = string(msgBytes)
 
-	msg, _ := messagePersistUnmarshalProto(msgBytes)
+	msg, err := messagePersistUnmarshalProto(msgBytes)
+	if err != nil {
+		Log.Error("Could not unmarshal message in bayesLearn(): %s", err.Error())
+		return
+	}
 
 	saLearn(msg, dat["spam"] == "spam")
 }
