@@ -69,9 +69,7 @@ func bayesHandleReportMessageIdQueueItem(item string) {
 	}
 
 	payloadJson, _ := json.Marshal(dat)
-	err := redisClient.Publish(fmt.Sprintf("cluegetter!!bayes!learn"),
-		string(payloadJson)).Err()
-
+	err := redisPublish(fmt.Sprintf("cluegetter!!bayes!learn"), payloadJson)
 	if err != nil {
 		Log.Error("Error while reporting bayes message id: %s", err.Error())
 	}
@@ -101,8 +99,7 @@ func bayesReportMessageId(spam bool, messageId, host, reporter, reason string) {
 
 	payloadJson, _ := json.Marshal(payload)
 	key := fmt.Sprintf("cluegetter!%d!bayes!reportMessageId", instance)
-	Log.Info("Reporting MessageId to fellow nodes on %s", key)
-	err := redisClient.Publish(key, string(payloadJson)).Err()
+	err := redisPublish(key, payloadJson)
 
 	if err != nil {
 		Log.Error("Error while reporting bayes message id: %s", err.Error())
@@ -113,7 +110,11 @@ func bayesLearn(item string) {
 	cluegetterRecover("bayesHandleReportMessageIdQueueItem")
 
 	var dat map[string]string
-	json.Unmarshal([]byte(item), &dat)
+	err := json.Unmarshal([]byte(item), &dat)
+	if err != nil {
+		Log.Error("Could not unmarshal map in bayesLearn(): %s", err.Error())
+		return
+	}
 
 	msgBytes := messagePersistCache.getByMessageId(dat["messageId"])
 	dat["message"] = string(msgBytes)

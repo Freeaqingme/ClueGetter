@@ -65,7 +65,7 @@ func daemonStart() {
 	done := make(chan struct{})
 	rdbmsStart()
 	setInstance()
-	persistStart()
+	redisStart()
 
 	milterSessionStart()
 	httpStart(done)

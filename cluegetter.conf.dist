@@ -152,6 +152,15 @@ enable-proxy-protocol = false
 enabled = false
 host = "localhost:6379"
 
+# For debugging purposes a directory can be specified to persist a copy
+# of in- and outgoing PUBSUB communication.
+# dump-dir = "/var/cache/cluegetter/redis"
+
+# It's unlikely you want to dump /all/ PUBSUB traffic from and to Redis. As such,
+# you can specify one or more PCRE regexes that keys should be matched against,
+# and then only communication matching these keys is dumped.
+# dump-key = "^cluegetter!"
+
 [bounceHandler]
 # Enable the Bounce Handler functionality in order to get insights in
 # What emails could not be (immediately) delivered. Please refer to the

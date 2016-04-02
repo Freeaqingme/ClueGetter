@@ -10,12 +10,13 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"github.com/glenn-brown/golang-pkg-pcre/src/pkg/pcre"
-	redis "gopkg.in/redis.v3"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/glenn-brown/golang-pkg-pcre/src/pkg/pcre"
+	redis "gopkg.in/redis.v3"
 )
 
 type quotasSelectResultSet struct {

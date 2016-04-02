@@ -118,13 +118,19 @@ func mailQueueDeleteItems(queueIds []string) {
 		execPath = mailQueueDefaultPostsuperExecutable
 	}
 
+	var logArgs string
+	if len(args) > 90 {
+		logArgs = strings.Join(args[:90], " ") + "..."
+	} else {
+		logArgs = strings.Join(args, " ")
+	}
 	cmd := exec.Command(execPath, args...)
 	cmd.Dir = "/"
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if err != nil {
-		Log.Error("Error ocurred while running postsuper: %s", err)
+		Log.Error("Error ocurred while running postsuper (args: '%s'): %s", logArgs, err)
 		return
 	}
 
@@ -402,7 +408,7 @@ func mailQueueHttpDelete(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		err := redisClient.Publish("cluegetter!!mailQueue!delete", strings.Join(v, " ")).Err()
+		err := redisPublish("cluegetter!!mailQueue!delete", []byte(strings.Join(v, " ")))
 		if err != nil {
 			panic(err)
 		}

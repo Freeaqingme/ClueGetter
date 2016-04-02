@@ -42,9 +42,11 @@ type config struct {
 		Archive_Retention_Safeguard      float64
 	}
 	Redis struct {
-		Enabled bool
-		Host    []string
-		Method  string
+		Enabled  bool
+		Host     []string
+		Method   string
+		Dump_Dir string
+		Dump_Key []string
 	}
 	ModuleGroup map[string]*ConfigModuleGroup
 	Http        struct {
@@ -210,6 +212,7 @@ func DefaultConfig(cfg *config) {
 	cfg.Redis.Enabled = false
 	cfg.Redis.Host = []string{}
 	cfg.Redis.Method = "standalone"
+	cfg.Redis.Dump_Key = []string{}
 
 	cfg.Http.Enabled = true
 	cfg.Http.Listen_Port = "0"
