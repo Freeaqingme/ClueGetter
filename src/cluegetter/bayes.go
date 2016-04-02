@@ -82,6 +82,7 @@ func bayesAddToCorpus(spam bool, msg *Proto_MessageV1, messageId, host, reporter
 }
 
 func bayesReportMessageId(spam bool, messageId, host, reporter, reason string) {
+	cluegetterRecover("bayesReportMessageId")
 	if !Config.Bayes.Enabled {
 		return
 	}
