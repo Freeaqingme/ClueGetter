@@ -84,7 +84,9 @@ func clamavMilterCheck(msg *Message, abort chan bool) *MessageCheckResult {
 	// There really should only be 1 item in res, but just in case there's
 	// more, we do want to close everything.
 	defer func() {
-		for _ = range res {
+		for v := range res {
+			Log.Notice("Got an additional ClamAV result, but it was discarded while scanning %s: %s",
+				msg.QueueId, v.Raw)
 		}
 	}()
 

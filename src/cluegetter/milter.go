@@ -285,14 +285,14 @@ func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
 		Log.Info("Message Permit: sess=%s message=%s %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msg)
 		return
 	case verdict == messageTempFail:
-		m.SetReply(ctx, "421", "4.7.0", msg)
+		m.SetReply(ctx, "421", "4.7.0", fmt.Sprintf("%s (%s)", msg, s.getLastMessage().QueueId))
 		Log.Info("Message TempFail: sess=%s message=%s msg: %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msg)
 		if Config.ClueGetter.Noop {
 			return
 		}
 		return m.Tempfail
 	case verdict == messageReject:
-		m.SetReply(ctx, "550", "5.7.1", msg)
+		m.SetReply(ctx, "550", "5.7.1", fmt.Sprintf("%s (%s)", msg, s.getLastMessage().QueueId))
 		Log.Info("Message Reject: sess=%s message=%s msg: %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msg)
 		if Config.ClueGetter.Noop {
 			return
