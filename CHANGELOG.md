@@ -1,5 +1,18 @@
 # Change Log
 
+### 2016-04-03 Version 0.5.4
+* New Feature: ClamAV integration
+* New Feature: Support multiple http frontends
+* New Feature: Support Proxy Protocol on the HTTP Interface(s).
+* New Feature: Initial Bayes support, train bounced messages as SPAM.
+* New Feature: Allow to dump Redis PUBSUB communication to files
+* Improvement: Update various libraries (Redis, Mysql)
+* Improvement: Update greylist whitelist only once per update interval in entire cluster
+* Improvement: Update quotas in Redis only once per update interval in entire cluster
+* Improvement: Various Lua touch-ups
+* Improvement: Append queue id to all tempfail and reject messages
+* Bugfix: Use weighted score for spam-flag score
+
 ### 2016-03-25 Version 0.5.3
 * New Feature: Initial LUA support
 * Improvement: Various changes to cluegetter.service
