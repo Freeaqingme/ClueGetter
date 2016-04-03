@@ -46,8 +46,9 @@ func init() {
 
 func greylistStart() {
 	greylistPrepStmt()
+	greylistUpdateWhitelist()
 	go func() {
-		ticker := time.NewTicker(time.Duration(15) * time.Minute)
+		ticker := time.NewTicker(time.Duration(1) * time.Minute)
 		for {
 			select {
 			case <-ticker.C:
@@ -131,6 +132,17 @@ func greylistUpdateWhitelist() {
 		}
 		Log.Error("Panic caught in greylistUpdateWhitelist(). Recovering. Error: %s", r)
 	}()
+
+	if Config.Redis.Enabled {
+		key := fmt.Sprintf("cluegetter-%d-greylisting-schedule-greylistUpdateWhitelist", instance)
+		set, err := redisClient.SetNX(key, hostname, 5*time.Minute).Result()
+		if err != nil {
+			Log.Error("Could not update greylist whitelist schedule: %s", err.Error())
+		} else if !set {
+			Log.Debug("Greylist whitelist update was run recently. Sipping")
+			return
+		}
+	}
 
 	t0 := time.Now()
 	res, err := greylistUpdateWhitelistStmt.Exec()

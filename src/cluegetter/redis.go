@@ -10,11 +10,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	redis "gopkg.in/redis.v3"
+	"io/ioutil"
 	"math"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/glenn-brown/golang-pkg-pcre/src/pkg/pcre"
+	redis "gopkg.in/redis.v3"
 )
 
 type RedisClientBase interface {
@@ -33,6 +36,7 @@ type RedisClientBase interface {
 	SAdd(key string, members ...string) *redis.IntCmd
 	SMembers(key string) *redis.StringSliceCmd
 	Set(key string, value interface{}, expiration time.Duration) *redis.StatusCmd
+	SetNX(key string, value interface{}, expiration time.Duration) *redis.BoolCmd
 	ZAdd(key string, members ...redis.Z) *redis.IntCmd
 	ZCount(key, min, max string) *redis.IntCmd
 	ZRemRangeByScore(key, min, max string) *redis.IntCmd
@@ -55,16 +59,32 @@ type RedisKeyValue struct {
 	value []byte
 }
 
-var redisClient RedisClient
-var RedisLPushChan chan *RedisKeyValue
+var (
+	redisClient    RedisClient
+	RedisLPushChan chan *RedisKeyValue
+	redisDumpKeys  = make([]*pcre.Regexp, 0)
+)
 
-func persistStart() {
+func redisStart() {
 	if !Config.Redis.Enabled {
 		return
 	}
 
 	if len(Config.Redis.Host) == 0 {
 		Log.Fatal("No Redis.Host specified")
+	}
+
+	if Config.Redis.Dump_Dir != "" {
+		if len(Config.Redis.Dump_Key) == 0 {
+			Config.Redis.Dump_Key = []string{"^cluegetter!"}
+		}
+		for _, regexStr := range Config.Redis.Dump_Key {
+			regex, err := pcre.Compile(regexStr, 0)
+			if err != nil {
+				Log.Fatal("Could not compile redis key regex: /%s/. Error: %s", regexStr, err.String())
+			}
+			redisDumpKeys = append(redisDumpKeys, &regex)
+		}
 	}
 
 	RedisLPushChan = make(chan *RedisKeyValue, 255)
@@ -232,6 +252,19 @@ func redisGetServices() []*service {
 	return out
 }
 
+func redisPublish(key string, msg []byte) error {
+	var logMsg string
+	if len(logMsg) > 128 {
+		logMsg = string(logMsg[:128]) + "..."
+	} else {
+		logMsg = string(logMsg)
+	}
+
+	redisDumpPublish("out", key, msg)
+	Log.Info("Publising on Redis channel '%s': %s", key, logMsg)
+	return redisClient.Publish(key, string(msg)).Err()
+}
+
 func redisRpc() {
 	pubsub, err := redisClient.PSubscribe("cluegetter!*")
 	if err != nil {
@@ -288,10 +321,44 @@ func redisRpc() {
 		}
 
 		Log.Info("Received RPC Message: <%s>%s", msg.Channel, logMsg)
+		redisDumpPublish("in", msg.Channel, []byte(msg.Payload))
 		for _, channel := range listeners[elements[2]] {
 			go func(payload string) {
 				channel <- payload
 			}(msg.Payload)
 		}
 	}
+}
+
+func redisDumpPublish(direction, key string, msg []byte) {
+	if Config.Redis.Dump_Dir == "" {
+		return
+	}
+
+	dump := false
+	for _, regexp := range redisDumpKeys {
+		if len(regexp.FindIndex([]byte(key), 0)) != 0 {
+			dump = true
+			break
+		}
+	}
+	if !dump {
+		return
+	}
+
+	filename := fmt.Sprintf("cluegetter-redisPublish-%s-%s-", key, direction)
+	f, err := ioutil.TempFile(Config.Redis.Dump_Dir, filename)
+	if err != nil {
+		Log.Error("Could not open file for dump file: %s", err.Error())
+		return
+	}
+
+	defer f.Close()
+	count, err := f.Write(msg)
+	if err != nil {
+		Log.Error("Wrote %d bytes to '%s', then got error: %s", count, f.Name(), err.Error())
+		return
+	}
+
+	Log.Debug("Wrote %d bytes to '%s'", count, f.Name())
 }

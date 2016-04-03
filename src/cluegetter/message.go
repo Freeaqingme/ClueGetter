@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"net"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -440,6 +439,7 @@ func messageSave(msg *Message, checkResults []*Proto_MessageV1_CheckResult, verd
 	}
 
 	messagePersistQueue <- protoMsg
+	go messagePersistInCache(msg.QueueId, messageGetMessageId(msg), protoMsg)
 }
 
 func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (add, delete []MessageHeader) {
@@ -449,7 +449,7 @@ func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (a
 
 	rejectscore := 0.0
 	for _, result := range results[messageReject] {
-		rejectscore += result.score
+		rejectscore += result.weightedScore
 	}
 
 	if msg.session.config.ClueGetter.Insert_Missing_Message_Id == true && msg.injectMessageId != "" {
@@ -502,11 +502,7 @@ func (msg *Message) GetHeader(key string, includeDeleted bool) []MessageHeader {
 
 func (msg *Message) String() []byte {
 	sess := *msg.session
-	fqdn, err := os.Hostname()
-	if err != nil {
-		Log.Error("Could not determine FQDN")
-		fqdn = sess.getMtaHostName()
-	}
+	fqdn := hostname
 	revdns, err := net.LookupAddr(sess.getIp())
 	revdnsStr := "unknown"
 	if err == nil {
@@ -534,8 +530,13 @@ func (msg *Message) String() []byte {
 }
 
 func messageEnsureHasMessageId(msg *Message) {
-	id := messageGetMessageId(msg)
+	for _, v := range msg.Headers {
+		if strings.EqualFold((v).getKey(), "Message-Id") {
+			return
+		}
+	}
 
+	id := messageGetMessageId(msg)
 	msg.Headers = append(msg.Headers, MessageHeader{
 		Key: "Message-Id", Value: id,
 	})
@@ -552,12 +553,20 @@ func messageGetMessageId(msg *Message) string {
 	}
 
 	if msg.injectMessageId == "" {
-		messageIdHdr = fmt.Sprintf("<%d.%s.cluegetter@%s>",
-			time.Now().Unix(), msg.QueueId, sess.getMtaHostName())
+		messageIdHdr = messageGenerateMessageId(msg.QueueId, sess.getMtaHostName())
 		msg.injectMessageId = messageIdHdr
 	}
 
 	return msg.injectMessageId
+}
+
+func messageGenerateMessageId(queueId, host string) string {
+	if host != "" {
+		host = hostname
+	}
+
+	return fmt.Sprintf("<%d.%s.cluegetter@%s>",
+		time.Now().Unix(), queueId, hostname)
 }
 
 func messageParseAddress(address string) (local, domain string) {

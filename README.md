@@ -16,6 +16,7 @@ Features:
   Can be used alongside the Rspamd module.
 * Rspamd - Determine whether an email is SPAM through [Rspamd](http://www.rspamd.com).
   Can be used alongside the SpamAssassin module.
+* ClamAV/Clamd - Scan the message for viruses, malware, etc.
 * Greylisting - Ask a server to try again in a bit if it wasn't seen before and the mail looks spammy.
 * [Bounce Handling](https://github.com/Freeaqingme/ClueGetter/wiki/Bounce-Handling) - Keep track of
   what emails were rejected by remote MTAs and for what reasons.
@@ -27,7 +28,6 @@ Features:
 
 Planned modules:
 * GeoIP - Detect anomalies in the countries used to send mail from
-* ClamAv/Clamd - Scan the message for viruses
 * Reputation - Incorporate previous verdicts in future verdicts.
 * SRS - Implement with proper support for virtual domains
 

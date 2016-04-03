@@ -10,12 +10,13 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"github.com/glenn-brown/golang-pkg-pcre/src/pkg/pcre"
-	redis "gopkg.in/redis.v3"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/glenn-brown/golang-pkg-pcre/src/pkg/pcre"
+	redis "gopkg.in/redis.v3"
 )
 
 type quotasSelectResultSet struct {
@@ -149,7 +150,7 @@ func quotasRegexesLoad() {
 
 func quotasRedisStart() {
 	go func() {
-		ticker := time.NewTicker(time.Duration(5) * time.Minute)
+		ticker := time.NewTicker(time.Duration(1) * time.Minute)
 		for {
 			select {
 			case <-ticker.C:
@@ -172,6 +173,15 @@ func quotasRedisUpdateFromRdbms() {
 		}
 		Log.Error("Panic caught in quotasRedisUpdateFromRdbms(). Recovering. Error: %s", r)
 	}()
+
+	key := fmt.Sprintf("cluegetter-%d-quotas-schedule-quotasRedisUpdateFromRdbms", instance)
+	set, err := redisClient.SetNX(key, hostname, 5*time.Minute).Result()
+	if err != nil {
+		Log.Error("Could not update quotasRedisUpdateFromRdbms schedule: %s", err.Error())
+	} else if !set {
+		Log.Debug("Update Quotas From Rdbms was run recently. Sipping")
+		return
+	}
 
 	Log.Info("Importing quotas into Redis")
 	t0 := time.Now()

@@ -29,6 +29,7 @@ type bounceHandlerBounce struct {
 	date        *time.Time
 	mta         string
 	queueId     string
+	messageId   string
 	sender      string //Todo: Split this out later to local/remote part but want to inventory formats first
 	rcptReports []*bounceHandlerRcptReport
 }
@@ -99,7 +100,7 @@ func bounceHandlerSubmitCli() {
 
 func bounceHandlerPrepStmt() {
 	stmt, err := Rdbms.Prepare(
-		"INSERT INTO bounce (cluegetter_instance, date, mta, queueId, sender) VALUES (?, ?, ?, ?, ?)")
+		"INSERT INTO bounce (cluegetter_instance, date, mta, queueId, messageId, sender) VALUES (?, ?, ?, ?, ?, ?)")
 	if err != nil {
 		Log.Fatal(err)
 	}
@@ -169,10 +170,11 @@ func bounceHandlerHandleIpc(bodyB64 string) {
 func bounceHandlerParseReport(body []byte, remoteAddr string) {
 	bounceHandlerPersistRawCopy(body)
 
-	hdrs, deliveryReports, _, _ := bounceHandlerParseReportMime(string(body))
+	hdrs, deliveryReports, _, msgHdrs := bounceHandlerParseReportMime(string(body))
 	bounceReasons, rcptReportsHdrs := bounceHandlerGetBounceReasons(deliveryReports)
 
 	rcptReports := make([]*bounceHandlerRcptReport, len(rcptReportsHdrs))
+	bayesReason := ""
 	for i, rcptReport := range rcptReportsHdrs {
 		rcptReports[i] = &bounceHandlerRcptReport{
 			rcptReport.Get("Status"),
@@ -180,6 +182,10 @@ func bounceHandlerParseReport(body []byte, remoteAddr string) {
 			rcptReport.Get("Final-Recipient"),
 			rcptReport.Get("Remote-Mta"),
 			rcptReport.Get("Diagnostic-Code"),
+		}
+
+		if bounceHandlerShouldReportBayes(rcptReports[i].diagCode) {
+			bayesReason = rcptReports[i].diagCode
 		}
 	}
 
@@ -190,12 +196,41 @@ func bounceHandlerParseReport(body []byte, remoteAddr string) {
 		mta:         bounceReasons.Get("Reporting-MTA"),
 		queueId:     bounceReasons.Get("X-Postfix-Queue-Id"),
 		sender:      bounceReasons.Get("X-Postfix-Sender"),
+		messageId:   bounceHandlerGetMessageId(msgHdrs, bounceReasons.Get("X-Postfix-Queue-Id")),
 		rcptReports: rcptReports,
 	}
 
-	Log.Debug("Successfully parsed %d reports from %s", len(rcptReports), remoteAddr)
 	bounceHandlerSaveBounce(bounce)
+	if bayesReason != "" {
+		go bayesReportMessageId(true, bounce.messageId, bounce.mta, "__MTA", bayesReason)
+
+		queueId := bounceHandlerGetHeaderFromBytes(deliveryReports, "X-Postfix-Queue-ID")
+		mailQueueDeleteItems([]string{queueId})
+	}
 	Log.Info("Successfully saved %d reports from %s", len(rcptReports), remoteAddr)
+}
+
+func bounceHandlerGetMessageId(msg []byte, queueId string) string {
+	r := strings.NewReader(string(msg) + "\r\n\r\n")
+	m, err := mail.ReadMessage(r)
+	if err != nil {
+		return ""
+	}
+
+	if id := m.Header.Get("Message-Id"); id != "" {
+		return id
+	}
+	return messageGenerateMessageId(queueId, "")
+}
+
+func bounceHandlerGetHeaderFromBytes(msg []byte, header string) string {
+	r := strings.NewReader(string(msg) + "\r\n\r\n")
+	m, err := mail.ReadMessage(r)
+	if err != nil {
+		return ""
+	}
+
+	return m.Header.Get(header)
 }
 
 func bounceHandlerGetBounceReasons(notification []byte) (mail.Header, []mail.Header) {
@@ -223,7 +258,7 @@ func bounceHandlerGetBounceReasons(notification []byte) (mail.Header, []mail.Hea
 	return m.Header, rcptReports
 }
 
-func bounceHandlerParseReportMime(msg string) (bounceHdrs mail.Header, deliveryReport []byte, notification []byte, msgHdrs []byte) {
+func bounceHandlerParseReportMime(msg string) (bounceHdrs mail.Header, deliveryReport, notification, msgHdrs []byte) {
 	r := strings.NewReader(msg)
 	m, err := mail.ReadMessage(r)
 	if err != nil {
@@ -274,7 +309,7 @@ func bounceHandlerParseReportMime(msg string) (bounceHdrs mail.Header, deliveryR
 func bounceHandlerSaveBounce(bounce *bounceHandlerBounce) {
 	StatsCounters["RdbmsQueries"].increase(1)
 	res, err := BounceHandlerSaveBounceStmt.Exec(
-		bounce.instance, bounce.date, bounce.mta, bounce.queueId, bounce.sender,
+		bounce.instance, bounce.date, bounce.mta, bounce.queueId, bounce.messageId, bounce.sender,
 	)
 	if err != nil {
 		panic("Could not execute BounceHandlerSaveBounceStmt. Error: " + err.Error())
@@ -317,4 +352,25 @@ func bounceHandlerPersistRawCopy(body []byte) {
 	}
 
 	Log.Debug("Wrote %d bytes to %s", count, f.Name())
+}
+
+// We only want to add emails to our bayes corpus if the remote
+// side deems there's something wrong with the contents. Not if
+// there's e.g. something wrong with the recipient's mailbox.
+func bounceHandlerShouldReportBayes(diagCode string) bool {
+	matches := []string{
+		"spam",
+		"unsolicited",
+		"contained unsafe content",
+
+		//"x-unix", // DEBUG
+	}
+
+	for _, match := range matches {
+		if strings.Contains(diagCode, match) {
+			return true
+		}
+	}
+
+	return false
 }

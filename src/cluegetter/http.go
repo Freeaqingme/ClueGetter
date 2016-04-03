@@ -9,11 +9,13 @@ package main
 
 import (
 	"cluegetter/assets"
+	proxyproto "github.com/Freeaqingme/go-proxyproto"
+	humanize "github.com/dustin/go-humanize"
+
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
-	humanize "github.com/dustin/go-humanize"
 	"html/template"
 	"net"
 	"net/http"
@@ -30,18 +32,6 @@ func httpStart(done <-chan struct{}) {
 		Log.Info("HTTP module has not been enabled. Skipping...")
 		return
 	}
-	listen_host := Config.Http.Listen_Host
-	listen_port := Config.Http.Listen_Port
-
-	laddr, err := net.ResolveTCPAddr("tcp", listen_host+":"+listen_port)
-	if nil != err {
-		Log.Fatal(err)
-	}
-	listener, err := net.ListenTCP("tcp", laddr)
-	if nil != err {
-		Log.Fatal(err)
-	}
-	Log.Info("HTTP interface now listening on %s", listener.Addr())
 
 	http.HandleFunc("/stats/abusers/", httpAbusersHandler)
 	http.HandleFunc("/message/", httpHandlerMessage)
@@ -60,13 +50,18 @@ func httpStart(done <-chan struct{}) {
 		}
 	}
 
-	go http.Serve(listener, httpLogRequest(http.DefaultServeMux))
+	for name, httpConfig := range Config.HttpFrontend {
+		httpStartFrontend(done, name, httpConfig)
+	}
 
-	go func() {
-		<-done
-		listener.Close()
-		Log.Info("HTTP Listener closed")
-	}()
+	// Legacy reasons, remove later
+	if Config.Http.Listen_Port != "0" {
+		httpStartFrontend(done, "LegacyDefaultFrontend", &ConfigHttpFrontend{
+			Enabled:     Config.Http.Enabled,
+			Listen_Port: Config.Http.Listen_Port,
+			Listen_Host: Config.Http.Listen_Host,
+		})
+	}
 }
 
 type HttpViewData struct {
@@ -136,9 +131,48 @@ type httpMessageCheckResult struct {
 	Determinants  string
 }
 
-func httpLogRequest(handler http.Handler) http.Handler {
+func httpStartFrontend(done <-chan struct{}, name string, httpConfig *ConfigHttpFrontend) {
+	if !httpConfig.Enabled {
+		Log.Info("HTTP frontend '%s' has not been enabled. Skipping...", name)
+		return
+	}
+
+	listener := httpListen(name, httpConfig)
+	if httpConfig.Enable_Proxy_Protocol {
+		proxyListener := &proxyproto.Listener{listener}
+		go http.Serve(proxyListener, httpLogRequest(name, http.DefaultServeMux))
+	} else {
+		go http.Serve(listener, httpLogRequest(name, http.DefaultServeMux))
+	}
+
+	go func() {
+		<-done
+		listener.Close()
+		Log.Info("HTTP frontend '%s' closed", name)
+	}()
+}
+
+func httpListen(name string, httpConfig *ConfigHttpFrontend) *net.TCPListener {
+	listen_host := httpConfig.Listen_Host
+	listen_port := httpConfig.Listen_Port
+
+	laddr, err := net.ResolveTCPAddr("tcp", listen_host+":"+listen_port)
+	if nil != err {
+		Log.Fatal(fmt.Sprintf("HTTP Frontend '%s': %s", name, err.Error()))
+	}
+	listener, err := net.ListenTCP("tcp", laddr)
+	if nil != err {
+		Log.Fatal(fmt.Sprintf("HTTP Frontend '%s': %s", name, err.Error()))
+	}
+	Log.Info("HTTP frontend '%s' now listening on %s", name, listener.Addr())
+
+	return listener
+}
+
+func httpLogRequest(frontend string, handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		Log.Info("HTTP Request: %s %s %s \"%s\"", r.RemoteAddr, r.Method, r.URL, r.Header.Get("User-Agent"))
+		Log.Info("HTTP Request '%s': %s %s %s \"%s\"",
+			frontend, r.RemoteAddr, r.Method, r.URL, r.Header.Get("User-Agent"))
 		handler.ServeHTTP(w, r)
 	})
 }

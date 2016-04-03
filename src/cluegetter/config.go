@@ -42,9 +42,11 @@ type config struct {
 		Archive_Retention_Safeguard      float64
 	}
 	Redis struct {
-		Enabled bool
-		Host    []string
-		Method  string
+		Enabled  bool
+		Host     []string
+		Method   string
+		Dump_Dir string
+		Dump_Key []string
 	}
 	ModuleGroup map[string]*ConfigModuleGroup
 	Http        struct {
@@ -53,6 +55,7 @@ type config struct {
 		Listen_Host      string
 		Google_Analytics string
 	}
+	HttpFrontend  map[string]*ConfigHttpFrontend
 	LuaModule     map[string]*ConfigLuaModule
 	BounceHandler struct {
 		Enabled     bool
@@ -60,12 +63,20 @@ type config struct {
 		Listen_Host string
 		Dump_Dir    string
 	}
+	Bayes struct {
+		Enabled bool
+	}
 	MailQueue struct {
 		Enabled             bool
 		Spool_Dir           string
 		Update_Interval     int
 		PostsuperExecutable string
 		PostcatExecutable   string
+	}
+	Clamav struct {
+		Enabled       bool
+		Address       string
+		Default_Score float64
 	}
 	Greylisting struct {
 		Enabled        bool
@@ -95,6 +106,14 @@ type config struct {
 		Max_Size        int
 	}
 }
+
+type ConfigHttpFrontend struct {
+	Enabled               bool
+	Listen_Port           string
+	Listen_Host           string
+	Enable_Proxy_Protocol bool
+}
+
 type ConfigLuaModule struct {
 	Enabled bool
 	Script  string
@@ -107,6 +126,10 @@ type SessionConfig struct {
 		Message_Spamflag_Score    float64
 		Breaker_Score             float64
 		Insert_Missing_Message_Id bool
+	}
+	Clamav struct {
+		Enabled       bool
+		Default_Score float64
 	}
 	Greylisting struct {
 		Enabled        bool
@@ -140,6 +163,9 @@ func (conf *config) sessionConfig() (sconf *SessionConfig) {
 	sconf.ClueGetter.Message_Spamflag_Score = conf.ClueGetter.Message_Spamflag_Score
 	sconf.ClueGetter.Breaker_Score = conf.ClueGetter.Breaker_Score
 	sconf.ClueGetter.Insert_Missing_Message_Id = conf.ClueGetter.Insert_Missing_Message_Id
+
+	sconf.Clamav.Enabled = conf.Clamav.Enabled
+	sconf.Clamav.Default_Score = conf.Clamav.Default_Score
 
 	sconf.Greylisting.Enabled = conf.Greylisting.Enabled
 	sconf.Greylisting.Initial_Score = conf.Greylisting.Initial_Score
@@ -195,40 +221,36 @@ func DefaultConfig(cfg *config) {
 	cfg.ClueGetter.Archive_Retention_Message_Result = 2
 	cfg.ClueGetter.Archive_Retention_Message = 52
 
-	cfg.Redis.Enabled = false
 	cfg.Redis.Host = []string{}
 	cfg.Redis.Method = "standalone"
+	cfg.Redis.Dump_Key = []string{}
 
 	cfg.Http.Enabled = true
-	cfg.Http.Listen_Port = "1937"
+	cfg.Http.Listen_Port = "0"
 	cfg.Http.Listen_Host = "127.0.0.1"
 	cfg.Http.Google_Analytics = ""
 
-	cfg.BounceHandler.Enabled = false
 	cfg.BounceHandler.Listen_Port = "10034"
 	cfg.BounceHandler.Listen_Host = "127.0.0.1"
 
-	cfg.MailQueue.Enabled = false
 	cfg.MailQueue.Spool_Dir = "/var/spool/postfix"
 	cfg.MailQueue.Update_Interval = 5
 
-	cfg.Greylisting.Enabled = false
+	cfg.Clamav.Default_Score = 10.0
+
 	cfg.Greylisting.Initial_Score = 7.0
 	cfg.Greylisting.Initial_Period = 5
 	cfg.Greylisting.Whitelist_Spf = []string{}
 
-	cfg.Quotas.Enabled = false
 	cfg.Quotas.Account_Client_Address = true
 	cfg.Quotas.Account_Sender = false
 	cfg.Quotas.Account_Recipient = false
 	cfg.Quotas.Account_Sasl_Username = false
 
-	cfg.Rspamd.Enabled = false
 	cfg.Rspamd.Host = "127.0.0.1"
 	cfg.Rspamd.Port = 11333
 	cfg.Rspamd.Multiplier = 0.67
 
-	cfg.SpamAssassin.Enabled = false
 	cfg.SpamAssassin.Host = "127.0.0.1"
 	cfg.SpamAssassin.Port = 783
 	cfg.SpamAssassin.Timeout = 10

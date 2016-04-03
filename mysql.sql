@@ -182,10 +182,12 @@ CREATE TABLE bounce (
   date datetime NOT NULL,
   mta varchar(128) NOT NULL,
   queueId varchar(25) CHARACTER SET ascii NOT NULL,
+  messageId varchar(255) NOT NULL COMMENT 'Value of Message-ID header',
   sender varchar(255) NOT NULL,
   PRIMARY KEY (id),
   KEY queueId(queueId),
   KEY cluegetter_instance(cluegetter_instance),
+  KEY messageId (messageId),
   CONSTRAINT bounce_ibfk_1 FOREIGN KEY (cluegetter_instance) REFERENCES instance (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 

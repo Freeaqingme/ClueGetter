@@ -1,32 +1,37 @@
 package main
 
 import (
+	"github.com/golang/protobuf/proto"
+
 	"crypto/md5"
 	"database/sql"
+	"errors"
 	"fmt"
-	"github.com/golang/protobuf/proto"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 
-var MessageStmtInsertMsg = *new(*sql.Stmt)
-var MessageStmtInsertMsgBody = *new(*sql.Stmt)
-var MessageStmtInsertRcpt = *new(*sql.Stmt)
-var MessageStmtInsertMsgRcpt = *new(*sql.Stmt)
-var MessageStmtInsertMsgHdr = *new(*sql.Stmt)
-var MessageStmtSetVerdict = *new(*sql.Stmt)
-var MessageStmtInsertModuleResult = *new(*sql.Stmt)
-var MessageStmtPruneBody = *new(*sql.Stmt)
-var MessageStmtPruneHeader = *new(*sql.Stmt)
-var MessageStmtPruneMessageResult = *new(*sql.Stmt)
-var MessageStmtPruneMessageQuota = *new(*sql.Stmt)
-var MessageStmtPruneMessage = *new(*sql.Stmt)
-var MessageStmtPruneMessageRecipient = *new(*sql.Stmt)
-var MessageStmtPruneRecipient = *new(*sql.Stmt)
-var MessageStmtPruneSession = *new(*sql.Stmt)
+var (
+	MessageStmtInsertMsg             = *new(*sql.Stmt)
+	MessageStmtInsertMsgBody         = *new(*sql.Stmt)
+	MessageStmtInsertRcpt            = *new(*sql.Stmt)
+	MessageStmtInsertMsgRcpt         = *new(*sql.Stmt)
+	MessageStmtInsertMsgHdr          = *new(*sql.Stmt)
+	MessageStmtInsertModuleResult    = *new(*sql.Stmt)
+	MessageStmtPruneBody             = *new(*sql.Stmt)
+	MessageStmtPruneHeader           = *new(*sql.Stmt)
+	MessageStmtPruneMessageResult    = *new(*sql.Stmt)
+	MessageStmtPruneMessageQuota     = *new(*sql.Stmt)
+	MessageStmtPruneMessage          = *new(*sql.Stmt)
+	MessageStmtPruneMessageRecipient = *new(*sql.Stmt)
+	MessageStmtPruneRecipient        = *new(*sql.Stmt)
+	MessageStmtPruneSession          = *new(*sql.Stmt)
 
-var messagePersistQueue = make(chan []byte, 100)
+	messagePersistQueue = make(chan []byte, 100)
+)
 
 func messagePersistStart() {
 	messagePersistStmtPrepare()
@@ -41,6 +46,13 @@ func messagePersistStart() {
 	} else {
 		Log.Info("archive-prune-interval set to 0. Not pruning anything.")
 	}
+
+	ticker := time.NewTicker(time.Second * 30)
+	go func() {
+		for range ticker.C {
+			messagePersistCache.prune()
+		}
+	}()
 }
 
 func messagePersistHandleQueue(queue chan []byte) {
@@ -64,13 +76,22 @@ func messagePersistProtoBuf(protoBuf []byte) {
 		return
 	}()
 
-	msg := &Proto_MessageV1{}
-	err := proto.Unmarshal(protoBuf, msg)
+	msg, err := messagePersistUnmarshalProto(protoBuf)
 	if err != nil {
 		panic("unmarshaling error: " + err.Error())
 	}
 
 	messagePersist(msg)
+}
+
+func messagePersistUnmarshalProto(protoBuf []byte) (*Proto_MessageV1, error) {
+	msg := &Proto_MessageV1{}
+	err := proto.Unmarshal(protoBuf, msg)
+	if err != nil {
+		return nil, errors.New("Error unmarshalling message: " + err.Error())
+	}
+
+	return msg, nil
 }
 
 func messagePersistStmtPrepare() {
@@ -103,13 +124,6 @@ func messagePersistStmtPrepare() {
 	}
 
 	MessageStmtInsertMsgHdr, err = Rdbms.Prepare(`INSERT INTO message_header(message, name, body) VALUES(?, ?, ?)`)
-	if err != nil {
-		Log.Fatal(err)
-	}
-
-	MessageStmtSetVerdict, err = Rdbms.Prepare(`
-		UPDATE message SET verdict=?, verdict_msg=?, rejectScore=?, rejectScoreThreshold=?,
-			tempfailScore=?, tempfailScoreThreshold=? WHERE id=?`)
 	if err != nil {
 		Log.Fatal(err)
 	}
@@ -402,4 +416,137 @@ func messageSaveRecipients(recipients []string, msgId *string) {
 			panic("Could not get execute MessageStmtInsertMsgRcpt in messageSaveRecipients(). Error: " + err.Error())
 		}
 	}
+}
+
+func messagePersistInCache(queueId string, msgId string, msg []byte) {
+	if ok, err := messagePersistCache.Set(queueId, msgId, msg); !ok {
+		Log.Notice("Could not add message %s to message cache: %s",
+			queueId, err.Error())
+	}
+}
+
+///////////////////
+// Message Cache //
+///////////////////
+
+var messagePersistCache = messageCacheNew(5*1024*1024, 2*1024*1024*1024)
+
+type messageCache struct {
+	sync.RWMutex
+	cache        map[string][]byte
+	age          map[string]int64
+	msgIdIdx     map[string]string
+	msgIdRevIdx  map[string]string
+	size         uint64
+	maxSize      uint64
+	maxEntrySize uint64
+}
+
+func messageCacheNew(maxEntrySize uint64, maxSize uint64) *messageCache {
+	return &messageCache{
+		cache:        make(map[string][]byte),
+		age:          make(map[string]int64),
+		msgIdIdx:     make(map[string]string),
+		msgIdRevIdx:  make(map[string]string),
+		size:         0,
+		maxSize:      maxSize,
+		maxEntrySize: maxEntrySize,
+	}
+}
+
+func (c *messageCache) getByQueueId(queueId string) []byte {
+	c.RLock()
+	defer c.RUnlock()
+
+	return c.cache[queueId]
+}
+
+func (c *messageCache) getByMessageId(msgId string) []byte {
+	c.RLock()
+	queueId := c.msgIdIdx[msgId]
+	protoBuf := c.cache[queueId]
+	c.RUnlock()
+
+	return protoBuf
+}
+
+func (c *messageCache) Set(queueId, msgId string, msg []byte) (bool, error) {
+	size := uint64(len(msg))
+	if size > c.maxEntrySize {
+		return false, errors.New(fmt.Sprintf(
+			"Could not cache item '%s' (size %d). Item is bigger than max entry size %d",
+			queueId, size, c.maxEntrySize,
+		))
+	}
+
+	c.Lock()
+	defer c.Unlock()
+
+	if c.size+size > c.maxSize {
+		return false, errors.New(fmt.Sprintf(
+			"Could not cache item '%s' (size %d). Total cache size would be exceeded.",
+			queueId, size,
+		))
+	}
+
+	if _, exists := c.cache[queueId]; exists {
+		c._del(queueId)
+	}
+
+	c.msgIdIdx[msgId] = queueId
+	c.msgIdRevIdx[queueId] = msgId
+
+	c.cache[queueId] = msg
+	c.age[queueId] = time.Now().Unix()
+	atomic.AddUint64(&c.size, size)
+
+	return true, nil
+}
+
+func (c *messageCache) _del(id string) {
+	item, exists := c.cache[id]
+	if !exists {
+		return
+	}
+
+	size := len(item)
+	delete(c.cache, id)
+	delete(c.age, id)
+	atomic.AddUint64(&c.size, ^uint64(size-1))
+
+	delete(c.msgIdIdx, c.msgIdRevIdx[id])
+	delete(c.msgIdRevIdx, id)
+}
+
+func (c *messageCache) prune() {
+	if c.size < c.maxSize/2 {
+		Log.Debug("Skipping pruning of messageCache it's below 50%% (%d/%d) capacity.", c.size, c.maxSize)
+		return
+	}
+
+	t0 := time.Now()
+	cutoff := t0.Unix() - 300
+	prune := make([]string, 0)
+	c.RLock()
+	for key, age := range c.age {
+		if age < cutoff {
+			prune = append(prune, key)
+		}
+	}
+	c.RUnlock()
+	Log.Debug("Scanned for prunable message cache items in %s", time.Now().Sub(t0).String())
+	t0 = time.Now()
+	if len(prune) == 0 {
+		goto end
+	}
+
+	c.Lock()
+	defer c.Unlock()
+
+	for _, key := range prune {
+		c._del(key)
+	}
+end:
+	Log.Debug("Pruned %d message cache items in %s. It now contains %d items, %d bytes",
+		len(prune), time.Now().Sub(t0).String(), len(c.cache), c.size)
 }

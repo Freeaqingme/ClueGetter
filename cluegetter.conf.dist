@@ -135,11 +135,15 @@ module = 0.1 rspamd
 # whatsoever.
 
 enabled = true
-listen-port = 1937
-listen-host = "127.0.0.1"
 
 # Your Google Analytics ID
 google-analytics = ""
+
+[httpFrontend "default"]
+enabled               = true
+listen-port           = 1937
+listen-host           = "0.0.0.0"
+enable-proxy-protocol = false
 
 [redis]
 # Redis can be used as a cache so that ClueGetter will continue functioning
@@ -147,6 +151,15 @@ google-analytics = ""
 # repeated multiple times if you're running a redis cluster.
 enabled = false
 host = "localhost:6379"
+
+# For debugging purposes a directory can be specified to persist a copy
+# of in- and outgoing PUBSUB communication.
+# dump-dir = "/var/cache/cluegetter/redis"
+
+# It's unlikely you want to dump /all/ PUBSUB traffic from and to Redis. As such,
+# you can specify one or more PCRE regexes that keys should be matched against,
+# and then only communication matching these keys is dumped.
+# dump-key = "^cluegetter!"
 
 [bounceHandler]
 # Enable the Bounce Handler functionality in order to get insights in
@@ -159,6 +172,15 @@ listen-host = "127.0.0.1"
 # For debugging purposes a directory can be specified to persist a copy
 # of all incoming delivery reports.
 # dump-dir = "/var/cache/cluegetter/deliveryreports"
+
+[bayes]
+# Attempt to learn from feedback from various sources by feeding our
+# bayesian and other fuzzy learning algorithms.
+enabled = true
+
+# Currently supported:
+#  - SpamAssassin: make sure it's enabled, and that you
+#    run spamd with the --allow-tell option.
 
 [mailQueue]
 # Show and manipulate items currently in the (Postfix) queue.
@@ -173,6 +195,15 @@ spool-dir = /var/spool/postfix
 
 # postcat-executable = /usr/sbin/postcat
 # postsuper-executable = /usr/sbin/postsuper
+
+[clamav]
+# Scan for viruses, malware, etc through ClamAV
+
+enabled = true
+address = "/var/run/clamav/clamd.ctl"
+
+# Score that should be given when a message gives a hit with ClamAV
+# default-score = 10
 
 [greylisting]
 # When the greylisting module is enabled, hosts that haven not been seen

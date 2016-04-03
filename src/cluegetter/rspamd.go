@@ -39,18 +39,13 @@ type rspamdResponse struct {
 
 func init() {
 	enable := func() bool { return Config.Rspamd.Enabled }
-	init := rspamdStart
 	milterCheck := rspamdGetResult
 
 	ModuleRegister(&module{
 		name:        "rspamd",
 		enable:      &enable,
-		init:        &init,
 		milterCheck: &milterCheck,
 	})
-}
-
-func rspamdStart() {
 }
 
 func rspamdGetResult(msg *Message, abort chan bool) *MessageCheckResult {
@@ -58,7 +53,17 @@ func rspamdGetResult(msg *Message, abort chan bool) *MessageCheckResult {
 		return nil
 	}
 
-	rawResult := rspamdGetRawResult(msg)
+	rawResult, err := rspamdGetRawResult(msg)
+	if err != nil {
+		return &MessageCheckResult{
+			module:          "rspamd",
+			suggestedAction: messageError,
+			score:           25,
+			determinants: map[string]interface{}{
+				"error": err.Error(),
+			},
+		}
+	}
 	parsedResponse := rspamdParseRawResult(rawResult)
 
 	score := parsedResponse.Default.Score * msg.session.config.Rspamd.Multiplier
@@ -140,13 +145,16 @@ func rspamdParseRawResult(rawResult interface{}) *rspamdResponse {
 
 }
 
-func rspamdGetRawResult(msg *Message) interface{} {
+func rspamdGetRawResult(msg *Message) (interface{}, error) {
 	sess := *msg.session
 	var reqBody = msg.String()
 
 	url := fmt.Sprintf("http://%s:%d/check", Config.Rspamd.Host, Config.Rspamd.Port)
 	client := &http.Client{}
-	req, _ := http.NewRequest("GET", url, bytes.NewBuffer(reqBody))
+	req, err := http.NewRequest("GET", url, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return nil, err
+	}
 	for _, rcpt := range msg.Rcpt {
 		req.Header.Add("Rcpt", rcpt)
 	}
@@ -158,7 +166,7 @@ func rspamdGetRawResult(msg *Message) interface{} {
 	res, err := client.Do(req)
 
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
@@ -166,8 +174,8 @@ func rspamdGetRawResult(msg *Message) interface{} {
 	var parsed interface{}
 	err = json.Unmarshal([]byte(string(body)), &parsed)
 	if err != nil {
-		fmt.Println("error:", err)
+		return nil, err
 	}
 
-	return parsed
+	return parsed, nil
 }
