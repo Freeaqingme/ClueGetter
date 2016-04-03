@@ -39,18 +39,13 @@ type rspamdResponse struct {
 
 func init() {
 	enable := func() bool { return Config.Rspamd.Enabled }
-	init := rspamdStart
 	milterCheck := rspamdGetResult
 
 	ModuleRegister(&module{
 		name:        "rspamd",
 		enable:      &enable,
-		init:        &init,
 		milterCheck: &milterCheck,
 	})
-}
-
-func rspamdStart() {
 }
 
 func rspamdGetResult(msg *Message, abort chan bool) *MessageCheckResult {

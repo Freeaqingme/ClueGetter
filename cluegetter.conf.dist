@@ -196,6 +196,15 @@ spool-dir = /var/spool/postfix
 # postcat-executable = /usr/sbin/postcat
 # postsuper-executable = /usr/sbin/postsuper
 
+[clamav]
+# Scan for viruses, malware, etc through ClamAV
+
+enabled = true
+address = "/var/run/clamav/clamd.ctl"
+
+# Score that should be given when a message gives a hit with ClamAV
+# default-score = 10
+
 [greylisting]
 # When the greylisting module is enabled, hosts that haven not been seen
 # before and that seem a little spammy are temporarily rejected until
