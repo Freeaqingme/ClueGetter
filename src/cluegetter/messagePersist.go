@@ -429,7 +429,7 @@ func messagePersistInCache(queueId string, msgId string, msg []byte) {
 // Message Cache //
 ///////////////////
 
-var messagePersistCache = messageCacheNew(5*1024*1024, 2*1024*1024*1024)
+var messagePersistCache = messageCacheNew(5*1024*1024, 512*1024*1024)
 
 type messageCache struct {
 	sync.RWMutex
