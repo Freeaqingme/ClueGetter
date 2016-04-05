@@ -59,17 +59,28 @@ func bayesHandleReportMessageIdQueueItem(item string) {
 	json.Unmarshal([]byte(item), &dat)
 
 	msgBytes := messagePersistCache.getByMessageId(dat["messageId"])
+	if len(msgBytes) == 0 {
+		Log.Error("Could not retrieve message from cache with message-id %s", dat["messageId"])
+	}
 	dat["message"] = string(msgBytes)
 
-	msg, _ := messagePersistUnmarshalProto(msgBytes)
+	msg, err := messagePersistUnmarshalProto(msgBytes)
+	if err != nil {
+		Log.Error("Could not unmarshal message from cache: %s", err.Error())
+		return
+	}
 	if dat["spam"] == "yes" {
 		bayesAddToCorpus(true, msg, dat["messageId"], dat["host"], dat["reporter"], dat["reason"])
 	} else {
 		bayesAddToCorpus(false, msg, dat["messageId"], dat["host"], dat["reporter"], dat["reason"])
 	}
 
-	payloadJson, _ := json.Marshal(dat)
-	err := redisPublish(fmt.Sprintf("cluegetter!!bayes!learn"), payloadJson)
+	payloadJson, err := json.Marshal(dat)
+	if err != nil {
+		Log.Error("Could not marshal data-object to json: %s", err.Error())
+		return
+	}
+	err = redisPublish(fmt.Sprintf("cluegetter!!bayes!learn"), payloadJson)
 	if err != nil {
 		Log.Error("Error while reporting bayes message id: %s", err.Error())
 	}
