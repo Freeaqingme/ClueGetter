@@ -1,8 +1,6 @@
 package main
 
 import (
-	"github.com/golang/protobuf/proto"
-
 	"crypto/md5"
 	"database/sql"
 	"errors"
@@ -86,7 +84,7 @@ func messagePersistProtoBuf(protoBuf []byte) {
 
 func messagePersistUnmarshalProto(protoBuf []byte) (*Proto_MessageV1, error) {
 	msg := &Proto_MessageV1{}
-	err := proto.Unmarshal(protoBuf, msg)
+	err := msg.Unmarshal(protoBuf)
 	if err != nil {
 		return nil, errors.New("Error unmarshalling message: " + err.Error())
 	}

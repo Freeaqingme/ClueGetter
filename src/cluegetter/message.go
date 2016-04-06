@@ -10,7 +10,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/golang/protobuf/proto"
 	"net"
 	"strconv"
 	"strings"
@@ -433,7 +432,7 @@ func messageSave(msg *Message, checkResults []*Proto_MessageV1_CheckResult, verd
 		Session:                msg.session.getProtoBufStruct(),
 	}
 
-	protoMsg, err := proto.Marshal(protoStruct)
+	protoMsg, err := protoStruct.Marshal()
 	if err != nil {
 		panic("marshaling error: " + err.Error())
 	}
