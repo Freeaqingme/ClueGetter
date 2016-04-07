@@ -484,7 +484,7 @@ func quotasRedisAddMsg(quotasKey *string, count int) func(*Message, int) {
 
 func quotasRdbmsAddMsg(quota_id uint64) func(*Message, int) {
 	return func(msg *Message, verdict int) {
-		if verdict != 0 {
+		if verdict != Proto_MessageV1_PERMIT && verdict != Proto_MessageV1_REJECT {
 			return
 		}
 
