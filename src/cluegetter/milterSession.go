@@ -230,7 +230,7 @@ func milterSessionPersistProtoBuf(protoBuf []byte) {
 		return
 	}()
 
-	msg := &Proto_MessageV1_Session{}
+	msg := &Proto_Message_Session{}
 	err := proto.Unmarshal(protoBuf, msg)
 	if err != nil {
 		panic("unmarshaling error: " + err.Error())
@@ -240,7 +240,7 @@ func milterSessionPersistProtoBuf(protoBuf []byte) {
 	return
 }
 
-func milterSessionPersist(sess *Proto_MessageV1_Session) {
+func milterSessionPersist(sess *Proto_Message_Session) {
 	client := milterSessionGetClient(sess.GetMtaHostName(), sess.GetMtaDaemonName())
 
 	var date_disconnect time.Time
@@ -269,14 +269,14 @@ func (s *milterSession) persist() {
 	milterSessionPersistQueue <- protoMsg
 }
 
-func (sess *milterSession) getProtoBufStruct() *Proto_MessageV1_Session {
+func (sess *milterSession) getProtoBufStruct() *Proto_Message_Session {
 	timeStart := uint64(sess.timeStart.Unix())
 	var timeEnd uint64
 	if &sess.timeEnd != nil {
 		timeEnd = uint64(sess.timeEnd.Unix())
 	}
 	instanceId := uint64(instance)
-	return &Proto_MessageV1_Session{
+	return &Proto_Message_Session{
 		InstanceId:    &instanceId,
 		Id:            sess.id[:],
 		TimeStart:     &timeStart,

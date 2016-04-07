@@ -9,7 +9,7 @@
 		cluegetter.proto
 
 	It has these top-level messages:
-		Proto_MessageV1
+		Proto_Message
 */
 package main
 
@@ -26,158 +26,158 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-type Proto_MessageV1_Verdict int32
+type Proto_Message_Verdict int32
 
 const (
-	Proto_MessageV1_PERMIT   Proto_MessageV1_Verdict = 0
-	Proto_MessageV1_TEMPFAIL Proto_MessageV1_Verdict = 1
-	Proto_MessageV1_REJECT   Proto_MessageV1_Verdict = 2
-	Proto_MessageV1_ERROR    Proto_MessageV1_Verdict = 3
+	Proto_Message_PERMIT   Proto_Message_Verdict = 0
+	Proto_Message_TEMPFAIL Proto_Message_Verdict = 1
+	Proto_Message_REJECT   Proto_Message_Verdict = 2
+	Proto_Message_ERROR    Proto_Message_Verdict = 3
 )
 
-var Proto_MessageV1_Verdict_name = map[int32]string{
+var Proto_Message_Verdict_name = map[int32]string{
 	0: "PERMIT",
 	1: "TEMPFAIL",
 	2: "REJECT",
 	3: "ERROR",
 }
-var Proto_MessageV1_Verdict_value = map[string]int32{
+var Proto_Message_Verdict_value = map[string]int32{
 	"PERMIT":   0,
 	"TEMPFAIL": 1,
 	"REJECT":   2,
 	"ERROR":    3,
 }
 
-func (x Proto_MessageV1_Verdict) Enum() *Proto_MessageV1_Verdict {
-	p := new(Proto_MessageV1_Verdict)
+func (x Proto_Message_Verdict) Enum() *Proto_Message_Verdict {
+	p := new(Proto_Message_Verdict)
 	*p = x
 	return p
 }
-func (x Proto_MessageV1_Verdict) String() string {
-	return proto.EnumName(Proto_MessageV1_Verdict_name, int32(x))
+func (x Proto_Message_Verdict) String() string {
+	return proto.EnumName(Proto_Message_Verdict_name, int32(x))
 }
-func (x *Proto_MessageV1_Verdict) UnmarshalJSON(data []byte) error {
-	value, err := proto.UnmarshalJSONEnum(Proto_MessageV1_Verdict_value, data, "Proto_MessageV1_Verdict")
+func (x *Proto_Message_Verdict) UnmarshalJSON(data []byte) error {
+	value, err := proto.UnmarshalJSONEnum(Proto_Message_Verdict_value, data, "Proto_Message_Verdict")
 	if err != nil {
 		return err
 	}
-	*x = Proto_MessageV1_Verdict(value)
+	*x = Proto_Message_Verdict(value)
 	return nil
 }
 
-type Proto_MessageV1 struct {
-	Session                *Proto_MessageV1_Session       `protobuf:"bytes,1,req,name=session" json:"session,omitempty"`
-	Id                     *string                        `protobuf:"bytes,2,req,name=id" json:"id,omitempty"`
-	From                   *string                        `protobuf:"bytes,3,req,name=from" json:"from,omitempty"`
-	Rcpt                   []string                       `protobuf:"bytes,4,rep,name=rcpt" json:"rcpt,omitempty"`
-	Headers                []*Proto_MessageV1_Header      `protobuf:"bytes,5,rep,name=headers" json:"headers,omitempty"`
-	Body                   []byte                         `protobuf:"bytes,6,opt,name=body" json:"body,omitempty"`
-	Verdict                *Proto_MessageV1_Verdict       `protobuf:"varint,7,req,name=verdict,enum=main.Proto_MessageV1_Verdict" json:"verdict,omitempty"`
-	VerdictMsg             *string                        `protobuf:"bytes,8,req,name=verdictMsg" json:"verdictMsg,omitempty"`
-	RejectScore            *float64                       `protobuf:"fixed64,9,req,name=rejectScore" json:"rejectScore,omitempty"`
-	RejectScoreThreshold   *float64                       `protobuf:"fixed64,10,req,name=rejectScoreThreshold" json:"rejectScoreThreshold,omitempty"`
-	TempfailScore          *float64                       `protobuf:"fixed64,11,req,name=tempfailScore" json:"tempfailScore,omitempty"`
-	TempfailScoreThreshold *float64                       `protobuf:"fixed64,12,req,name=tempfailScoreThreshold" json:"tempfailScoreThreshold,omitempty"`
-	CheckResults           []*Proto_MessageV1_CheckResult `protobuf:"bytes,13,rep,name=checkResults" json:"checkResults,omitempty"`
-	XXX_unrecognized       []byte                         `json:"-"`
+type Proto_Message struct {
+	Session                *Proto_Message_Session       `protobuf:"bytes,1,req,name=session" json:"session,omitempty"`
+	Id                     *string                      `protobuf:"bytes,2,req,name=id" json:"id,omitempty"`
+	From                   *string                      `protobuf:"bytes,3,req,name=from" json:"from,omitempty"`
+	Rcpt                   []string                     `protobuf:"bytes,4,rep,name=rcpt" json:"rcpt,omitempty"`
+	Headers                []*Proto_Message_Header      `protobuf:"bytes,5,rep,name=headers" json:"headers,omitempty"`
+	Body                   []byte                       `protobuf:"bytes,6,opt,name=body" json:"body,omitempty"`
+	Verdict                *Proto_Message_Verdict       `protobuf:"varint,7,req,name=verdict,enum=main.Proto_Message_Verdict" json:"verdict,omitempty"`
+	VerdictMsg             *string                      `protobuf:"bytes,8,req,name=verdictMsg" json:"verdictMsg,omitempty"`
+	RejectScore            *float64                     `protobuf:"fixed64,9,req,name=rejectScore" json:"rejectScore,omitempty"`
+	RejectScoreThreshold   *float64                     `protobuf:"fixed64,10,req,name=rejectScoreThreshold" json:"rejectScoreThreshold,omitempty"`
+	TempfailScore          *float64                     `protobuf:"fixed64,11,req,name=tempfailScore" json:"tempfailScore,omitempty"`
+	TempfailScoreThreshold *float64                     `protobuf:"fixed64,12,req,name=tempfailScoreThreshold" json:"tempfailScoreThreshold,omitempty"`
+	CheckResults           []*Proto_Message_CheckResult `protobuf:"bytes,13,rep,name=checkResults" json:"checkResults,omitempty"`
+	XXX_unrecognized       []byte                       `json:"-"`
 }
 
-func (m *Proto_MessageV1) Reset()         { *m = Proto_MessageV1{} }
-func (m *Proto_MessageV1) String() string { return proto.CompactTextString(m) }
-func (*Proto_MessageV1) ProtoMessage()    {}
+func (m *Proto_Message) Reset()         { *m = Proto_Message{} }
+func (m *Proto_Message) String() string { return proto.CompactTextString(m) }
+func (*Proto_Message) ProtoMessage()    {}
 
-func (m *Proto_MessageV1) GetSession() *Proto_MessageV1_Session {
+func (m *Proto_Message) GetSession() *Proto_Message_Session {
 	if m != nil {
 		return m.Session
 	}
 	return nil
 }
 
-func (m *Proto_MessageV1) GetId() string {
+func (m *Proto_Message) GetId() string {
 	if m != nil && m.Id != nil {
 		return *m.Id
 	}
 	return ""
 }
 
-func (m *Proto_MessageV1) GetFrom() string {
+func (m *Proto_Message) GetFrom() string {
 	if m != nil && m.From != nil {
 		return *m.From
 	}
 	return ""
 }
 
-func (m *Proto_MessageV1) GetRcpt() []string {
+func (m *Proto_Message) GetRcpt() []string {
 	if m != nil {
 		return m.Rcpt
 	}
 	return nil
 }
 
-func (m *Proto_MessageV1) GetHeaders() []*Proto_MessageV1_Header {
+func (m *Proto_Message) GetHeaders() []*Proto_Message_Header {
 	if m != nil {
 		return m.Headers
 	}
 	return nil
 }
 
-func (m *Proto_MessageV1) GetBody() []byte {
+func (m *Proto_Message) GetBody() []byte {
 	if m != nil {
 		return m.Body
 	}
 	return nil
 }
 
-func (m *Proto_MessageV1) GetVerdict() Proto_MessageV1_Verdict {
+func (m *Proto_Message) GetVerdict() Proto_Message_Verdict {
 	if m != nil && m.Verdict != nil {
 		return *m.Verdict
 	}
-	return Proto_MessageV1_PERMIT
+	return Proto_Message_PERMIT
 }
 
-func (m *Proto_MessageV1) GetVerdictMsg() string {
+func (m *Proto_Message) GetVerdictMsg() string {
 	if m != nil && m.VerdictMsg != nil {
 		return *m.VerdictMsg
 	}
 	return ""
 }
 
-func (m *Proto_MessageV1) GetRejectScore() float64 {
+func (m *Proto_Message) GetRejectScore() float64 {
 	if m != nil && m.RejectScore != nil {
 		return *m.RejectScore
 	}
 	return 0
 }
 
-func (m *Proto_MessageV1) GetRejectScoreThreshold() float64 {
+func (m *Proto_Message) GetRejectScoreThreshold() float64 {
 	if m != nil && m.RejectScoreThreshold != nil {
 		return *m.RejectScoreThreshold
 	}
 	return 0
 }
 
-func (m *Proto_MessageV1) GetTempfailScore() float64 {
+func (m *Proto_Message) GetTempfailScore() float64 {
 	if m != nil && m.TempfailScore != nil {
 		return *m.TempfailScore
 	}
 	return 0
 }
 
-func (m *Proto_MessageV1) GetTempfailScoreThreshold() float64 {
+func (m *Proto_Message) GetTempfailScoreThreshold() float64 {
 	if m != nil && m.TempfailScoreThreshold != nil {
 		return *m.TempfailScoreThreshold
 	}
 	return 0
 }
 
-func (m *Proto_MessageV1) GetCheckResults() []*Proto_MessageV1_CheckResult {
+func (m *Proto_Message) GetCheckResults() []*Proto_Message_CheckResult {
 	if m != nil {
 		return m.CheckResults
 	}
 	return nil
 }
 
-type Proto_MessageV1_Session struct {
+type Proto_Message_Session struct {
 	InstanceId       *uint64 `protobuf:"varint,1,req,name=instanceId" json:"instanceId,omitempty"`
 	Id               []byte  `protobuf:"bytes,2,req,name=id" json:"id,omitempty"`
 	TimeStart        *uint64 `protobuf:"varint,3,req,name=timeStart" json:"timeStart,omitempty"`
@@ -199,218 +199,218 @@ type Proto_MessageV1_Session struct {
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Proto_MessageV1_Session) Reset()         { *m = Proto_MessageV1_Session{} }
-func (m *Proto_MessageV1_Session) String() string { return proto.CompactTextString(m) }
-func (*Proto_MessageV1_Session) ProtoMessage()    {}
+func (m *Proto_Message_Session) Reset()         { *m = Proto_Message_Session{} }
+func (m *Proto_Message_Session) String() string { return proto.CompactTextString(m) }
+func (*Proto_Message_Session) ProtoMessage()    {}
 
-func (m *Proto_MessageV1_Session) GetInstanceId() uint64 {
+func (m *Proto_Message_Session) GetInstanceId() uint64 {
 	if m != nil && m.InstanceId != nil {
 		return *m.InstanceId
 	}
 	return 0
 }
 
-func (m *Proto_MessageV1_Session) GetId() []byte {
+func (m *Proto_Message_Session) GetId() []byte {
 	if m != nil {
 		return m.Id
 	}
 	return nil
 }
 
-func (m *Proto_MessageV1_Session) GetTimeStart() uint64 {
+func (m *Proto_Message_Session) GetTimeStart() uint64 {
 	if m != nil && m.TimeStart != nil {
 		return *m.TimeStart
 	}
 	return 0
 }
 
-func (m *Proto_MessageV1_Session) GetTimeEnd() uint64 {
+func (m *Proto_Message_Session) GetTimeEnd() uint64 {
 	if m != nil && m.TimeEnd != nil {
 		return *m.TimeEnd
 	}
 	return 0
 }
 
-func (m *Proto_MessageV1_Session) GetSaslUsername() string {
+func (m *Proto_Message_Session) GetSaslUsername() string {
 	if m != nil && m.SaslUsername != nil {
 		return *m.SaslUsername
 	}
 	return ""
 }
 
-func (m *Proto_MessageV1_Session) GetSaslSender() string {
+func (m *Proto_Message_Session) GetSaslSender() string {
 	if m != nil && m.SaslSender != nil {
 		return *m.SaslSender
 	}
 	return ""
 }
 
-func (m *Proto_MessageV1_Session) GetSaslMethod() string {
+func (m *Proto_Message_Session) GetSaslMethod() string {
 	if m != nil && m.SaslMethod != nil {
 		return *m.SaslMethod
 	}
 	return ""
 }
 
-func (m *Proto_MessageV1_Session) GetCertIssuer() string {
+func (m *Proto_Message_Session) GetCertIssuer() string {
 	if m != nil && m.CertIssuer != nil {
 		return *m.CertIssuer
 	}
 	return ""
 }
 
-func (m *Proto_MessageV1_Session) GetCertSubject() string {
+func (m *Proto_Message_Session) GetCertSubject() string {
 	if m != nil && m.CertSubject != nil {
 		return *m.CertSubject
 	}
 	return ""
 }
 
-func (m *Proto_MessageV1_Session) GetCipherBits() uint32 {
+func (m *Proto_Message_Session) GetCipherBits() uint32 {
 	if m != nil && m.CipherBits != nil {
 		return *m.CipherBits
 	}
 	return 0
 }
 
-func (m *Proto_MessageV1_Session) GetCipher() string {
+func (m *Proto_Message_Session) GetCipher() string {
 	if m != nil && m.Cipher != nil {
 		return *m.Cipher
 	}
 	return ""
 }
 
-func (m *Proto_MessageV1_Session) GetTlsVersion() string {
+func (m *Proto_Message_Session) GetTlsVersion() string {
 	if m != nil && m.TlsVersion != nil {
 		return *m.TlsVersion
 	}
 	return ""
 }
 
-func (m *Proto_MessageV1_Session) GetIp() string {
+func (m *Proto_Message_Session) GetIp() string {
 	if m != nil && m.Ip != nil {
 		return *m.Ip
 	}
 	return ""
 }
 
-func (m *Proto_MessageV1_Session) GetReverseDns() string {
+func (m *Proto_Message_Session) GetReverseDns() string {
 	if m != nil && m.ReverseDns != nil {
 		return *m.ReverseDns
 	}
 	return ""
 }
 
-func (m *Proto_MessageV1_Session) GetHostname() string {
+func (m *Proto_Message_Session) GetHostname() string {
 	if m != nil && m.Hostname != nil {
 		return *m.Hostname
 	}
 	return ""
 }
 
-func (m *Proto_MessageV1_Session) GetHelo() string {
+func (m *Proto_Message_Session) GetHelo() string {
 	if m != nil && m.Helo != nil {
 		return *m.Helo
 	}
 	return ""
 }
 
-func (m *Proto_MessageV1_Session) GetMtaHostName() string {
+func (m *Proto_Message_Session) GetMtaHostName() string {
 	if m != nil && m.MtaHostName != nil {
 		return *m.MtaHostName
 	}
 	return ""
 }
 
-func (m *Proto_MessageV1_Session) GetMtaDaemonName() string {
+func (m *Proto_Message_Session) GetMtaDaemonName() string {
 	if m != nil && m.MtaDaemonName != nil {
 		return *m.MtaDaemonName
 	}
 	return ""
 }
 
-type Proto_MessageV1_Header struct {
+type Proto_Message_Header struct {
 	Key              *string `protobuf:"bytes,1,req,name=key" json:"key,omitempty"`
 	Value            *string `protobuf:"bytes,2,req,name=value" json:"value,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Proto_MessageV1_Header) Reset()         { *m = Proto_MessageV1_Header{} }
-func (m *Proto_MessageV1_Header) String() string { return proto.CompactTextString(m) }
-func (*Proto_MessageV1_Header) ProtoMessage()    {}
+func (m *Proto_Message_Header) Reset()         { *m = Proto_Message_Header{} }
+func (m *Proto_Message_Header) String() string { return proto.CompactTextString(m) }
+func (*Proto_Message_Header) ProtoMessage()    {}
 
-func (m *Proto_MessageV1_Header) GetKey() string {
+func (m *Proto_Message_Header) GetKey() string {
 	if m != nil && m.Key != nil {
 		return *m.Key
 	}
 	return ""
 }
 
-func (m *Proto_MessageV1_Header) GetValue() string {
+func (m *Proto_Message_Header) GetValue() string {
 	if m != nil && m.Value != nil {
 		return *m.Value
 	}
 	return ""
 }
 
-type Proto_MessageV1_CheckResult struct {
-	MessageId        *string                  `protobuf:"bytes,1,req,name=message_id" json:"message_id,omitempty"`
-	Module           *string                  `protobuf:"bytes,2,req,name=module" json:"module,omitempty"`
-	Verdict          *Proto_MessageV1_Verdict `protobuf:"varint,3,req,name=verdict,enum=main.Proto_MessageV1_Verdict" json:"verdict,omitempty"`
-	Score            *float64                 `protobuf:"fixed64,4,req,name=score" json:"score,omitempty"`
-	WeightedScore    *float64                 `protobuf:"fixed64,5,req,name=weightedScore" json:"weightedScore,omitempty"`
-	Duration         *float64                 `protobuf:"fixed64,6,req,name=duration" json:"duration,omitempty"`
-	Determinants     []byte                   `protobuf:"bytes,7,opt,name=determinants" json:"determinants,omitempty"`
-	XXX_unrecognized []byte                   `json:"-"`
+type Proto_Message_CheckResult struct {
+	MessageId        *string                `protobuf:"bytes,1,req,name=message_id" json:"message_id,omitempty"`
+	Module           *string                `protobuf:"bytes,2,req,name=module" json:"module,omitempty"`
+	Verdict          *Proto_Message_Verdict `protobuf:"varint,3,req,name=verdict,enum=main.Proto_Message_Verdict" json:"verdict,omitempty"`
+	Score            *float64               `protobuf:"fixed64,4,req,name=score" json:"score,omitempty"`
+	WeightedScore    *float64               `protobuf:"fixed64,5,req,name=weightedScore" json:"weightedScore,omitempty"`
+	Duration         *float64               `protobuf:"fixed64,6,req,name=duration" json:"duration,omitempty"`
+	Determinants     []byte                 `protobuf:"bytes,7,opt,name=determinants" json:"determinants,omitempty"`
+	XXX_unrecognized []byte                 `json:"-"`
 }
 
-func (m *Proto_MessageV1_CheckResult) Reset()         { *m = Proto_MessageV1_CheckResult{} }
-func (m *Proto_MessageV1_CheckResult) String() string { return proto.CompactTextString(m) }
-func (*Proto_MessageV1_CheckResult) ProtoMessage()    {}
+func (m *Proto_Message_CheckResult) Reset()         { *m = Proto_Message_CheckResult{} }
+func (m *Proto_Message_CheckResult) String() string { return proto.CompactTextString(m) }
+func (*Proto_Message_CheckResult) ProtoMessage()    {}
 
-func (m *Proto_MessageV1_CheckResult) GetMessageId() string {
+func (m *Proto_Message_CheckResult) GetMessageId() string {
 	if m != nil && m.MessageId != nil {
 		return *m.MessageId
 	}
 	return ""
 }
 
-func (m *Proto_MessageV1_CheckResult) GetModule() string {
+func (m *Proto_Message_CheckResult) GetModule() string {
 	if m != nil && m.Module != nil {
 		return *m.Module
 	}
 	return ""
 }
 
-func (m *Proto_MessageV1_CheckResult) GetVerdict() Proto_MessageV1_Verdict {
+func (m *Proto_Message_CheckResult) GetVerdict() Proto_Message_Verdict {
 	if m != nil && m.Verdict != nil {
 		return *m.Verdict
 	}
-	return Proto_MessageV1_PERMIT
+	return Proto_Message_PERMIT
 }
 
-func (m *Proto_MessageV1_CheckResult) GetScore() float64 {
+func (m *Proto_Message_CheckResult) GetScore() float64 {
 	if m != nil && m.Score != nil {
 		return *m.Score
 	}
 	return 0
 }
 
-func (m *Proto_MessageV1_CheckResult) GetWeightedScore() float64 {
+func (m *Proto_Message_CheckResult) GetWeightedScore() float64 {
 	if m != nil && m.WeightedScore != nil {
 		return *m.WeightedScore
 	}
 	return 0
 }
 
-func (m *Proto_MessageV1_CheckResult) GetDuration() float64 {
+func (m *Proto_Message_CheckResult) GetDuration() float64 {
 	if m != nil && m.Duration != nil {
 		return *m.Duration
 	}
 	return 0
 }
 
-func (m *Proto_MessageV1_CheckResult) GetDeterminants() []byte {
+func (m *Proto_Message_CheckResult) GetDeterminants() []byte {
 	if m != nil {
 		return m.Determinants
 	}
@@ -418,13 +418,13 @@ func (m *Proto_MessageV1_CheckResult) GetDeterminants() []byte {
 }
 
 func init() {
-	proto.RegisterType((*Proto_MessageV1)(nil), "main.Proto_Message_v1")
-	proto.RegisterType((*Proto_MessageV1_Session)(nil), "main.Proto_Message_v1.Session")
-	proto.RegisterType((*Proto_MessageV1_Header)(nil), "main.Proto_Message_v1.Header")
-	proto.RegisterType((*Proto_MessageV1_CheckResult)(nil), "main.Proto_Message_v1.CheckResult")
-	proto.RegisterEnum("main.Proto_MessageV1_Verdict", Proto_MessageV1_Verdict_name, Proto_MessageV1_Verdict_value)
+	proto.RegisterType((*Proto_Message)(nil), "main.Proto_Message")
+	proto.RegisterType((*Proto_Message_Session)(nil), "main.Proto_Message.Session")
+	proto.RegisterType((*Proto_Message_Header)(nil), "main.Proto_Message.Header")
+	proto.RegisterType((*Proto_Message_CheckResult)(nil), "main.Proto_Message.CheckResult")
+	proto.RegisterEnum("main.Proto_Message_Verdict", Proto_Message_Verdict_name, Proto_Message_Verdict_value)
 }
-func (m *Proto_MessageV1) Marshal() (data []byte, err error) {
+func (m *Proto_Message) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
 	n, err := m.MarshalTo(data)
@@ -434,7 +434,7 @@ func (m *Proto_MessageV1) Marshal() (data []byte, err error) {
 	return data[:n], nil
 }
 
-func (m *Proto_MessageV1) MarshalTo(data []byte) (int, error) {
+func (m *Proto_Message) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -561,7 +561,7 @@ func (m *Proto_MessageV1) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *Proto_MessageV1_Session) Marshal() (data []byte, err error) {
+func (m *Proto_Message_Session) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
 	n, err := m.MarshalTo(data)
@@ -571,7 +571,7 @@ func (m *Proto_MessageV1_Session) Marshal() (data []byte, err error) {
 	return data[:n], nil
 }
 
-func (m *Proto_MessageV1_Session) MarshalTo(data []byte) (int, error) {
+func (m *Proto_Message_Session) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -700,7 +700,7 @@ func (m *Proto_MessageV1_Session) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *Proto_MessageV1_Header) Marshal() (data []byte, err error) {
+func (m *Proto_Message_Header) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
 	n, err := m.MarshalTo(data)
@@ -710,7 +710,7 @@ func (m *Proto_MessageV1_Header) Marshal() (data []byte, err error) {
 	return data[:n], nil
 }
 
-func (m *Proto_MessageV1_Header) MarshalTo(data []byte) (int, error) {
+func (m *Proto_Message_Header) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -737,7 +737,7 @@ func (m *Proto_MessageV1_Header) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *Proto_MessageV1_CheckResult) Marshal() (data []byte, err error) {
+func (m *Proto_Message_CheckResult) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
 	n, err := m.MarshalTo(data)
@@ -747,7 +747,7 @@ func (m *Proto_MessageV1_CheckResult) Marshal() (data []byte, err error) {
 	return data[:n], nil
 }
 
-func (m *Proto_MessageV1_CheckResult) MarshalTo(data []byte) (int, error) {
+func (m *Proto_Message_CheckResult) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -835,7 +835,7 @@ func encodeVarintCluegetter(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	return offset + 1
 }
-func (m *Proto_MessageV1) Size() (n int) {
+func (m *Proto_Message) Size() (n int) {
 	var l int
 	_ = l
 	if m.Session != nil {
@@ -897,7 +897,7 @@ func (m *Proto_MessageV1) Size() (n int) {
 	return n
 }
 
-func (m *Proto_MessageV1_Session) Size() (n int) {
+func (m *Proto_Message_Session) Size() (n int) {
 	var l int
 	_ = l
 	if m.InstanceId != nil {
@@ -974,7 +974,7 @@ func (m *Proto_MessageV1_Session) Size() (n int) {
 	return n
 }
 
-func (m *Proto_MessageV1_Header) Size() (n int) {
+func (m *Proto_Message_Header) Size() (n int) {
 	var l int
 	_ = l
 	if m.Key != nil {
@@ -991,7 +991,7 @@ func (m *Proto_MessageV1_Header) Size() (n int) {
 	return n
 }
 
-func (m *Proto_MessageV1_CheckResult) Size() (n int) {
+func (m *Proto_Message_CheckResult) Size() (n int) {
 	var l int
 	_ = l
 	if m.MessageId != nil {
@@ -1037,7 +1037,7 @@ func sovCluegetter(x uint64) (n int) {
 func sozCluegetter(x uint64) (n int) {
 	return sovCluegetter(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *Proto_MessageV1) Unmarshal(data []byte) error {
+func (m *Proto_Message) Unmarshal(data []byte) error {
 	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
@@ -1061,10 +1061,10 @@ func (m *Proto_MessageV1) Unmarshal(data []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: Proto_Message_v1: wiretype end group for non-group")
+			return fmt.Errorf("proto: Proto_Message: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Proto_Message_v1: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: Proto_Message: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1094,7 +1094,7 @@ func (m *Proto_MessageV1) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Session == nil {
-				m.Session = &Proto_MessageV1_Session{}
+				m.Session = &Proto_Message_Session{}
 			}
 			if err := m.Session.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
@@ -1218,7 +1218,7 @@ func (m *Proto_MessageV1) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Headers = append(m.Headers, &Proto_MessageV1_Header{})
+			m.Headers = append(m.Headers, &Proto_Message_Header{})
 			if err := m.Headers[len(m.Headers)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -1255,7 +1255,7 @@ func (m *Proto_MessageV1) Unmarshal(data []byte) error {
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Verdict", wireType)
 			}
-			var v Proto_MessageV1_Verdict
+			var v Proto_Message_Verdict
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowCluegetter
@@ -1265,7 +1265,7 @@ func (m *Proto_MessageV1) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				v |= (Proto_MessageV1_Verdict(b) & 0x7F) << shift
+				v |= (Proto_Message_Verdict(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1409,7 +1409,7 @@ func (m *Proto_MessageV1) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.CheckResults = append(m.CheckResults, &Proto_MessageV1_CheckResult{})
+			m.CheckResults = append(m.CheckResults, &Proto_Message_CheckResult{})
 			if err := m.CheckResults[len(m.CheckResults)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -1463,7 +1463,7 @@ func (m *Proto_MessageV1) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *Proto_MessageV1_Session) Unmarshal(data []byte) error {
+func (m *Proto_Message_Session) Unmarshal(data []byte) error {
 	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
@@ -2029,7 +2029,7 @@ func (m *Proto_MessageV1_Session) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *Proto_MessageV1_Header) Unmarshal(data []byte) error {
+func (m *Proto_Message_Header) Unmarshal(data []byte) error {
 	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
@@ -2149,7 +2149,7 @@ func (m *Proto_MessageV1_Header) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *Proto_MessageV1_CheckResult) Unmarshal(data []byte) error {
+func (m *Proto_Message_CheckResult) Unmarshal(data []byte) error {
 	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
@@ -2245,7 +2245,7 @@ func (m *Proto_MessageV1_CheckResult) Unmarshal(data []byte) error {
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Verdict", wireType)
 			}
-			var v Proto_MessageV1_Verdict
+			var v Proto_Message_Verdict
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowCluegetter
@@ -2255,7 +2255,7 @@ func (m *Proto_MessageV1_CheckResult) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				v |= (Proto_MessageV1_Verdict(b) & 0x7F) << shift
+				v |= (Proto_Message_Verdict(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}

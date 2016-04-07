@@ -2,7 +2,7 @@ syntax = "proto2";
 
 package main;
 
-message Proto_Message_v1 {
+message Proto_Message {
 
     required Session session   = 1;
 

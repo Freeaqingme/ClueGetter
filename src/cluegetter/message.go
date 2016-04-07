@@ -235,13 +235,13 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 
 	errorCount = errorCount - messageWeighResults(flatResults)
 
-	checkResults := make([]*Proto_MessageV1_CheckResult, 0)
+	checkResults := make([]*Proto_Message_CheckResult, 0)
 	for _, result := range flatResults {
 		determinants, _ := json.Marshal(result.determinants)
 
 		duration := result.duration.Seconds()
-		verdict := Proto_MessageV1_Verdict(result.suggestedAction)
-		protoStruct := &Proto_MessageV1_CheckResult{
+		verdict := Proto_Message_Verdict(result.suggestedAction)
+		protoStruct := &Proto_Message_CheckResult{
 			MessageId:     &msg.QueueId,
 			Module:        &result.module,
 			Verdict:       &verdict,
@@ -405,18 +405,18 @@ func messageGetResults(msg *Message, done chan bool) chan *MessageCheckResult {
 	return out
 }
 
-func messageSave(msg *Message, checkResults []*Proto_MessageV1_CheckResult, verdict int,
+func messageSave(msg *Message, checkResults []*Proto_Message_CheckResult, verdict int,
 	verdictMsg string, rejectScore float64, tempfailScore float64) {
 
-	headers := make([]*Proto_MessageV1_Header, len(msg.Headers))
+	headers := make([]*Proto_Message_Header, len(msg.Headers))
 	for k, v := range msg.Headers {
 		headerKey := v.getKey()
 		headerValue := v.getValue()
-		headers[k] = &Proto_MessageV1_Header{Key: &headerKey, Value: &headerValue}
+		headers[k] = &Proto_Message_Header{Key: &headerKey, Value: &headerValue}
 	}
 
-	verdictEnum := Proto_MessageV1_Verdict(verdict)
-	protoStruct := &Proto_MessageV1{
+	verdictEnum := Proto_Message_Verdict(verdict)
+	protoStruct := &Proto_Message{
 		Id:                     &msg.QueueId,
 		From:                   &msg.From,
 		Rcpt:                   msg.Rcpt,

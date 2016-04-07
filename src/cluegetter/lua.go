@@ -82,7 +82,7 @@ func luaMilterCheck(luaModuleName string, msg *Message, done chan bool) *Message
 
 	var suggestedAction int32
 	var ok bool
-	if suggestedAction, ok = Proto_MessageV1_Verdict_value[suggestedActionStr.String()]; !ok {
+	if suggestedAction, ok = Proto_Message_Verdict_value[suggestedActionStr.String()]; !ok {
 		panic("Invalid suggested action from lua module '" + luaModuleName + "': " + suggestedActionStr.String())
 	}
 

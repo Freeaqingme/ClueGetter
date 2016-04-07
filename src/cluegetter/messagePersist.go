@@ -82,8 +82,8 @@ func messagePersistProtoBuf(protoBuf []byte) {
 	messagePersist(msg)
 }
 
-func messagePersistUnmarshalProto(protoBuf []byte) (*Proto_MessageV1, error) {
-	msg := &Proto_MessageV1{}
+func messagePersistUnmarshalProto(protoBuf []byte) (*Proto_Message, error) {
+	msg := &Proto_Message{}
 	err := msg.Unmarshal(protoBuf)
 	if err != nil {
 		return nil, errors.New("Error unmarshalling message: " + err.Error())
@@ -270,7 +270,7 @@ WaitForNext:
 	}
 }
 
-func messagePersist(msg *Proto_MessageV1) {
+func messagePersist(msg *Proto_Message) {
 	sess := *msg.Session
 	milterSessionPersist(&sess)
 
@@ -330,7 +330,7 @@ func messagePersist(msg *Proto_MessageV1) {
 
 }
 
-func messageSaveCheckResults(msg *Proto_MessageV1) {
+func messageSaveCheckResults(msg *Proto_Message) {
 	for _, result := range msg.CheckResults {
 
 		StatsCounters["RdbmsQueries"].increase(1)
@@ -344,7 +344,7 @@ func messageSaveCheckResults(msg *Proto_MessageV1) {
 	}
 }
 
-func messageSaveHeaders(msg *Proto_MessageV1) {
+func messageSaveHeaders(msg *Proto_Message) {
 	for _, headerPair := range msg.Headers {
 		StatsCounters["RdbmsQueries"].increase(1)
 		_, err := MessageStmtInsertMsgHdr.Exec(
@@ -360,7 +360,7 @@ func messageSaveHeaders(msg *Proto_MessageV1) {
 /**
  * Store message in chunks of 65K bytes
  */
-func messageSaveBody(msg *Proto_MessageV1) {
+func messageSaveBody(msg *Proto_Message) {
 	for i := 0; (i * 65535) < len(msg.Body); i++ {
 		StatsCounters["RdbmsQueries"].increase(1)
 		boundary := (i + 1) * 65535

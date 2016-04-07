@@ -86,7 +86,7 @@ func bayesHandleReportMessageIdQueueItem(item string) {
 	}
 }
 
-func bayesAddToCorpus(spam bool, msg *Proto_MessageV1, messageId, host, reporter, reason string) {
+func bayesAddToCorpus(spam bool, msg *Proto_Message, messageId, host, reporter, reason string) {
 	// TODO
 }
 
@@ -139,10 +139,10 @@ func bayesLearn(item string) {
 	saLearn(msg, dat["spam"] == "spam")
 }
 
-// This shows the disadvantage of having both a Message and Proto_MessageV1
+// This shows the disadvantage of having both a Message and Proto_Message
 // object. We really should look into merging the Message and Proto_ objects
 // and subsequently merge this with: func (msg *Message) String() []byte
-func bayesRenderProtoMsg(msg *Proto_MessageV1) []byte {
+func bayesRenderProtoMsg(msg *Proto_Message) []byte {
 	sess := *msg.Session
 	fqdn := sess.Hostname
 	revdns, err := net.LookupAddr(*sess.Ip)

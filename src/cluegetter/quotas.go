@@ -484,13 +484,13 @@ func quotasRedisAddMsg(quotasKey *string, count int) func(*Message, int) {
 
 func quotasRdbmsAddMsg(quota_id uint64) func(*Message, int) {
 	return func(msg *Message, verdict int) {
-		if verdict != Proto_MessageV1_PERMIT && verdict != Proto_MessageV1_REJECT {
+		if verdict != messagePermit && verdict != messageReject {
 			return
 		}
 
 		// Right now we have no sync mechanism that ensures that the quotas
 		// are persisted after the message (the message being persisted
-		// asynchronously. As such, we use a crude delay and hope
+		// asynchronously). As such, we use a crude delay and hope
 		// for the best. Improvements are welcome.
 		time.Sleep(5 * time.Second)
 

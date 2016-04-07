@@ -127,7 +127,7 @@ func saParseReplyReportVar(reportFactRaw map[string]interface{}) *saReportFact {
 	return reportFact
 }
 
-func saLearn(msg *Proto_MessageV1, spam bool) {
+func saLearn(msg *Proto_Message, spam bool) {
 	if !Config.SpamAssassin.Enabled {
 		return
 	}
