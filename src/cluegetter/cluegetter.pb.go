@@ -10,6 +10,7 @@
 
 	It has these top-level messages:
 		Proto_Message
+		Proto_Session
 */
 package main
 
@@ -66,7 +67,7 @@ func (x *Proto_Message_Verdict) UnmarshalJSON(data []byte) error {
 }
 
 type Proto_Message struct {
-	Session                *Proto_Message_Session       `protobuf:"bytes,1,req,name=session" json:"session,omitempty"`
+	Session                *Proto_Session               `protobuf:"bytes,1,req,name=session" json:"session,omitempty"`
 	Id                     *string                      `protobuf:"bytes,2,req,name=id" json:"id,omitempty"`
 	From                   *string                      `protobuf:"bytes,3,req,name=from" json:"from,omitempty"`
 	Rcpt                   []string                     `protobuf:"bytes,4,rep,name=rcpt" json:"rcpt,omitempty"`
@@ -86,7 +87,7 @@ func (m *Proto_Message) Reset()         { *m = Proto_Message{} }
 func (m *Proto_Message) String() string { return proto.CompactTextString(m) }
 func (*Proto_Message) ProtoMessage()    {}
 
-func (m *Proto_Message) GetSession() *Proto_Message_Session {
+func (m *Proto_Message) GetSession() *Proto_Session {
 	if m != nil {
 		return m.Session
 	}
@@ -177,182 +178,6 @@ func (m *Proto_Message) GetCheckResults() []*Proto_Message_CheckResult {
 	return nil
 }
 
-type Proto_Message_Session struct {
-	InstanceId       *uint64 `protobuf:"varint,1,req,name=instanceId" json:"instanceId,omitempty"`
-	Id               []byte  `protobuf:"bytes,2,req,name=id" json:"id,omitempty"`
-	TimeStart        *uint64 `protobuf:"varint,3,req,name=timeStart" json:"timeStart,omitempty"`
-	TimeEnd          *uint64 `protobuf:"varint,4,opt,name=timeEnd" json:"timeEnd,omitempty"`
-	SaslUsername     *string `protobuf:"bytes,5,opt,name=saslUsername" json:"saslUsername,omitempty"`
-	SaslSender       *string `protobuf:"bytes,6,opt,name=saslSender" json:"saslSender,omitempty"`
-	SaslMethod       *string `protobuf:"bytes,7,opt,name=saslMethod" json:"saslMethod,omitempty"`
-	CertIssuer       *string `protobuf:"bytes,8,opt,name=certIssuer" json:"certIssuer,omitempty"`
-	CertSubject      *string `protobuf:"bytes,9,opt,name=certSubject" json:"certSubject,omitempty"`
-	CipherBits       *uint32 `protobuf:"varint,10,opt,name=cipherBits" json:"cipherBits,omitempty"`
-	Cipher           *string `protobuf:"bytes,11,opt,name=cipher" json:"cipher,omitempty"`
-	TlsVersion       *string `protobuf:"bytes,12,opt,name=tlsVersion" json:"tlsVersion,omitempty"`
-	Ip               *string `protobuf:"bytes,13,req,name=ip" json:"ip,omitempty"`
-	ReverseDns       *string `protobuf:"bytes,14,opt,name=reverseDns" json:"reverseDns,omitempty"`
-	Hostname         *string `protobuf:"bytes,15,opt,name=hostname" json:"hostname,omitempty"`
-	Helo             *string `protobuf:"bytes,16,opt,name=helo" json:"helo,omitempty"`
-	MtaHostName      *string `protobuf:"bytes,17,opt,name=mtaHostName" json:"mtaHostName,omitempty"`
-	MtaDaemonName    *string `protobuf:"bytes,18,opt,name=mtaDaemonName" json:"mtaDaemonName,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
-}
-
-func (m *Proto_Message_Session) Reset()         { *m = Proto_Message_Session{} }
-func (m *Proto_Message_Session) String() string { return proto.CompactTextString(m) }
-func (*Proto_Message_Session) ProtoMessage()    {}
-
-func (m *Proto_Message_Session) GetInstanceId() uint64 {
-	if m != nil && m.InstanceId != nil {
-		return *m.InstanceId
-	}
-	return 0
-}
-
-func (m *Proto_Message_Session) GetId() []byte {
-	if m != nil {
-		return m.Id
-	}
-	return nil
-}
-
-func (m *Proto_Message_Session) GetTimeStart() uint64 {
-	if m != nil && m.TimeStart != nil {
-		return *m.TimeStart
-	}
-	return 0
-}
-
-func (m *Proto_Message_Session) GetTimeEnd() uint64 {
-	if m != nil && m.TimeEnd != nil {
-		return *m.TimeEnd
-	}
-	return 0
-}
-
-func (m *Proto_Message_Session) GetSaslUsername() string {
-	if m != nil && m.SaslUsername != nil {
-		return *m.SaslUsername
-	}
-	return ""
-}
-
-func (m *Proto_Message_Session) GetSaslSender() string {
-	if m != nil && m.SaslSender != nil {
-		return *m.SaslSender
-	}
-	return ""
-}
-
-func (m *Proto_Message_Session) GetSaslMethod() string {
-	if m != nil && m.SaslMethod != nil {
-		return *m.SaslMethod
-	}
-	return ""
-}
-
-func (m *Proto_Message_Session) GetCertIssuer() string {
-	if m != nil && m.CertIssuer != nil {
-		return *m.CertIssuer
-	}
-	return ""
-}
-
-func (m *Proto_Message_Session) GetCertSubject() string {
-	if m != nil && m.CertSubject != nil {
-		return *m.CertSubject
-	}
-	return ""
-}
-
-func (m *Proto_Message_Session) GetCipherBits() uint32 {
-	if m != nil && m.CipherBits != nil {
-		return *m.CipherBits
-	}
-	return 0
-}
-
-func (m *Proto_Message_Session) GetCipher() string {
-	if m != nil && m.Cipher != nil {
-		return *m.Cipher
-	}
-	return ""
-}
-
-func (m *Proto_Message_Session) GetTlsVersion() string {
-	if m != nil && m.TlsVersion != nil {
-		return *m.TlsVersion
-	}
-	return ""
-}
-
-func (m *Proto_Message_Session) GetIp() string {
-	if m != nil && m.Ip != nil {
-		return *m.Ip
-	}
-	return ""
-}
-
-func (m *Proto_Message_Session) GetReverseDns() string {
-	if m != nil && m.ReverseDns != nil {
-		return *m.ReverseDns
-	}
-	return ""
-}
-
-func (m *Proto_Message_Session) GetHostname() string {
-	if m != nil && m.Hostname != nil {
-		return *m.Hostname
-	}
-	return ""
-}
-
-func (m *Proto_Message_Session) GetHelo() string {
-	if m != nil && m.Helo != nil {
-		return *m.Helo
-	}
-	return ""
-}
-
-func (m *Proto_Message_Session) GetMtaHostName() string {
-	if m != nil && m.MtaHostName != nil {
-		return *m.MtaHostName
-	}
-	return ""
-}
-
-func (m *Proto_Message_Session) GetMtaDaemonName() string {
-	if m != nil && m.MtaDaemonName != nil {
-		return *m.MtaDaemonName
-	}
-	return ""
-}
-
-type Proto_Message_Header struct {
-	Key              *string `protobuf:"bytes,1,req,name=key" json:"key,omitempty"`
-	Value            *string `protobuf:"bytes,2,req,name=value" json:"value,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
-}
-
-func (m *Proto_Message_Header) Reset()         { *m = Proto_Message_Header{} }
-func (m *Proto_Message_Header) String() string { return proto.CompactTextString(m) }
-func (*Proto_Message_Header) ProtoMessage()    {}
-
-func (m *Proto_Message_Header) GetKey() string {
-	if m != nil && m.Key != nil {
-		return *m.Key
-	}
-	return ""
-}
-
-func (m *Proto_Message_Header) GetValue() string {
-	if m != nil && m.Value != nil {
-		return *m.Value
-	}
-	return ""
-}
-
 type Proto_Message_CheckResult struct {
 	MessageId        *string                `protobuf:"bytes,1,req,name=message_id" json:"message_id,omitempty"`
 	Module           *string                `protobuf:"bytes,2,req,name=module" json:"module,omitempty"`
@@ -417,11 +242,187 @@ func (m *Proto_Message_CheckResult) GetDeterminants() []byte {
 	return nil
 }
 
+type Proto_Message_Header struct {
+	Key              *string `protobuf:"bytes,1,req,name=key" json:"key,omitempty"`
+	Value            *string `protobuf:"bytes,2,req,name=value" json:"value,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *Proto_Message_Header) Reset()         { *m = Proto_Message_Header{} }
+func (m *Proto_Message_Header) String() string { return proto.CompactTextString(m) }
+func (*Proto_Message_Header) ProtoMessage()    {}
+
+func (m *Proto_Message_Header) GetKey() string {
+	if m != nil && m.Key != nil {
+		return *m.Key
+	}
+	return ""
+}
+
+func (m *Proto_Message_Header) GetValue() string {
+	if m != nil && m.Value != nil {
+		return *m.Value
+	}
+	return ""
+}
+
+type Proto_Session struct {
+	InstanceId       *uint64 `protobuf:"varint,1,req,name=instanceId" json:"instanceId,omitempty"`
+	Id               []byte  `protobuf:"bytes,2,req,name=id" json:"id,omitempty"`
+	TimeStart        *uint64 `protobuf:"varint,3,req,name=timeStart" json:"timeStart,omitempty"`
+	TimeEnd          *uint64 `protobuf:"varint,4,opt,name=timeEnd" json:"timeEnd,omitempty"`
+	SaslUsername     *string `protobuf:"bytes,5,opt,name=saslUsername" json:"saslUsername,omitempty"`
+	SaslSender       *string `protobuf:"bytes,6,opt,name=saslSender" json:"saslSender,omitempty"`
+	SaslMethod       *string `protobuf:"bytes,7,opt,name=saslMethod" json:"saslMethod,omitempty"`
+	CertIssuer       *string `protobuf:"bytes,8,opt,name=certIssuer" json:"certIssuer,omitempty"`
+	CertSubject      *string `protobuf:"bytes,9,opt,name=certSubject" json:"certSubject,omitempty"`
+	CipherBits       *uint32 `protobuf:"varint,10,opt,name=cipherBits" json:"cipherBits,omitempty"`
+	Cipher           *string `protobuf:"bytes,11,opt,name=cipher" json:"cipher,omitempty"`
+	TlsVersion       *string `protobuf:"bytes,12,opt,name=tlsVersion" json:"tlsVersion,omitempty"`
+	Ip               *string `protobuf:"bytes,13,req,name=ip" json:"ip,omitempty"`
+	ReverseDns       *string `protobuf:"bytes,14,opt,name=reverseDns" json:"reverseDns,omitempty"`
+	Hostname         *string `protobuf:"bytes,15,opt,name=hostname" json:"hostname,omitempty"`
+	Helo             *string `protobuf:"bytes,16,opt,name=helo" json:"helo,omitempty"`
+	MtaHostName      *string `protobuf:"bytes,17,opt,name=mtaHostName" json:"mtaHostName,omitempty"`
+	MtaDaemonName    *string `protobuf:"bytes,18,opt,name=mtaDaemonName" json:"mtaDaemonName,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *Proto_Session) Reset()         { *m = Proto_Session{} }
+func (m *Proto_Session) String() string { return proto.CompactTextString(m) }
+func (*Proto_Session) ProtoMessage()    {}
+
+func (m *Proto_Session) GetInstanceId() uint64 {
+	if m != nil && m.InstanceId != nil {
+		return *m.InstanceId
+	}
+	return 0
+}
+
+func (m *Proto_Session) GetId() []byte {
+	if m != nil {
+		return m.Id
+	}
+	return nil
+}
+
+func (m *Proto_Session) GetTimeStart() uint64 {
+	if m != nil && m.TimeStart != nil {
+		return *m.TimeStart
+	}
+	return 0
+}
+
+func (m *Proto_Session) GetTimeEnd() uint64 {
+	if m != nil && m.TimeEnd != nil {
+		return *m.TimeEnd
+	}
+	return 0
+}
+
+func (m *Proto_Session) GetSaslUsername() string {
+	if m != nil && m.SaslUsername != nil {
+		return *m.SaslUsername
+	}
+	return ""
+}
+
+func (m *Proto_Session) GetSaslSender() string {
+	if m != nil && m.SaslSender != nil {
+		return *m.SaslSender
+	}
+	return ""
+}
+
+func (m *Proto_Session) GetSaslMethod() string {
+	if m != nil && m.SaslMethod != nil {
+		return *m.SaslMethod
+	}
+	return ""
+}
+
+func (m *Proto_Session) GetCertIssuer() string {
+	if m != nil && m.CertIssuer != nil {
+		return *m.CertIssuer
+	}
+	return ""
+}
+
+func (m *Proto_Session) GetCertSubject() string {
+	if m != nil && m.CertSubject != nil {
+		return *m.CertSubject
+	}
+	return ""
+}
+
+func (m *Proto_Session) GetCipherBits() uint32 {
+	if m != nil && m.CipherBits != nil {
+		return *m.CipherBits
+	}
+	return 0
+}
+
+func (m *Proto_Session) GetCipher() string {
+	if m != nil && m.Cipher != nil {
+		return *m.Cipher
+	}
+	return ""
+}
+
+func (m *Proto_Session) GetTlsVersion() string {
+	if m != nil && m.TlsVersion != nil {
+		return *m.TlsVersion
+	}
+	return ""
+}
+
+func (m *Proto_Session) GetIp() string {
+	if m != nil && m.Ip != nil {
+		return *m.Ip
+	}
+	return ""
+}
+
+func (m *Proto_Session) GetReverseDns() string {
+	if m != nil && m.ReverseDns != nil {
+		return *m.ReverseDns
+	}
+	return ""
+}
+
+func (m *Proto_Session) GetHostname() string {
+	if m != nil && m.Hostname != nil {
+		return *m.Hostname
+	}
+	return ""
+}
+
+func (m *Proto_Session) GetHelo() string {
+	if m != nil && m.Helo != nil {
+		return *m.Helo
+	}
+	return ""
+}
+
+func (m *Proto_Session) GetMtaHostName() string {
+	if m != nil && m.MtaHostName != nil {
+		return *m.MtaHostName
+	}
+	return ""
+}
+
+func (m *Proto_Session) GetMtaDaemonName() string {
+	if m != nil && m.MtaDaemonName != nil {
+		return *m.MtaDaemonName
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*Proto_Message)(nil), "main.Proto_Message")
-	proto.RegisterType((*Proto_Message_Session)(nil), "main.Proto_Message.Session")
-	proto.RegisterType((*Proto_Message_Header)(nil), "main.Proto_Message.Header")
 	proto.RegisterType((*Proto_Message_CheckResult)(nil), "main.Proto_Message.CheckResult")
+	proto.RegisterType((*Proto_Message_Header)(nil), "main.Proto_Message.Header")
+	proto.RegisterType((*Proto_Session)(nil), "main.Proto_Session")
 	proto.RegisterEnum("main.Proto_Message_Verdict", Proto_Message_Verdict_name, Proto_Message_Verdict_value)
 }
 func (m *Proto_Message) Marshal() (data []byte, err error) {
@@ -561,7 +562,7 @@ func (m *Proto_Message) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *Proto_Message_Session) Marshal() (data []byte, err error) {
+func (m *Proto_Message_CheckResult) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
 	n, err := m.MarshalTo(data)
@@ -571,7 +572,115 @@ func (m *Proto_Message_Session) Marshal() (data []byte, err error) {
 	return data[:n], nil
 }
 
-func (m *Proto_Message_Session) MarshalTo(data []byte) (int, error) {
+func (m *Proto_Message_CheckResult) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.MessageId == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0xa
+		i++
+		i = encodeVarintCluegetter(data, i, uint64(len(*m.MessageId)))
+		i += copy(data[i:], *m.MessageId)
+	}
+	if m.Module == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x12
+		i++
+		i = encodeVarintCluegetter(data, i, uint64(len(*m.Module)))
+		i += copy(data[i:], *m.Module)
+	}
+	if m.Verdict == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x18
+		i++
+		i = encodeVarintCluegetter(data, i, uint64(*m.Verdict))
+	}
+	if m.Score == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x21
+		i++
+		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(*m.Score)))
+	}
+	if m.WeightedScore == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x29
+		i++
+		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(*m.WeightedScore)))
+	}
+	if m.Duration == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x31
+		i++
+		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(*m.Duration)))
+	}
+	if m.Determinants != nil {
+		data[i] = 0x3a
+		i++
+		i = encodeVarintCluegetter(data, i, uint64(len(m.Determinants)))
+		i += copy(data[i:], m.Determinants)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Proto_Message_Header) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Proto_Message_Header) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Key == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0xa
+		i++
+		i = encodeVarintCluegetter(data, i, uint64(len(*m.Key)))
+		i += copy(data[i:], *m.Key)
+	}
+	if m.Value == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x12
+		i++
+		i = encodeVarintCluegetter(data, i, uint64(len(*m.Value)))
+		i += copy(data[i:], *m.Value)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Proto_Session) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Proto_Session) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -700,114 +809,6 @@ func (m *Proto_Message_Session) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *Proto_Message_Header) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *Proto_Message_Header) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Key == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0xa
-		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.Key)))
-		i += copy(data[i:], *m.Key)
-	}
-	if m.Value == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x12
-		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.Value)))
-		i += copy(data[i:], *m.Value)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
-	}
-	return i, nil
-}
-
-func (m *Proto_Message_CheckResult) Marshal() (data []byte, err error) {
-	size := m.Size()
-	data = make([]byte, size)
-	n, err := m.MarshalTo(data)
-	if err != nil {
-		return nil, err
-	}
-	return data[:n], nil
-}
-
-func (m *Proto_Message_CheckResult) MarshalTo(data []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.MessageId == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0xa
-		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.MessageId)))
-		i += copy(data[i:], *m.MessageId)
-	}
-	if m.Module == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x12
-		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.Module)))
-		i += copy(data[i:], *m.Module)
-	}
-	if m.Verdict == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x18
-		i++
-		i = encodeVarintCluegetter(data, i, uint64(*m.Verdict))
-	}
-	if m.Score == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x21
-		i++
-		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(*m.Score)))
-	}
-	if m.WeightedScore == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x29
-		i++
-		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(*m.WeightedScore)))
-	}
-	if m.Duration == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
-		data[i] = 0x31
-		i++
-		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(*m.Duration)))
-	}
-	if m.Determinants != nil {
-		data[i] = 0x3a
-		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(m.Determinants)))
-		i += copy(data[i:], m.Determinants)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
-	}
-	return i, nil
-}
-
 func encodeFixed64Cluegetter(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	data[offset+1] = uint8(v >> 8)
@@ -897,7 +898,57 @@ func (m *Proto_Message) Size() (n int) {
 	return n
 }
 
-func (m *Proto_Message_Session) Size() (n int) {
+func (m *Proto_Message_CheckResult) Size() (n int) {
+	var l int
+	_ = l
+	if m.MessageId != nil {
+		l = len(*m.MessageId)
+		n += 1 + l + sovCluegetter(uint64(l))
+	}
+	if m.Module != nil {
+		l = len(*m.Module)
+		n += 1 + l + sovCluegetter(uint64(l))
+	}
+	if m.Verdict != nil {
+		n += 1 + sovCluegetter(uint64(*m.Verdict))
+	}
+	if m.Score != nil {
+		n += 9
+	}
+	if m.WeightedScore != nil {
+		n += 9
+	}
+	if m.Duration != nil {
+		n += 9
+	}
+	if m.Determinants != nil {
+		l = len(m.Determinants)
+		n += 1 + l + sovCluegetter(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Proto_Message_Header) Size() (n int) {
+	var l int
+	_ = l
+	if m.Key != nil {
+		l = len(*m.Key)
+		n += 1 + l + sovCluegetter(uint64(l))
+	}
+	if m.Value != nil {
+		l = len(*m.Value)
+		n += 1 + l + sovCluegetter(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Proto_Session) Size() (n int) {
 	var l int
 	_ = l
 	if m.InstanceId != nil {
@@ -967,56 +1018,6 @@ func (m *Proto_Message_Session) Size() (n int) {
 	if m.MtaDaemonName != nil {
 		l = len(*m.MtaDaemonName)
 		n += 2 + l + sovCluegetter(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *Proto_Message_Header) Size() (n int) {
-	var l int
-	_ = l
-	if m.Key != nil {
-		l = len(*m.Key)
-		n += 1 + l + sovCluegetter(uint64(l))
-	}
-	if m.Value != nil {
-		l = len(*m.Value)
-		n += 1 + l + sovCluegetter(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *Proto_Message_CheckResult) Size() (n int) {
-	var l int
-	_ = l
-	if m.MessageId != nil {
-		l = len(*m.MessageId)
-		n += 1 + l + sovCluegetter(uint64(l))
-	}
-	if m.Module != nil {
-		l = len(*m.Module)
-		n += 1 + l + sovCluegetter(uint64(l))
-	}
-	if m.Verdict != nil {
-		n += 1 + sovCluegetter(uint64(*m.Verdict))
-	}
-	if m.Score != nil {
-		n += 9
-	}
-	if m.WeightedScore != nil {
-		n += 9
-	}
-	if m.Duration != nil {
-		n += 9
-	}
-	if m.Determinants != nil {
-		l = len(m.Determinants)
-		n += 1 + l + sovCluegetter(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -1094,7 +1095,7 @@ func (m *Proto_Message) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Session == nil {
-				m.Session = &Proto_Message_Session{}
+				m.Session = &Proto_Session{}
 			}
 			if err := m.Session.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
@@ -1463,7 +1464,7 @@ func (m *Proto_Message) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *Proto_Message_Session) Unmarshal(data []byte) error {
+func (m *Proto_Message_CheckResult) Unmarshal(data []byte) error {
 	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
@@ -1487,10 +1488,371 @@ func (m *Proto_Message_Session) Unmarshal(data []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: Session: wiretype end group for non-group")
+			return fmt.Errorf("proto: CheckResult: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Session: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: CheckResult: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MessageId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCluegetter
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCluegetter
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.MessageId = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Module", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCluegetter
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCluegetter
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Module = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000002)
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Verdict", wireType)
+			}
+			var v Proto_Message_Verdict
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCluegetter
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (Proto_Message_Verdict(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Verdict = &v
+			hasFields[0] |= uint64(0x00000004)
+		case 4:
+			if wireType != 1 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Score", wireType)
+			}
+			var v uint64
+			if (iNdEx + 8) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += 8
+			v = uint64(data[iNdEx-8])
+			v |= uint64(data[iNdEx-7]) << 8
+			v |= uint64(data[iNdEx-6]) << 16
+			v |= uint64(data[iNdEx-5]) << 24
+			v |= uint64(data[iNdEx-4]) << 32
+			v |= uint64(data[iNdEx-3]) << 40
+			v |= uint64(data[iNdEx-2]) << 48
+			v |= uint64(data[iNdEx-1]) << 56
+			v2 := float64(math.Float64frombits(v))
+			m.Score = &v2
+			hasFields[0] |= uint64(0x00000008)
+		case 5:
+			if wireType != 1 {
+				return fmt.Errorf("proto: wrong wireType = %d for field WeightedScore", wireType)
+			}
+			var v uint64
+			if (iNdEx + 8) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += 8
+			v = uint64(data[iNdEx-8])
+			v |= uint64(data[iNdEx-7]) << 8
+			v |= uint64(data[iNdEx-6]) << 16
+			v |= uint64(data[iNdEx-5]) << 24
+			v |= uint64(data[iNdEx-4]) << 32
+			v |= uint64(data[iNdEx-3]) << 40
+			v |= uint64(data[iNdEx-2]) << 48
+			v |= uint64(data[iNdEx-1]) << 56
+			v2 := float64(math.Float64frombits(v))
+			m.WeightedScore = &v2
+			hasFields[0] |= uint64(0x00000010)
+		case 6:
+			if wireType != 1 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Duration", wireType)
+			}
+			var v uint64
+			if (iNdEx + 8) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += 8
+			v = uint64(data[iNdEx-8])
+			v |= uint64(data[iNdEx-7]) << 8
+			v |= uint64(data[iNdEx-6]) << 16
+			v |= uint64(data[iNdEx-5]) << 24
+			v |= uint64(data[iNdEx-4]) << 32
+			v |= uint64(data[iNdEx-3]) << 40
+			v |= uint64(data[iNdEx-2]) << 48
+			v |= uint64(data[iNdEx-1]) << 56
+			v2 := float64(math.Float64frombits(v))
+			m.Duration = &v2
+			hasFields[0] |= uint64(0x00000020)
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Determinants", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCluegetter
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthCluegetter
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Determinants = append([]byte{}, data[iNdEx:postIndex]...)
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCluegetter(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCluegetter
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000002) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000004) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000008) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000010) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000020) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Proto_Message_Header) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCluegetter
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Header: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Header: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCluegetter
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCluegetter
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Key = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCluegetter
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCluegetter
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Value = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000002)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCluegetter(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCluegetter
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000002) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Proto_Session) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCluegetter
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Proto_Session: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Proto_Session: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -2021,367 +2383,6 @@ func (m *Proto_Message_Session) Unmarshal(data []byte) error {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 	if hasFields[0]&uint64(0x00000008) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Proto_Message_Header) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowCluegetter
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Header: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Header: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCluegetter
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthCluegetter
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			s := string(data[iNdEx:postIndex])
-			m.Key = &s
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCluegetter
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthCluegetter
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			s := string(data[iNdEx:postIndex])
-			m.Value = &s
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
-		default:
-			iNdEx = preIndex
-			skippy, err := skipCluegetter(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthCluegetter
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Proto_Message_CheckResult) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
-	l := len(data)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowCluegetter
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := data[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CheckResult: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CheckResult: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MessageId", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCluegetter
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthCluegetter
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			s := string(data[iNdEx:postIndex])
-			m.MessageId = &s
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Module", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCluegetter
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthCluegetter
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			s := string(data[iNdEx:postIndex])
-			m.Module = &s
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Verdict", wireType)
-			}
-			var v Proto_Message_Verdict
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCluegetter
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				v |= (Proto_Message_Verdict(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Verdict = &v
-			hasFields[0] |= uint64(0x00000004)
-		case 4:
-			if wireType != 1 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Score", wireType)
-			}
-			var v uint64
-			if (iNdEx + 8) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += 8
-			v = uint64(data[iNdEx-8])
-			v |= uint64(data[iNdEx-7]) << 8
-			v |= uint64(data[iNdEx-6]) << 16
-			v |= uint64(data[iNdEx-5]) << 24
-			v |= uint64(data[iNdEx-4]) << 32
-			v |= uint64(data[iNdEx-3]) << 40
-			v |= uint64(data[iNdEx-2]) << 48
-			v |= uint64(data[iNdEx-1]) << 56
-			v2 := float64(math.Float64frombits(v))
-			m.Score = &v2
-			hasFields[0] |= uint64(0x00000008)
-		case 5:
-			if wireType != 1 {
-				return fmt.Errorf("proto: wrong wireType = %d for field WeightedScore", wireType)
-			}
-			var v uint64
-			if (iNdEx + 8) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += 8
-			v = uint64(data[iNdEx-8])
-			v |= uint64(data[iNdEx-7]) << 8
-			v |= uint64(data[iNdEx-6]) << 16
-			v |= uint64(data[iNdEx-5]) << 24
-			v |= uint64(data[iNdEx-4]) << 32
-			v |= uint64(data[iNdEx-3]) << 40
-			v |= uint64(data[iNdEx-2]) << 48
-			v |= uint64(data[iNdEx-1]) << 56
-			v2 := float64(math.Float64frombits(v))
-			m.WeightedScore = &v2
-			hasFields[0] |= uint64(0x00000010)
-		case 6:
-			if wireType != 1 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Duration", wireType)
-			}
-			var v uint64
-			if (iNdEx + 8) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += 8
-			v = uint64(data[iNdEx-8])
-			v |= uint64(data[iNdEx-7]) << 8
-			v |= uint64(data[iNdEx-6]) << 16
-			v |= uint64(data[iNdEx-5]) << 24
-			v |= uint64(data[iNdEx-4]) << 32
-			v |= uint64(data[iNdEx-3]) << 40
-			v |= uint64(data[iNdEx-2]) << 48
-			v |= uint64(data[iNdEx-1]) << 56
-			v2 := float64(math.Float64frombits(v))
-			m.Duration = &v2
-			hasFields[0] |= uint64(0x00000020)
-		case 7:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Determinants", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowCluegetter
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthCluegetter
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Determinants = append([]byte{}, data[iNdEx:postIndex]...)
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipCluegetter(data[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthCluegetter
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000004) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000008) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000010) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000020) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
