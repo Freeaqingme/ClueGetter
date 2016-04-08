@@ -1,3 +1,10 @@
+// ClueGetter - Does things with mail
+//
+// Copyright 2016 Dolf Schimmel, Freeaqingme.
+//
+// This Source Code Form is subject to the terms of the two-clause BSD license.
+// For its contents, please refer to the LICENSE file.
+//
 syntax = "proto2";
 
 package main;
@@ -31,8 +38,8 @@ message Proto_Message {
         optional bytes  determinants  = 7;
     }
     message Header {
-        required string key     = 1;
-        required string value   = 2;
+        required string key   = 1;
+        required string value = 2;
     }
 
     enum Verdict {
@@ -64,4 +71,40 @@ message Proto_Session {
     optional string helo            = 16;
     optional string mtaHostName     = 17;
     optional string mtaDaemonName   = 18;
+}
+
+message Rpc {
+    // For all intents and purposes this field should be
+    // considered required. But we may change that in a
+    // far away feature, and we like to be forward
+    // compatible with our proto buffers.
+    optional string name = 1;
+
+    extensions 256 to 1023;    // User extensions
+    extensions 1024 to 2047;   // Built-in extensions
+    extensions 10000 to 19000; // Community extensions
+}
+
+message Rpc_Bayes_Learn_Message {
+    extend Rpc {
+        optional Rpc_Bayes_Learn_Message Bayes_Learn_Message = 1024;
+    }
+
+    required bool is_spam          = 1;
+    required Proto_Message message = 2;
+    optional string host           = 17;
+    optional string reporter       = 18;
+    optional string reason         = 19;
+}
+
+message Rpc_Bayes_Learn_Message_Id {
+    extend Rpc {
+        optional Rpc_Bayes_Learn_Message_Id Bayes_Learn_Message_Id = 1025;
+    }
+
+    required bool  is_spam     = 1;
+    required string message_id = 2;
+    optional string host       = 17;
+    optional string reporter   = 18;
+    optional string reason     = 19;
 }

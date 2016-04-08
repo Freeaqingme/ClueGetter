@@ -11,6 +11,9 @@
 	It has these top-level messages:
 		Proto_Message
 		Proto_Session
+		Rpc
+		Rpc_Bayes_Learn_Message
+		Rpc_Bayes_Learn_Message_Id
 */
 package main
 
@@ -418,12 +421,162 @@ func (m *Proto_Session) GetMtaDaemonName() string {
 	return ""
 }
 
+type Rpc struct {
+	Name             *string                   `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
+	XXX_extensions   map[int32]proto.Extension `json:"-"`
+	XXX_unrecognized []byte                    `json:"-"`
+}
+
+func (m *Rpc) Reset()         { *m = Rpc{} }
+func (m *Rpc) String() string { return proto.CompactTextString(m) }
+func (*Rpc) ProtoMessage()    {}
+
+var extRange_Rpc = []proto.ExtensionRange{
+	{256, 1023},
+	{1024, 2047},
+	{10000, 19000},
+}
+
+func (*Rpc) ExtensionRangeArray() []proto.ExtensionRange {
+	return extRange_Rpc
+}
+func (m *Rpc) ExtensionMap() map[int32]proto.Extension {
+	if m.XXX_extensions == nil {
+		m.XXX_extensions = make(map[int32]proto.Extension)
+	}
+	return m.XXX_extensions
+}
+
+func (m *Rpc) GetName() string {
+	if m != nil && m.Name != nil {
+		return *m.Name
+	}
+	return ""
+}
+
+type Rpc_Bayes_Learn_Message struct {
+	IsSpam           *bool          `protobuf:"varint,1,req,name=is_spam" json:"is_spam,omitempty"`
+	Message          *Proto_Message `protobuf:"bytes,2,req,name=message" json:"message,omitempty"`
+	Host             *string        `protobuf:"bytes,17,opt,name=host" json:"host,omitempty"`
+	Reporter         *string        `protobuf:"bytes,18,opt,name=reporter" json:"reporter,omitempty"`
+	Reason           *string        `protobuf:"bytes,19,opt,name=reason" json:"reason,omitempty"`
+	XXX_unrecognized []byte         `json:"-"`
+}
+
+func (m *Rpc_Bayes_Learn_Message) Reset()         { *m = Rpc_Bayes_Learn_Message{} }
+func (m *Rpc_Bayes_Learn_Message) String() string { return proto.CompactTextString(m) }
+func (*Rpc_Bayes_Learn_Message) ProtoMessage()    {}
+
+func (m *Rpc_Bayes_Learn_Message) GetIsSpam() bool {
+	if m != nil && m.IsSpam != nil {
+		return *m.IsSpam
+	}
+	return false
+}
+
+func (m *Rpc_Bayes_Learn_Message) GetMessage() *Proto_Message {
+	if m != nil {
+		return m.Message
+	}
+	return nil
+}
+
+func (m *Rpc_Bayes_Learn_Message) GetHost() string {
+	if m != nil && m.Host != nil {
+		return *m.Host
+	}
+	return ""
+}
+
+func (m *Rpc_Bayes_Learn_Message) GetReporter() string {
+	if m != nil && m.Reporter != nil {
+		return *m.Reporter
+	}
+	return ""
+}
+
+func (m *Rpc_Bayes_Learn_Message) GetReason() string {
+	if m != nil && m.Reason != nil {
+		return *m.Reason
+	}
+	return ""
+}
+
+var E_Rpc_Bayes_Learn_Message_Bayes_Learn_Message = &proto.ExtensionDesc{
+	ExtendedType:  (*Rpc)(nil),
+	ExtensionType: (*Rpc_Bayes_Learn_Message)(nil),
+	Field:         1024,
+	Name:          "main.Rpc_Bayes_Learn_Message.Bayes_Learn_Message",
+	Tag:           "bytes,1024,opt,name=Bayes_Learn_Message",
+}
+
+type Rpc_Bayes_Learn_Message_Id struct {
+	IsSpam           *bool   `protobuf:"varint,1,req,name=is_spam" json:"is_spam,omitempty"`
+	MessageId        *string `protobuf:"bytes,2,req,name=message_id" json:"message_id,omitempty"`
+	Host             *string `protobuf:"bytes,17,opt,name=host" json:"host,omitempty"`
+	Reporter         *string `protobuf:"bytes,18,opt,name=reporter" json:"reporter,omitempty"`
+	Reason           *string `protobuf:"bytes,19,opt,name=reason" json:"reason,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *Rpc_Bayes_Learn_Message_Id) Reset()         { *m = Rpc_Bayes_Learn_Message_Id{} }
+func (m *Rpc_Bayes_Learn_Message_Id) String() string { return proto.CompactTextString(m) }
+func (*Rpc_Bayes_Learn_Message_Id) ProtoMessage()    {}
+
+func (m *Rpc_Bayes_Learn_Message_Id) GetIsSpam() bool {
+	if m != nil && m.IsSpam != nil {
+		return *m.IsSpam
+	}
+	return false
+}
+
+func (m *Rpc_Bayes_Learn_Message_Id) GetMessageId() string {
+	if m != nil && m.MessageId != nil {
+		return *m.MessageId
+	}
+	return ""
+}
+
+func (m *Rpc_Bayes_Learn_Message_Id) GetHost() string {
+	if m != nil && m.Host != nil {
+		return *m.Host
+	}
+	return ""
+}
+
+func (m *Rpc_Bayes_Learn_Message_Id) GetReporter() string {
+	if m != nil && m.Reporter != nil {
+		return *m.Reporter
+	}
+	return ""
+}
+
+func (m *Rpc_Bayes_Learn_Message_Id) GetReason() string {
+	if m != nil && m.Reason != nil {
+		return *m.Reason
+	}
+	return ""
+}
+
+var E_Rpc_Bayes_Learn_Message_Id_Bayes_Learn_Message_Id = &proto.ExtensionDesc{
+	ExtendedType:  (*Rpc)(nil),
+	ExtensionType: (*Rpc_Bayes_Learn_Message_Id)(nil),
+	Field:         1025,
+	Name:          "main.Rpc_Bayes_Learn_Message_Id.Bayes_Learn_Message_Id",
+	Tag:           "bytes,1025,opt,name=Bayes_Learn_Message_Id",
+}
+
 func init() {
 	proto.RegisterType((*Proto_Message)(nil), "main.Proto_Message")
 	proto.RegisterType((*Proto_Message_CheckResult)(nil), "main.Proto_Message.CheckResult")
 	proto.RegisterType((*Proto_Message_Header)(nil), "main.Proto_Message.Header")
 	proto.RegisterType((*Proto_Session)(nil), "main.Proto_Session")
+	proto.RegisterType((*Rpc)(nil), "main.Rpc")
+	proto.RegisterType((*Rpc_Bayes_Learn_Message)(nil), "main.Rpc_Bayes_Learn_Message")
+	proto.RegisterType((*Rpc_Bayes_Learn_Message_Id)(nil), "main.Rpc_Bayes_Learn_Message_Id")
 	proto.RegisterEnum("main.Proto_Message_Verdict", Proto_Message_Verdict_name, Proto_Message_Verdict_value)
+	proto.RegisterExtension(E_Rpc_Bayes_Learn_Message_Bayes_Learn_Message)
+	proto.RegisterExtension(E_Rpc_Bayes_Learn_Message_Id_Bayes_Learn_Message_Id)
 }
 func (m *Proto_Message) Marshal() (data []byte, err error) {
 	size := m.Size()
@@ -809,6 +962,176 @@ func (m *Proto_Session) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *Rpc) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Rpc) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Name == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0xa
+		i++
+		i = encodeVarintCluegetter(data, i, uint64(len(*m.Name)))
+		i += copy(data[i:], *m.Name)
+	}
+	if len(m.XXX_extensions) > 0 {
+		n, err := github_com_golang_protobuf_proto.EncodeExtensionMap(m.XXX_extensions, data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Rpc_Bayes_Learn_Message) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Rpc_Bayes_Learn_Message) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.IsSpam == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x8
+		i++
+		if *m.IsSpam {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
+	if m.Message == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x12
+		i++
+		i = encodeVarintCluegetter(data, i, uint64(m.Message.Size()))
+		n2, err := m.Message.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n2
+	}
+	if m.Host != nil {
+		data[i] = 0x8a
+		i++
+		data[i] = 0x1
+		i++
+		i = encodeVarintCluegetter(data, i, uint64(len(*m.Host)))
+		i += copy(data[i:], *m.Host)
+	}
+	if m.Reporter != nil {
+		data[i] = 0x92
+		i++
+		data[i] = 0x1
+		i++
+		i = encodeVarintCluegetter(data, i, uint64(len(*m.Reporter)))
+		i += copy(data[i:], *m.Reporter)
+	}
+	if m.Reason != nil {
+		data[i] = 0x9a
+		i++
+		data[i] = 0x1
+		i++
+		i = encodeVarintCluegetter(data, i, uint64(len(*m.Reason)))
+		i += copy(data[i:], *m.Reason)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Rpc_Bayes_Learn_Message_Id) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *Rpc_Bayes_Learn_Message_Id) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.IsSpam == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x8
+		i++
+		if *m.IsSpam {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
+	if m.MessageId == nil {
+		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	} else {
+		data[i] = 0x12
+		i++
+		i = encodeVarintCluegetter(data, i, uint64(len(*m.MessageId)))
+		i += copy(data[i:], *m.MessageId)
+	}
+	if m.Host != nil {
+		data[i] = 0x8a
+		i++
+		data[i] = 0x1
+		i++
+		i = encodeVarintCluegetter(data, i, uint64(len(*m.Host)))
+		i += copy(data[i:], *m.Host)
+	}
+	if m.Reporter != nil {
+		data[i] = 0x92
+		i++
+		data[i] = 0x1
+		i++
+		i = encodeVarintCluegetter(data, i, uint64(len(*m.Reporter)))
+		i += copy(data[i:], *m.Reporter)
+	}
+	if m.Reason != nil {
+		data[i] = 0x9a
+		i++
+		data[i] = 0x1
+		i++
+		i = encodeVarintCluegetter(data, i, uint64(len(*m.Reason)))
+		i += copy(data[i:], *m.Reason)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(data[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
 func encodeFixed64Cluegetter(data []byte, offset int, v uint64) int {
 	data[offset] = uint8(v)
 	data[offset+1] = uint8(v >> 8)
@@ -1017,6 +1340,78 @@ func (m *Proto_Session) Size() (n int) {
 	}
 	if m.MtaDaemonName != nil {
 		l = len(*m.MtaDaemonName)
+		n += 2 + l + sovCluegetter(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Rpc) Size() (n int) {
+	var l int
+	_ = l
+	if m.Name != nil {
+		l = len(*m.Name)
+		n += 1 + l + sovCluegetter(uint64(l))
+	}
+	if m.XXX_extensions != nil {
+		n += github_com_golang_protobuf_proto.SizeOfExtensionMap(m.XXX_extensions)
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Rpc_Bayes_Learn_Message) Size() (n int) {
+	var l int
+	_ = l
+	if m.IsSpam != nil {
+		n += 2
+	}
+	if m.Message != nil {
+		l = m.Message.Size()
+		n += 1 + l + sovCluegetter(uint64(l))
+	}
+	if m.Host != nil {
+		l = len(*m.Host)
+		n += 2 + l + sovCluegetter(uint64(l))
+	}
+	if m.Reporter != nil {
+		l = len(*m.Reporter)
+		n += 2 + l + sovCluegetter(uint64(l))
+	}
+	if m.Reason != nil {
+		l = len(*m.Reason)
+		n += 2 + l + sovCluegetter(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Rpc_Bayes_Learn_Message_Id) Size() (n int) {
+	var l int
+	_ = l
+	if m.IsSpam != nil {
+		n += 2
+	}
+	if m.MessageId != nil {
+		l = len(*m.MessageId)
+		n += 1 + l + sovCluegetter(uint64(l))
+	}
+	if m.Host != nil {
+		l = len(*m.Host)
+		n += 2 + l + sovCluegetter(uint64(l))
+	}
+	if m.Reporter != nil {
+		l = len(*m.Reporter)
+		n += 2 + l + sovCluegetter(uint64(l))
+	}
+	if m.Reason != nil {
+		l = len(*m.Reason)
 		n += 2 + l + sovCluegetter(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
@@ -2383,6 +2778,524 @@ func (m *Proto_Session) Unmarshal(data []byte) error {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 	if hasFields[0]&uint64(0x00000008) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Rpc) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCluegetter
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Rpc: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Rpc: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCluegetter
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCluegetter
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Name = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
+		default:
+			if ((fieldNum >= 256) && (fieldNum < 1024)) || ((fieldNum >= 1024) && (fieldNum < 2048)) || ((fieldNum >= 10000) && (fieldNum < 19001)) {
+				var sizeOfWire int
+				for {
+					sizeOfWire++
+					wire >>= 7
+					if wire == 0 {
+						break
+					}
+				}
+				iNdEx -= sizeOfWire
+				skippy, err := skipCluegetter(data[iNdEx:])
+				if err != nil {
+					return err
+				}
+				if skippy < 0 {
+					return ErrInvalidLengthCluegetter
+				}
+				if (iNdEx + skippy) > l {
+					return io.ErrUnexpectedEOF
+				}
+				if m.XXX_extensions == nil {
+					m.XXX_extensions = make(map[int32]github_com_golang_protobuf_proto.Extension)
+				}
+				m.XXX_extensions[int32(fieldNum)] = github_com_golang_protobuf_proto.NewExtension(data[iNdEx : iNdEx+skippy])
+				iNdEx += skippy
+			} else {
+				iNdEx = preIndex
+				skippy, err := skipCluegetter(data[iNdEx:])
+				if err != nil {
+					return err
+				}
+				if skippy < 0 {
+					return ErrInvalidLengthCluegetter
+				}
+				if (iNdEx + skippy) > l {
+					return io.ErrUnexpectedEOF
+				}
+				m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+				iNdEx += skippy
+			}
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Rpc_Bayes_Learn_Message) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCluegetter
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Rpc_Bayes_Learn_Message: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Rpc_Bayes_Learn_Message: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IsSpam", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCluegetter
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			b := bool(v != 0)
+			m.IsSpam = &b
+			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCluegetter
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCluegetter
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Message == nil {
+				m.Message = &Proto_Message{}
+			}
+			if err := m.Message.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000002)
+		case 17:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Host", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCluegetter
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCluegetter
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Host = &s
+			iNdEx = postIndex
+		case 18:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Reporter", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCluegetter
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCluegetter
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Reporter = &s
+			iNdEx = postIndex
+		case 19:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Reason", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCluegetter
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCluegetter
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Reason = &s
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCluegetter(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCluegetter
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000002) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Rpc_Bayes_Learn_Message_Id) Unmarshal(data []byte) error {
+	var hasFields [1]uint64
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCluegetter
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Rpc_Bayes_Learn_Message_Id: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Rpc_Bayes_Learn_Message_Id: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IsSpam", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCluegetter
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			b := bool(v != 0)
+			m.IsSpam = &b
+			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MessageId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCluegetter
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCluegetter
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.MessageId = &s
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000002)
+		case 17:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Host", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCluegetter
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCluegetter
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Host = &s
+			iNdEx = postIndex
+		case 18:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Reporter", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCluegetter
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCluegetter
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Reporter = &s
+			iNdEx = postIndex
+		case 19:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Reason", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCluegetter
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCluegetter
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := string(data[iNdEx:postIndex])
+			m.Reason = &s
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCluegetter(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCluegetter
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
+	}
+	if hasFields[0]&uint64(0x00000002) == 0 {
 		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
