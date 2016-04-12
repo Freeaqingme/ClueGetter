@@ -80,31 +80,27 @@ message Rpc {
     // compatible with our proto buffers.
     optional string name = 1;
 
-    extensions 256 to 1023;    // User extensions
-    extensions 1024 to 2047;   // Built-in extensions
-    extensions 10000 to 19000; // Community extensions
-}
+    // extensions 256 to 1023;    // User extensions
+    // extensions 1024 to 2047;   // Built-in extensions
+    // extensions 10000 to 19000; // Community extensions
 
-message Rpc_Bayes_Learn_Message {
-    extend Rpc {
-        optional Rpc_Bayes_Learn_Message Bayes_Learn_Message = 1024;
+
+    optional _Bayes_Learn_Message Bayes_Learn_Message = 1024;
+    message _Bayes_Learn_Message {
+        required bool is_spam          = 1;
+        required Proto_Message message = 2;
+        optional string host           = 17;
+        optional string reporter       = 18;
+        optional string reason         = 19;
     }
 
-    required bool is_spam          = 1;
-    required Proto_Message message = 2;
-    optional string host           = 17;
-    optional string reporter       = 18;
-    optional string reason         = 19;
-}
-
-message Rpc_Bayes_Learn_Message_Id {
-    extend Rpc {
-        optional Rpc_Bayes_Learn_Message_Id Bayes_Learn_Message_Id = 1025;
+    optional _Bayes_Learn_Message_Id Bayes_Learn_Message_Id = 1025;
+    message _Bayes_Learn_Message_Id {
+        required bool  is_spam     = 1;
+        required string message_id = 2;
+        optional string host       = 17;
+        optional string reporter   = 18;
+        optional string reason     = 19;
     }
 
-    required bool  is_spam     = 1;
-    required string message_id = 2;
-    optional string host       = 17;
-    optional string reporter   = 18;
-    optional string reason     = 19;
 }

@@ -55,32 +55,53 @@ func bayesHandleLearnQueue(learnMessageQueue chan string) {
 func bayesHandleReportMessageIdQueueItem(item string) {
 	cluegetterRecover("bayesHandleReportMessageIdQueueItem")
 
-	var dat map[string]string
-	json.Unmarshal([]byte(item), &dat)
+	rpc := &Rpc{}
+	err := rpc.Unmarshal([]byte(item))
+	if err != nil {
+		Log.Error("Could not unmarshal RPC Message Bayes_Learn_Message_Id:", err.Error())
+		return
+	}
+	if rpc.GetName() != "Bayes_Learn_Message_Id" || rpc.Bayes_Learn_Message_Id == nil {
+		Log.Error("Invalid RPC Message Bayes_Learn_Message_Id")
+		return
+	}
 
-	msgBytes := messagePersistCache.getByMessageId(dat["messageId"])
+	msgBytes := messagePersistCache.getByMessageId(rpc.Bayes_Learn_Message_Id.MessageId)
 	if len(msgBytes) == 0 {
 		Log.Error("Could not retrieve message from cache with message-id %s", dat["messageId"])
+		return
 	}
-	dat["message"] = string(msgBytes)
 
 	msg, err := messagePersistUnmarshalProto(msgBytes)
 	if err != nil {
 		Log.Error("Could not unmarshal message from cache: %s", err.Error())
 		return
 	}
-	if dat["spam"] == "yes" {
-		bayesAddToCorpus(true, msg, dat["messageId"], dat["host"], dat["reporter"], dat["reason"])
-	} else {
-		bayesAddToCorpus(false, msg, dat["messageId"], dat["host"], dat["reporter"], dat["reason"])
+	rpcName := "Bayes_Learn_Message"
+	rpcOut := &Rpc {
+		Name: &rpcName,
+		Bayes_Learn_Message_Id: &Rpc__Bayes_Learn_Message{
+			IsSpam: rpc.Bayes_Learn_Message_Id.GetIsSpam(),
+			Message: msg,
+			Host: rpc.Bayes_Learn_Message_Id.GetHost(),
+			Reporter: rpc.Bayes_Learn_Message_Id.GetReporter(),
+			Reason: rpc.Bayes_Learn_Message_Id.GetReason(),
+			Reason: rpc.Bayes_Learn_Message_Id.GetReason(),
+		},
 	}
 
-	payloadJson, err := json.Marshal(dat)
+	if rpc.Bayes_Learn_Message_Id.IsSpam {
+		bayesAddToCorpus(true, msg, rpc.Bayes_Learn_Message_Id, rpc.Bayes_Learn_Message_Id.GetHost(), rpc.Bayes_Learn_Message_Id.GetReporter(), rpc.Bayes_Learn_Message_Id.GetReason())
+	} else {
+		bayesAddToCorpus(false, msg, rpc.Bayes_Learn_Message_Id, rpc.Bayes_Learn_Message_Id.GetHost(), rpc.Bayes_Learn_Message_Id.GetReporter(), rpc.Bayes_Learn_Message_Id.GetReason())
+	}
+
+	payload, err := rpcOut.Marshal()
 	if err != nil {
 		Log.Error("Could not marshal data-object to json: %s", err.Error())
 		return
 	}
-	err = redisPublish(fmt.Sprintf("cluegetter!!bayes!learn"), payloadJson)
+	err = redisPublish(fmt.Sprintf("cluegetter!!bayes!learn"), payload)
 	if err != nil {
 		Log.Error("Error while reporting bayes message id: %s", err.Error())
 	}
@@ -96,21 +117,21 @@ func bayesReportMessageId(spam bool, messageId, host, reporter, reason string) {
 		return
 	}
 
-	spamStr := "yes"
-	if !spam {
-		spamStr = "no"
-	}
-	payload := map[string]string{
-		"messageId": messageId,
-		"host":      host,
-		"reporter":  reporter,
-		"reason":    reason,
-		"spam":      spamStr,
+	rpcName := "Bayes_Learn_Message_Id"
+	payload := &Rpc {
+		Name: &rpcName,
+		Bayes_Learn_Message_Id: &Rpc__Bayes_Learn_Message_Id{
+			IsSpam: &spam,
+			MessageId: &messageId,
+			Host: &host,
+			Reporter: &reporter,
+			Reason: &reason,
+		},
 	}
 
-	payloadJson, _ := json.Marshal(payload)
 	key := fmt.Sprintf("cluegetter!%d!bayes!reportMessageId", instance)
-	err := redisPublish(key, payloadJson)
+	payloadBytes, _ := payload.Marshal()
+	err := redisPublish(key, payloadBytes)
 
 	if err != nil {
 		Log.Error("Error while reporting bayes message id: %s", err.Error())

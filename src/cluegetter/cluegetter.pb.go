@@ -12,8 +12,6 @@
 		Proto_Message
 		Proto_Session
 		Rpc
-		Rpc_Bayes_Learn_Message
-		Rpc_Bayes_Learn_Message_Id
 */
 package main
 
@@ -29,6 +27,10 @@ import io "io"
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+const _ = proto.ProtoPackageIsVersion1
 
 type Proto_Message_Verdict int32
 
@@ -68,6 +70,9 @@ func (x *Proto_Message_Verdict) UnmarshalJSON(data []byte) error {
 	*x = Proto_Message_Verdict(value)
 	return nil
 }
+func (Proto_Message_Verdict) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptorCluegetter, []int{0, 0}
+}
 
 type Proto_Message struct {
 	Session                *Proto_Session               `protobuf:"bytes,1,req,name=session" json:"session,omitempty"`
@@ -86,9 +91,10 @@ type Proto_Message struct {
 	XXX_unrecognized       []byte                       `json:"-"`
 }
 
-func (m *Proto_Message) Reset()         { *m = Proto_Message{} }
-func (m *Proto_Message) String() string { return proto.CompactTextString(m) }
-func (*Proto_Message) ProtoMessage()    {}
+func (m *Proto_Message) Reset()                    { *m = Proto_Message{} }
+func (m *Proto_Message) String() string            { return proto.CompactTextString(m) }
+func (*Proto_Message) ProtoMessage()               {}
+func (*Proto_Message) Descriptor() ([]byte, []int) { return fileDescriptorCluegetter, []int{0} }
 
 func (m *Proto_Message) GetSession() *Proto_Session {
 	if m != nil {
@@ -195,6 +201,9 @@ type Proto_Message_CheckResult struct {
 func (m *Proto_Message_CheckResult) Reset()         { *m = Proto_Message_CheckResult{} }
 func (m *Proto_Message_CheckResult) String() string { return proto.CompactTextString(m) }
 func (*Proto_Message_CheckResult) ProtoMessage()    {}
+func (*Proto_Message_CheckResult) Descriptor() ([]byte, []int) {
+	return fileDescriptorCluegetter, []int{0, 0}
+}
 
 func (m *Proto_Message_CheckResult) GetMessageId() string {
 	if m != nil && m.MessageId != nil {
@@ -254,6 +263,9 @@ type Proto_Message_Header struct {
 func (m *Proto_Message_Header) Reset()         { *m = Proto_Message_Header{} }
 func (m *Proto_Message_Header) String() string { return proto.CompactTextString(m) }
 func (*Proto_Message_Header) ProtoMessage()    {}
+func (*Proto_Message_Header) Descriptor() ([]byte, []int) {
+	return fileDescriptorCluegetter, []int{0, 1}
+}
 
 func (m *Proto_Message_Header) GetKey() string {
 	if m != nil && m.Key != nil {
@@ -291,9 +303,10 @@ type Proto_Session struct {
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Proto_Session) Reset()         { *m = Proto_Session{} }
-func (m *Proto_Session) String() string { return proto.CompactTextString(m) }
-func (*Proto_Session) ProtoMessage()    {}
+func (m *Proto_Session) Reset()                    { *m = Proto_Session{} }
+func (m *Proto_Session) String() string            { return proto.CompactTextString(m) }
+func (*Proto_Session) ProtoMessage()               {}
+func (*Proto_Session) Descriptor() ([]byte, []int) { return fileDescriptorCluegetter, []int{1} }
 
 func (m *Proto_Session) GetInstanceId() uint64 {
 	if m != nil && m.InstanceId != nil {
@@ -422,30 +435,20 @@ func (m *Proto_Session) GetMtaDaemonName() string {
 }
 
 type Rpc struct {
-	Name             *string                   `protobuf:"bytes,1,req,name=name" json:"name,omitempty"`
-	XXX_extensions   map[int32]proto.Extension `json:"-"`
-	XXX_unrecognized []byte                    `json:"-"`
+	// For all intents and purposes this field should be
+	// considered required. But we may change that in a
+	// far away feature, and we like to be forward
+	// compatible with our proto buffers.
+	Name                   *string                      `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	Bayes_Learn_Message    *Rpc__Bayes_Learn_Message    `protobuf:"bytes,1024,opt,name=Bayes_Learn_Message" json:"Bayes_Learn_Message,omitempty"`
+	Bayes_Learn_Message_Id *Rpc__Bayes_Learn_Message_Id `protobuf:"bytes,1025,opt,name=Bayes_Learn_Message_Id" json:"Bayes_Learn_Message_Id,omitempty"`
+	XXX_unrecognized       []byte                       `json:"-"`
 }
 
-func (m *Rpc) Reset()         { *m = Rpc{} }
-func (m *Rpc) String() string { return proto.CompactTextString(m) }
-func (*Rpc) ProtoMessage()    {}
-
-var extRange_Rpc = []proto.ExtensionRange{
-	{256, 1023},
-	{1024, 2047},
-	{10000, 19000},
-}
-
-func (*Rpc) ExtensionRangeArray() []proto.ExtensionRange {
-	return extRange_Rpc
-}
-func (m *Rpc) ExtensionMap() map[int32]proto.Extension {
-	if m.XXX_extensions == nil {
-		m.XXX_extensions = make(map[int32]proto.Extension)
-	}
-	return m.XXX_extensions
-}
+func (m *Rpc) Reset()                    { *m = Rpc{} }
+func (m *Rpc) String() string            { return proto.CompactTextString(m) }
+func (*Rpc) ProtoMessage()               {}
+func (*Rpc) Descriptor() ([]byte, []int) { return fileDescriptorCluegetter, []int{2} }
 
 func (m *Rpc) GetName() string {
 	if m != nil && m.Name != nil {
@@ -454,7 +457,21 @@ func (m *Rpc) GetName() string {
 	return ""
 }
 
-type Rpc_Bayes_Learn_Message struct {
+func (m *Rpc) GetBayes_Learn_Message() *Rpc__Bayes_Learn_Message {
+	if m != nil {
+		return m.Bayes_Learn_Message
+	}
+	return nil
+}
+
+func (m *Rpc) GetBayes_Learn_Message_Id() *Rpc__Bayes_Learn_Message_Id {
+	if m != nil {
+		return m.Bayes_Learn_Message_Id
+	}
+	return nil
+}
+
+type Rpc__Bayes_Learn_Message struct {
 	IsSpam           *bool          `protobuf:"varint,1,req,name=is_spam" json:"is_spam,omitempty"`
 	Message          *Proto_Message `protobuf:"bytes,2,req,name=message" json:"message,omitempty"`
 	Host             *string        `protobuf:"bytes,17,opt,name=host" json:"host,omitempty"`
@@ -463,54 +480,49 @@ type Rpc_Bayes_Learn_Message struct {
 	XXX_unrecognized []byte         `json:"-"`
 }
 
-func (m *Rpc_Bayes_Learn_Message) Reset()         { *m = Rpc_Bayes_Learn_Message{} }
-func (m *Rpc_Bayes_Learn_Message) String() string { return proto.CompactTextString(m) }
-func (*Rpc_Bayes_Learn_Message) ProtoMessage()    {}
+func (m *Rpc__Bayes_Learn_Message) Reset()         { *m = Rpc__Bayes_Learn_Message{} }
+func (m *Rpc__Bayes_Learn_Message) String() string { return proto.CompactTextString(m) }
+func (*Rpc__Bayes_Learn_Message) ProtoMessage()    {}
+func (*Rpc__Bayes_Learn_Message) Descriptor() ([]byte, []int) {
+	return fileDescriptorCluegetter, []int{2, 0}
+}
 
-func (m *Rpc_Bayes_Learn_Message) GetIsSpam() bool {
+func (m *Rpc__Bayes_Learn_Message) GetIsSpam() bool {
 	if m != nil && m.IsSpam != nil {
 		return *m.IsSpam
 	}
 	return false
 }
 
-func (m *Rpc_Bayes_Learn_Message) GetMessage() *Proto_Message {
+func (m *Rpc__Bayes_Learn_Message) GetMessage() *Proto_Message {
 	if m != nil {
 		return m.Message
 	}
 	return nil
 }
 
-func (m *Rpc_Bayes_Learn_Message) GetHost() string {
+func (m *Rpc__Bayes_Learn_Message) GetHost() string {
 	if m != nil && m.Host != nil {
 		return *m.Host
 	}
 	return ""
 }
 
-func (m *Rpc_Bayes_Learn_Message) GetReporter() string {
+func (m *Rpc__Bayes_Learn_Message) GetReporter() string {
 	if m != nil && m.Reporter != nil {
 		return *m.Reporter
 	}
 	return ""
 }
 
-func (m *Rpc_Bayes_Learn_Message) GetReason() string {
+func (m *Rpc__Bayes_Learn_Message) GetReason() string {
 	if m != nil && m.Reason != nil {
 		return *m.Reason
 	}
 	return ""
 }
 
-var E_Rpc_Bayes_Learn_Message_Bayes_Learn_Message = &proto.ExtensionDesc{
-	ExtendedType:  (*Rpc)(nil),
-	ExtensionType: (*Rpc_Bayes_Learn_Message)(nil),
-	Field:         1024,
-	Name:          "main.Rpc_Bayes_Learn_Message.Bayes_Learn_Message",
-	Tag:           "bytes,1024,opt,name=Bayes_Learn_Message",
-}
-
-type Rpc_Bayes_Learn_Message_Id struct {
+type Rpc__Bayes_Learn_Message_Id struct {
 	IsSpam           *bool   `protobuf:"varint,1,req,name=is_spam" json:"is_spam,omitempty"`
 	MessageId        *string `protobuf:"bytes,2,req,name=message_id" json:"message_id,omitempty"`
 	Host             *string `protobuf:"bytes,17,opt,name=host" json:"host,omitempty"`
@@ -519,51 +531,46 @@ type Rpc_Bayes_Learn_Message_Id struct {
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Rpc_Bayes_Learn_Message_Id) Reset()         { *m = Rpc_Bayes_Learn_Message_Id{} }
-func (m *Rpc_Bayes_Learn_Message_Id) String() string { return proto.CompactTextString(m) }
-func (*Rpc_Bayes_Learn_Message_Id) ProtoMessage()    {}
+func (m *Rpc__Bayes_Learn_Message_Id) Reset()         { *m = Rpc__Bayes_Learn_Message_Id{} }
+func (m *Rpc__Bayes_Learn_Message_Id) String() string { return proto.CompactTextString(m) }
+func (*Rpc__Bayes_Learn_Message_Id) ProtoMessage()    {}
+func (*Rpc__Bayes_Learn_Message_Id) Descriptor() ([]byte, []int) {
+	return fileDescriptorCluegetter, []int{2, 1}
+}
 
-func (m *Rpc_Bayes_Learn_Message_Id) GetIsSpam() bool {
+func (m *Rpc__Bayes_Learn_Message_Id) GetIsSpam() bool {
 	if m != nil && m.IsSpam != nil {
 		return *m.IsSpam
 	}
 	return false
 }
 
-func (m *Rpc_Bayes_Learn_Message_Id) GetMessageId() string {
+func (m *Rpc__Bayes_Learn_Message_Id) GetMessageId() string {
 	if m != nil && m.MessageId != nil {
 		return *m.MessageId
 	}
 	return ""
 }
 
-func (m *Rpc_Bayes_Learn_Message_Id) GetHost() string {
+func (m *Rpc__Bayes_Learn_Message_Id) GetHost() string {
 	if m != nil && m.Host != nil {
 		return *m.Host
 	}
 	return ""
 }
 
-func (m *Rpc_Bayes_Learn_Message_Id) GetReporter() string {
+func (m *Rpc__Bayes_Learn_Message_Id) GetReporter() string {
 	if m != nil && m.Reporter != nil {
 		return *m.Reporter
 	}
 	return ""
 }
 
-func (m *Rpc_Bayes_Learn_Message_Id) GetReason() string {
+func (m *Rpc__Bayes_Learn_Message_Id) GetReason() string {
 	if m != nil && m.Reason != nil {
 		return *m.Reason
 	}
 	return ""
-}
-
-var E_Rpc_Bayes_Learn_Message_Id_Bayes_Learn_Message_Id = &proto.ExtensionDesc{
-	ExtendedType:  (*Rpc)(nil),
-	ExtensionType: (*Rpc_Bayes_Learn_Message_Id)(nil),
-	Field:         1025,
-	Name:          "main.Rpc_Bayes_Learn_Message_Id.Bayes_Learn_Message_Id",
-	Tag:           "bytes,1025,opt,name=Bayes_Learn_Message_Id",
 }
 
 func init() {
@@ -572,11 +579,9 @@ func init() {
 	proto.RegisterType((*Proto_Message_Header)(nil), "main.Proto_Message.Header")
 	proto.RegisterType((*Proto_Session)(nil), "main.Proto_Session")
 	proto.RegisterType((*Rpc)(nil), "main.Rpc")
-	proto.RegisterType((*Rpc_Bayes_Learn_Message)(nil), "main.Rpc_Bayes_Learn_Message")
-	proto.RegisterType((*Rpc_Bayes_Learn_Message_Id)(nil), "main.Rpc_Bayes_Learn_Message_Id")
+	proto.RegisterType((*Rpc__Bayes_Learn_Message)(nil), "main.Rpc._Bayes_Learn_Message")
+	proto.RegisterType((*Rpc__Bayes_Learn_Message_Id)(nil), "main.Rpc._Bayes_Learn_Message_Id")
 	proto.RegisterEnum("main.Proto_Message_Verdict", Proto_Message_Verdict_name, Proto_Message_Verdict_value)
-	proto.RegisterExtension(E_Rpc_Bayes_Learn_Message_Bayes_Learn_Message)
-	proto.RegisterExtension(E_Rpc_Bayes_Learn_Message_Id_Bayes_Learn_Message_Id)
 }
 func (m *Proto_Message) Marshal() (data []byte, err error) {
 	size := m.Size()
@@ -674,28 +679,28 @@ func (m *Proto_Message) MarshalTo(data []byte) (int, error) {
 	} else {
 		data[i] = 0x49
 		i++
-		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(*m.RejectScore)))
+		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(float64(*m.RejectScore))))
 	}
 	if m.RejectScoreThreshold == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	} else {
 		data[i] = 0x51
 		i++
-		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(*m.RejectScoreThreshold)))
+		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(float64(*m.RejectScoreThreshold))))
 	}
 	if m.TempfailScore == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	} else {
 		data[i] = 0x59
 		i++
-		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(*m.TempfailScore)))
+		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(float64(*m.TempfailScore))))
 	}
 	if m.TempfailScoreThreshold == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	} else {
 		data[i] = 0x61
 		i++
-		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(*m.TempfailScoreThreshold)))
+		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(float64(*m.TempfailScoreThreshold))))
 	}
 	if len(m.CheckResults) > 0 {
 		for _, msg := range m.CheckResults {
@@ -758,21 +763,21 @@ func (m *Proto_Message_CheckResult) MarshalTo(data []byte) (int, error) {
 	} else {
 		data[i] = 0x21
 		i++
-		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(*m.Score)))
+		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(float64(*m.Score))))
 	}
 	if m.WeightedScore == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	} else {
 		data[i] = 0x29
 		i++
-		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(*m.WeightedScore)))
+		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(float64(*m.WeightedScore))))
 	}
 	if m.Duration == nil {
 		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	} else {
 		data[i] = 0x31
 		i++
-		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(*m.Duration)))
+		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(float64(*m.Duration))))
 	}
 	if m.Determinants != nil {
 		data[i] = 0x3a
@@ -977,20 +982,35 @@ func (m *Rpc) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Name == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.Name != nil {
 		data[i] = 0xa
 		i++
 		i = encodeVarintCluegetter(data, i, uint64(len(*m.Name)))
 		i += copy(data[i:], *m.Name)
 	}
-	if len(m.XXX_extensions) > 0 {
-		n, err := github_com_golang_protobuf_proto.EncodeExtensionMap(m.XXX_extensions, data[i:])
+	if m.Bayes_Learn_Message != nil {
+		data[i] = 0x82
+		i++
+		data[i] = 0x40
+		i++
+		i = encodeVarintCluegetter(data, i, uint64(m.Bayes_Learn_Message.Size()))
+		n2, err := m.Bayes_Learn_Message.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n
+		i += n2
+	}
+	if m.Bayes_Learn_Message_Id != nil {
+		data[i] = 0x8a
+		i++
+		data[i] = 0x40
+		i++
+		i = encodeVarintCluegetter(data, i, uint64(m.Bayes_Learn_Message_Id.Size()))
+		n3, err := m.Bayes_Learn_Message_Id.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n3
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
@@ -998,7 +1018,7 @@ func (m *Rpc) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *Rpc_Bayes_Learn_Message) Marshal() (data []byte, err error) {
+func (m *Rpc__Bayes_Learn_Message) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
 	n, err := m.MarshalTo(data)
@@ -1008,7 +1028,7 @@ func (m *Rpc_Bayes_Learn_Message) Marshal() (data []byte, err error) {
 	return data[:n], nil
 }
 
-func (m *Rpc_Bayes_Learn_Message) MarshalTo(data []byte) (int, error) {
+func (m *Rpc__Bayes_Learn_Message) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -1031,11 +1051,11 @@ func (m *Rpc_Bayes_Learn_Message) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x12
 		i++
 		i = encodeVarintCluegetter(data, i, uint64(m.Message.Size()))
-		n2, err := m.Message.MarshalTo(data[i:])
+		n4, err := m.Message.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n2
+		i += n4
 	}
 	if m.Host != nil {
 		data[i] = 0x8a
@@ -1067,7 +1087,7 @@ func (m *Rpc_Bayes_Learn_Message) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
-func (m *Rpc_Bayes_Learn_Message_Id) Marshal() (data []byte, err error) {
+func (m *Rpc__Bayes_Learn_Message_Id) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
 	n, err := m.MarshalTo(data)
@@ -1077,7 +1097,7 @@ func (m *Rpc_Bayes_Learn_Message_Id) Marshal() (data []byte, err error) {
 	return data[:n], nil
 }
 
-func (m *Rpc_Bayes_Learn_Message_Id) MarshalTo(data []byte) (int, error) {
+func (m *Rpc__Bayes_Learn_Message_Id) MarshalTo(data []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -1355,8 +1375,13 @@ func (m *Rpc) Size() (n int) {
 		l = len(*m.Name)
 		n += 1 + l + sovCluegetter(uint64(l))
 	}
-	if m.XXX_extensions != nil {
-		n += github_com_golang_protobuf_proto.SizeOfExtensionMap(m.XXX_extensions)
+	if m.Bayes_Learn_Message != nil {
+		l = m.Bayes_Learn_Message.Size()
+		n += 2 + l + sovCluegetter(uint64(l))
+	}
+	if m.Bayes_Learn_Message_Id != nil {
+		l = m.Bayes_Learn_Message_Id.Size()
+		n += 2 + l + sovCluegetter(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -1364,7 +1389,7 @@ func (m *Rpc) Size() (n int) {
 	return n
 }
 
-func (m *Rpc_Bayes_Learn_Message) Size() (n int) {
+func (m *Rpc__Bayes_Learn_Message) Size() (n int) {
 	var l int
 	_ = l
 	if m.IsSpam != nil {
@@ -1392,7 +1417,7 @@ func (m *Rpc_Bayes_Learn_Message) Size() (n int) {
 	return n
 }
 
-func (m *Rpc_Bayes_Learn_Message_Id) Size() (n int) {
+func (m *Rpc__Bayes_Learn_Message_Id) Size() (n int) {
 	var l int
 	_ = l
 	if m.IsSpam != nil {
@@ -1645,7 +1670,10 @@ func (m *Proto_Message) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Body = append([]byte{}, data[iNdEx:postIndex]...)
+			m.Body = append(m.Body[:0], data[iNdEx:postIndex]...)
+			if m.Body == nil {
+				m.Body = []byte{}
+			}
 			iNdEx = postIndex
 		case 7:
 			if wireType != 0 {
@@ -2058,7 +2086,10 @@ func (m *Proto_Message_CheckResult) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Determinants = append([]byte{}, data[iNdEx:postIndex]...)
+			m.Determinants = append(m.Determinants[:0], data[iNdEx:postIndex]...)
+			if m.Determinants == nil {
+				m.Determinants = []byte{}
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -2297,7 +2328,10 @@ func (m *Proto_Session) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Id = append([]byte{}, data[iNdEx:postIndex]...)
+			m.Id = append(m.Id[:0], data[iNdEx:postIndex]...)
+			if m.Id == nil {
+				m.Id = []byte{}
+			}
 			iNdEx = postIndex
 			hasFields[0] |= uint64(0x00000002)
 		case 3:
@@ -2787,7 +2821,6 @@ func (m *Proto_Session) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Rpc) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2846,52 +2879,87 @@ func (m *Rpc) Unmarshal(data []byte) error {
 			s := string(data[iNdEx:postIndex])
 			m.Name = &s
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
-		default:
-			if ((fieldNum >= 256) && (fieldNum < 1024)) || ((fieldNum >= 1024) && (fieldNum < 2048)) || ((fieldNum >= 10000) && (fieldNum < 19001)) {
-				var sizeOfWire int
-				for {
-					sizeOfWire++
-					wire >>= 7
-					if wire == 0 {
-						break
-					}
-				}
-				iNdEx -= sizeOfWire
-				skippy, err := skipCluegetter(data[iNdEx:])
-				if err != nil {
-					return err
-				}
-				if skippy < 0 {
-					return ErrInvalidLengthCluegetter
-				}
-				if (iNdEx + skippy) > l {
-					return io.ErrUnexpectedEOF
-				}
-				if m.XXX_extensions == nil {
-					m.XXX_extensions = make(map[int32]github_com_golang_protobuf_proto.Extension)
-				}
-				m.XXX_extensions[int32(fieldNum)] = github_com_golang_protobuf_proto.NewExtension(data[iNdEx : iNdEx+skippy])
-				iNdEx += skippy
-			} else {
-				iNdEx = preIndex
-				skippy, err := skipCluegetter(data[iNdEx:])
-				if err != nil {
-					return err
-				}
-				if skippy < 0 {
-					return ErrInvalidLengthCluegetter
-				}
-				if (iNdEx + skippy) > l {
-					return io.ErrUnexpectedEOF
-				}
-				m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
-				iNdEx += skippy
+		case 1024:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Bayes_Learn_Message", wireType)
 			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCluegetter
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCluegetter
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Bayes_Learn_Message == nil {
+				m.Bayes_Learn_Message = &Rpc__Bayes_Learn_Message{}
+			}
+			if err := m.Bayes_Learn_Message.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 1025:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Bayes_Learn_Message_Id", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCluegetter
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCluegetter
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Bayes_Learn_Message_Id == nil {
+				m.Bayes_Learn_Message_Id = &Rpc__Bayes_Learn_Message_Id{}
+			}
+			if err := m.Bayes_Learn_Message_Id.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCluegetter(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCluegetter
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -2899,7 +2967,7 @@ func (m *Rpc) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *Rpc_Bayes_Learn_Message) Unmarshal(data []byte) error {
+func (m *Rpc__Bayes_Learn_Message) Unmarshal(data []byte) error {
 	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
@@ -2923,10 +2991,10 @@ func (m *Rpc_Bayes_Learn_Message) Unmarshal(data []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: Rpc_Bayes_Learn_Message: wiretype end group for non-group")
+			return fmt.Errorf("proto: _Bayes_Learn_Message: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Rpc_Bayes_Learn_Message: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: _Bayes_Learn_Message: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -3103,7 +3171,7 @@ func (m *Rpc_Bayes_Learn_Message) Unmarshal(data []byte) error {
 	}
 	return nil
 }
-func (m *Rpc_Bayes_Learn_Message_Id) Unmarshal(data []byte) error {
+func (m *Rpc__Bayes_Learn_Message_Id) Unmarshal(data []byte) error {
 	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
@@ -3127,10 +3195,10 @@ func (m *Rpc_Bayes_Learn_Message_Id) Unmarshal(data []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: Rpc_Bayes_Learn_Message_Id: wiretype end group for non-group")
+			return fmt.Errorf("proto: _Bayes_Learn_Message_Id: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Rpc_Bayes_Learn_Message_Id: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: _Bayes_Learn_Message_Id: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -3408,3 +3476,55 @@ var (
 	ErrInvalidLengthCluegetter = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowCluegetter   = fmt.Errorf("proto: integer overflow")
 )
+
+var fileDescriptorCluegetter = []byte{
+	// 759 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x94, 0x54, 0x4d, 0x6f, 0xdb, 0x46,
+	0x10, 0x35, 0xf5, 0xad, 0x91, 0x64, 0xd3, 0x94, 0xeb, 0x12, 0x6a, 0xa1, 0xba, 0x82, 0x0f, 0x06,
+	0x5a, 0xe8, 0x20, 0xa0, 0x97, 0xa2, 0x97, 0xca, 0x56, 0x61, 0x15, 0x56, 0x6b, 0x48, 0x4a, 0xae,
+	0xc2, 0x9a, 0x1c, 0x8b, 0x8c, 0xf9, 0x85, 0xdd, 0x95, 0x03, 0x1f, 0x02, 0x24, 0x40, 0xae, 0xb9,
+	0xe7, 0x4f, 0xe4, 0x7f, 0xe4, 0x98, 0x5f, 0x10, 0x04, 0xc9, 0x1f, 0xc9, 0xec, 0x92, 0xb4, 0xe5,
+	0x44, 0x49, 0x90, 0x83, 0x00, 0xed, 0xdb, 0xb7, 0xb3, 0xf3, 0xe6, 0xbd, 0x25, 0x98, 0x4e, 0xb0,
+	0xc2, 0x25, 0x4a, 0x89, 0xbc, 0x9f, 0xf0, 0x58, 0xc6, 0x56, 0x29, 0x64, 0x7e, 0xd4, 0x7b, 0x51,
+	0x86, 0xd6, 0xb9, 0x5a, 0x2f, 0x26, 0x28, 0x04, 0x5b, 0xa2, 0x75, 0x08, 0x55, 0x41, 0x7f, 0xfd,
+	0x38, 0xb2, 0x8d, 0x83, 0xc2, 0x51, 0x63, 0xd0, 0xee, 0x2b, 0x66, 0x3f, 0x65, 0xcd, 0xd2, 0x2d,
+	0x0b, 0xa0, 0xe0, 0xbb, 0x76, 0x81, 0x08, 0x75, 0xab, 0x09, 0xa5, 0x4b, 0x1e, 0x87, 0x76, 0x31,
+	0x5f, 0x71, 0x27, 0x91, 0x76, 0xe9, 0xa0, 0x48, 0xab, 0xdf, 0xa0, 0xea, 0x21, 0x73, 0x91, 0x0b,
+	0xbb, 0x4c, 0x40, 0x63, 0xd0, 0x59, 0xaf, 0x96, 0xdd, 0xd9, 0x3f, 0xd5, 0x14, 0x75, 0xf4, 0x22,
+	0x76, 0x6f, 0xec, 0xca, 0x81, 0x71, 0xd4, 0xb4, 0x7e, 0x87, 0xea, 0x35, 0x72, 0xd7, 0x77, 0xa4,
+	0x5d, 0xa5, 0xca, 0xdb, 0x83, 0x9f, 0x36, 0x1d, 0x7d, 0x98, 0x52, 0x2c, 0xea, 0x28, 0x63, 0x4f,
+	0xc4, 0xd2, 0xae, 0xe9, 0x56, 0xda, 0xd0, 0xe0, 0xf8, 0x08, 0x1d, 0x39, 0x73, 0x62, 0x8e, 0x76,
+	0x9d, 0x40, 0xc3, 0xfa, 0x19, 0xf6, 0xd6, 0xc0, 0xb9, 0xc7, 0x51, 0x78, 0x71, 0xe0, 0xda, 0xa0,
+	0x77, 0x7f, 0x80, 0x96, 0xc4, 0x30, 0xb9, 0x64, 0x7e, 0x90, 0x1e, 0x6a, 0x68, 0xb8, 0x0b, 0xfb,
+	0xf7, 0xe0, 0xbb, 0x63, 0x4d, 0xbd, 0xff, 0x07, 0x34, 0x1d, 0x0f, 0x9d, 0xab, 0x29, 0x8a, 0x55,
+	0x20, 0x85, 0xdd, 0xd2, 0x5a, 0x7f, 0xd9, 0xd4, 0xf0, 0xf1, 0x1d, 0xaf, 0xf3, 0xca, 0x80, 0xc6,
+	0xda, 0x5a, 0x89, 0x08, 0x53, 0xda, 0x82, 0xa6, 0x6b, 0x68, 0x11, 0xdb, 0x50, 0x09, 0x63, 0x77,
+	0x15, 0x60, 0x36, 0xed, 0xb5, 0xb1, 0x14, 0xbf, 0x3d, 0x96, 0x16, 0x94, 0x85, 0xd6, 0x51, 0xca,
+	0xe5, 0x3d, 0x46, 0x7f, 0xe9, 0x49, 0x74, 0x53, 0x79, 0x65, 0x0d, 0x9b, 0x50, 0x73, 0x57, 0x9c,
+	0x49, 0x65, 0x7a, 0x45, 0x23, 0x7b, 0xd0, 0x74, 0x91, 0xc2, 0x12, 0xfa, 0x11, 0x8b, 0x48, 0x50,
+	0x55, 0x59, 0xd2, 0x39, 0x84, 0x4a, 0x66, 0x55, 0x03, 0x8a, 0x57, 0x78, 0x93, 0xb5, 0x48, 0x97,
+	0x5c, 0x33, 0xca, 0x57, 0xda, 0x61, 0xef, 0x4f, 0xa8, 0xe6, 0xd7, 0x03, 0x54, 0xce, 0x47, 0xd3,
+	0xc9, 0x78, 0x6e, 0x6e, 0x91, 0xbb, 0xb5, 0xf9, 0x68, 0x72, 0xfe, 0xcf, 0xdf, 0xe3, 0x33, 0xd3,
+	0x50, 0x3b, 0xd3, 0xd1, 0xbf, 0xa3, 0xe3, 0xb9, 0x59, 0xb0, 0xea, 0x50, 0x1e, 0x4d, 0xa7, 0xff,
+	0x4f, 0xcd, 0x62, 0xef, 0x6d, 0x21, 0xcf, 0x63, 0x9e, 0x34, 0x62, 0xfa, 0x91, 0x90, 0x2c, 0x72,
+	0x70, 0x9c, 0xce, 0xa4, 0xb4, 0x96, 0xbe, 0xa6, 0xb5, 0x0b, 0x75, 0xe9, 0x87, 0x38, 0x93, 0x8c,
+	0xa7, 0x13, 0x29, 0x59, 0x3b, 0x50, 0x55, 0xd0, 0x28, 0x72, 0x49, 0xb6, 0x41, 0x00, 0xa9, 0x11,
+	0x4c, 0x04, 0x0f, 0x04, 0xf2, 0x88, 0x85, 0x4a, 0xb5, 0x41, 0x6d, 0x53, 0x19, 0x85, 0xce, 0x30,
+	0x22, 0x45, 0x3a, 0x74, 0xb7, 0xd8, 0x04, 0xa5, 0x17, 0xbb, 0x5a, 0xb5, 0xc6, 0x1c, 0xe4, 0x72,
+	0x2c, 0xc4, 0x8a, 0x78, 0x35, 0x8d, 0x51, 0xb4, 0x14, 0x36, 0x5b, 0x5d, 0xa8, 0x28, 0x51, 0xb4,
+	0x72, 0xa2, 0x9f, 0x78, 0xc8, 0x87, 0x3e, 0x8d, 0x0c, 0x08, 0x6b, 0x29, 0xfb, 0x52, 0x8c, 0x92,
+	0x94, 0x71, 0x64, 0x20, 0x68, 0x3e, 0xfa, 0x85, 0x35, 0x35, 0xa6, 0xe4, 0x24, 0x94, 0x99, 0x42,
+	0xba, 0xcf, 0x91, 0x0c, 0x16, 0x78, 0x12, 0x09, 0x7b, 0x5b, 0xef, 0x93, 0x3d, 0x5e, 0x2c, 0xa4,
+	0x6e, 0x7d, 0x47, 0x23, 0xf4, 0x52, 0x3c, 0x0c, 0x62, 0xdb, 0xcc, 0x9b, 0x09, 0x25, 0x3b, 0x25,
+	0xca, 0x7f, 0x8a, 0xb2, 0xab, 0x41, 0xb2, 0x9a, 0xc0, 0x13, 0x86, 0x61, 0x1c, 0x69, 0xd8, 0x52,
+	0x70, 0xef, 0x79, 0x11, 0x8a, 0xd3, 0xc4, 0x51, 0x15, 0x74, 0x3d, 0x43, 0x93, 0xff, 0x82, 0xf6,
+	0x90, 0xdd, 0xa0, 0x58, 0x9c, 0x21, 0xe3, 0x51, 0x9e, 0x22, 0xfb, 0xa9, 0x12, 0xdb, 0x18, 0x74,
+	0xd3, 0x84, 0xd1, 0xb1, 0xfe, 0x62, 0x03, 0xcd, 0x1a, 0xc2, 0xfe, 0x06, 0x78, 0x41, 0x76, 0x3d,
+	0x4b, 0x0b, 0xfc, 0xfa, 0xf5, 0x02, 0xc4, 0xec, 0x3c, 0x81, 0xbd, 0x8d, 0xb5, 0xc9, 0x4b, 0x5f,
+	0x2c, 0x44, 0xc2, 0x42, 0xed, 0x7d, 0x4d, 0x7d, 0x9f, 0xb2, 0x37, 0xa2, 0x03, 0xf0, 0xc9, 0xf7,
+	0x29, 0x3f, 0xa6, 0x06, 0x44, 0xf3, 0xc8, 0x66, 0x41, 0x03, 0xe4, 0x98, 0xc4, 0x9c, 0x02, 0x9d,
+	0x8e, 0x41, 0xd9, 0xc2, 0x91, 0x09, 0xb2, 0xa0, 0xad, 0xd6, 0x9d, 0x08, 0x7e, 0xfc, 0x42, 0x67,
+	0x9f, 0x77, 0x70, 0xff, 0x95, 0xde, 0x7e, 0x03, 0xbf, 0xe7, 0xbe, 0xa1, 0xf9, 0xfa, 0x7d, 0xd7,
+	0x78, 0x43, 0xbf, 0x77, 0xf4, 0x7b, 0xf9, 0xa1, 0xbb, 0xf5, 0x31, 0x00, 0x00, 0xff, 0xff, 0x54,
+	0x8c, 0xe9, 0x72, 0xa2, 0x05, 0x00, 0x00,
+}
