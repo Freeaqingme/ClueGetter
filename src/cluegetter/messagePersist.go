@@ -275,23 +275,23 @@ func messagePersist(msg *Proto_Message) {
 	milterSessionPersist(&sess)
 
 	var sender_local, sender_domain string
-	if strings.Index(*msg.From, "@") != -1 {
-		sender_local = strings.Split(*msg.From, "@")[0]
-		sender_domain = strings.Split(*msg.From, "@")[1]
+	if strings.Index(msg.From, "@") != -1 {
+		sender_local = strings.Split(msg.From, "@")[0]
+		sender_domain = strings.Split(msg.From, "@")[1]
 	} else {
-		sender_local = *msg.From
+		sender_local = msg.From
 	}
 
 	messageIdHdr := ""
 	for _, v := range msg.Headers {
-		if strings.EqualFold((*v).GetKey(), "Message-Id") {
-			messageIdHdr = (*v).GetValue()
+		if strings.EqualFold(v.Key, "Message-Id") {
+			messageIdHdr = v.Value
 		}
 	}
 
 	verdictValue := [3]string{"permit", "tempfail", "reject"}
 	StatsCounters["RdbmsQueries"].increase(1)
-	sessId := sess.GetId()
+	sessId := sess.Id
 	_, err := MessageStmtInsertMsg.Exec(
 		msg.Id,
 		string(sessId[:]),
@@ -302,7 +302,7 @@ func messagePersist(msg *Proto_Message) {
 		sender_local,
 		sender_domain,
 		len(msg.Rcpt),
-		verdictValue[*msg.Verdict],
+		verdictValue[msg.Verdict],
 		msg.VerdictMsg,
 		msg.RejectScore,
 		msg.RejectScoreThreshold,
@@ -348,7 +348,7 @@ func messageSaveHeaders(msg *Proto_Message) {
 	for _, headerPair := range msg.Headers {
 		StatsCounters["RdbmsQueries"].increase(1)
 		_, err := MessageStmtInsertMsgHdr.Exec(
-			msg.Id, (*headerPair).GetKey(), (*headerPair).GetValue())
+			msg.Id, headerPair.Key, headerPair.Value)
 
 		if err != nil {
 			StatsCounters["RdbmsErrors"].increase(1)
@@ -381,7 +381,7 @@ func messageSaveBody(msg *Proto_Message) {
 	}
 }
 
-func messageSaveRecipients(recipients []string, msgId *string) {
+func messageSaveRecipients(recipients []string, msgId string) {
 	for _, rcpt := range recipients {
 		var local string
 		var domain string

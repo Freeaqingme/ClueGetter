@@ -19,8 +19,6 @@ import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
 
-import github_com_golang_protobuf_proto "github.com/golang/protobuf/proto"
-
 import io "io"
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -54,41 +52,27 @@ var Proto_Message_Verdict_value = map[string]int32{
 	"ERROR":    3,
 }
 
-func (x Proto_Message_Verdict) Enum() *Proto_Message_Verdict {
-	p := new(Proto_Message_Verdict)
-	*p = x
-	return p
-}
 func (x Proto_Message_Verdict) String() string {
 	return proto.EnumName(Proto_Message_Verdict_name, int32(x))
-}
-func (x *Proto_Message_Verdict) UnmarshalJSON(data []byte) error {
-	value, err := proto.UnmarshalJSONEnum(Proto_Message_Verdict_value, data, "Proto_Message_Verdict")
-	if err != nil {
-		return err
-	}
-	*x = Proto_Message_Verdict(value)
-	return nil
 }
 func (Proto_Message_Verdict) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptorCluegetter, []int{0, 0}
 }
 
 type Proto_Message struct {
-	Session                *Proto_Session               `protobuf:"bytes,1,req,name=session" json:"session,omitempty"`
-	Id                     *string                      `protobuf:"bytes,2,req,name=id" json:"id,omitempty"`
-	From                   *string                      `protobuf:"bytes,3,req,name=from" json:"from,omitempty"`
+	Session                *Proto_Session               `protobuf:"bytes,1,opt,name=session" json:"session,omitempty"`
+	Id                     string                       `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
+	From                   string                       `protobuf:"bytes,3,opt,name=from,proto3" json:"from,omitempty"`
 	Rcpt                   []string                     `protobuf:"bytes,4,rep,name=rcpt" json:"rcpt,omitempty"`
 	Headers                []*Proto_Message_Header      `protobuf:"bytes,5,rep,name=headers" json:"headers,omitempty"`
-	Body                   []byte                       `protobuf:"bytes,6,opt,name=body" json:"body,omitempty"`
-	Verdict                *Proto_Message_Verdict       `protobuf:"varint,7,req,name=verdict,enum=main.Proto_Message_Verdict" json:"verdict,omitempty"`
-	VerdictMsg             *string                      `protobuf:"bytes,8,req,name=verdictMsg" json:"verdictMsg,omitempty"`
-	RejectScore            *float64                     `protobuf:"fixed64,9,req,name=rejectScore" json:"rejectScore,omitempty"`
-	RejectScoreThreshold   *float64                     `protobuf:"fixed64,10,req,name=rejectScoreThreshold" json:"rejectScoreThreshold,omitempty"`
-	TempfailScore          *float64                     `protobuf:"fixed64,11,req,name=tempfailScore" json:"tempfailScore,omitempty"`
-	TempfailScoreThreshold *float64                     `protobuf:"fixed64,12,req,name=tempfailScoreThreshold" json:"tempfailScoreThreshold,omitempty"`
+	Body                   []byte                       `protobuf:"bytes,6,opt,name=body,proto3" json:"body,omitempty"`
+	Verdict                Proto_Message_Verdict        `protobuf:"varint,7,opt,name=verdict,proto3,enum=main.Proto_Message_Verdict" json:"verdict,omitempty"`
+	VerdictMsg             string                       `protobuf:"bytes,8,opt,name=verdictMsg,proto3" json:"verdictMsg,omitempty"`
+	RejectScore            float64                      `protobuf:"fixed64,9,opt,name=rejectScore,proto3" json:"rejectScore,omitempty"`
+	RejectScoreThreshold   float64                      `protobuf:"fixed64,10,opt,name=rejectScoreThreshold,proto3" json:"rejectScoreThreshold,omitempty"`
+	TempfailScore          float64                      `protobuf:"fixed64,11,opt,name=tempfailScore,proto3" json:"tempfailScore,omitempty"`
+	TempfailScoreThreshold float64                      `protobuf:"fixed64,12,opt,name=tempfailScoreThreshold,proto3" json:"tempfailScoreThreshold,omitempty"`
 	CheckResults           []*Proto_Message_CheckResult `protobuf:"bytes,13,rep,name=checkResults" json:"checkResults,omitempty"`
-	XXX_unrecognized       []byte                       `json:"-"`
 }
 
 func (m *Proto_Message) Reset()                    { *m = Proto_Message{} }
@@ -103,81 +87,11 @@ func (m *Proto_Message) GetSession() *Proto_Session {
 	return nil
 }
 
-func (m *Proto_Message) GetId() string {
-	if m != nil && m.Id != nil {
-		return *m.Id
-	}
-	return ""
-}
-
-func (m *Proto_Message) GetFrom() string {
-	if m != nil && m.From != nil {
-		return *m.From
-	}
-	return ""
-}
-
-func (m *Proto_Message) GetRcpt() []string {
-	if m != nil {
-		return m.Rcpt
-	}
-	return nil
-}
-
 func (m *Proto_Message) GetHeaders() []*Proto_Message_Header {
 	if m != nil {
 		return m.Headers
 	}
 	return nil
-}
-
-func (m *Proto_Message) GetBody() []byte {
-	if m != nil {
-		return m.Body
-	}
-	return nil
-}
-
-func (m *Proto_Message) GetVerdict() Proto_Message_Verdict {
-	if m != nil && m.Verdict != nil {
-		return *m.Verdict
-	}
-	return Proto_Message_PERMIT
-}
-
-func (m *Proto_Message) GetVerdictMsg() string {
-	if m != nil && m.VerdictMsg != nil {
-		return *m.VerdictMsg
-	}
-	return ""
-}
-
-func (m *Proto_Message) GetRejectScore() float64 {
-	if m != nil && m.RejectScore != nil {
-		return *m.RejectScore
-	}
-	return 0
-}
-
-func (m *Proto_Message) GetRejectScoreThreshold() float64 {
-	if m != nil && m.RejectScoreThreshold != nil {
-		return *m.RejectScoreThreshold
-	}
-	return 0
-}
-
-func (m *Proto_Message) GetTempfailScore() float64 {
-	if m != nil && m.TempfailScore != nil {
-		return *m.TempfailScore
-	}
-	return 0
-}
-
-func (m *Proto_Message) GetTempfailScoreThreshold() float64 {
-	if m != nil && m.TempfailScoreThreshold != nil {
-		return *m.TempfailScoreThreshold
-	}
-	return 0
 }
 
 func (m *Proto_Message) GetCheckResults() []*Proto_Message_CheckResult {
@@ -188,14 +102,13 @@ func (m *Proto_Message) GetCheckResults() []*Proto_Message_CheckResult {
 }
 
 type Proto_Message_CheckResult struct {
-	MessageId        *string                `protobuf:"bytes,1,req,name=message_id" json:"message_id,omitempty"`
-	Module           *string                `protobuf:"bytes,2,req,name=module" json:"module,omitempty"`
-	Verdict          *Proto_Message_Verdict `protobuf:"varint,3,req,name=verdict,enum=main.Proto_Message_Verdict" json:"verdict,omitempty"`
-	Score            *float64               `protobuf:"fixed64,4,req,name=score" json:"score,omitempty"`
-	WeightedScore    *float64               `protobuf:"fixed64,5,req,name=weightedScore" json:"weightedScore,omitempty"`
-	Duration         *float64               `protobuf:"fixed64,6,req,name=duration" json:"duration,omitempty"`
-	Determinants     []byte                 `protobuf:"bytes,7,opt,name=determinants" json:"determinants,omitempty"`
-	XXX_unrecognized []byte                 `json:"-"`
+	MessageId     string                `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	Module        string                `protobuf:"bytes,2,opt,name=module,proto3" json:"module,omitempty"`
+	Verdict       Proto_Message_Verdict `protobuf:"varint,3,opt,name=verdict,proto3,enum=main.Proto_Message_Verdict" json:"verdict,omitempty"`
+	Score         float64               `protobuf:"fixed64,4,opt,name=score,proto3" json:"score,omitempty"`
+	WeightedScore float64               `protobuf:"fixed64,5,opt,name=weightedScore,proto3" json:"weightedScore,omitempty"`
+	Duration      float64               `protobuf:"fixed64,6,opt,name=duration,proto3" json:"duration,omitempty"`
+	Determinants  []byte                `protobuf:"bytes,7,opt,name=determinants,proto3" json:"determinants,omitempty"`
 }
 
 func (m *Proto_Message_CheckResult) Reset()         { *m = Proto_Message_CheckResult{} }
@@ -205,59 +118,9 @@ func (*Proto_Message_CheckResult) Descriptor() ([]byte, []int) {
 	return fileDescriptorCluegetter, []int{0, 0}
 }
 
-func (m *Proto_Message_CheckResult) GetMessageId() string {
-	if m != nil && m.MessageId != nil {
-		return *m.MessageId
-	}
-	return ""
-}
-
-func (m *Proto_Message_CheckResult) GetModule() string {
-	if m != nil && m.Module != nil {
-		return *m.Module
-	}
-	return ""
-}
-
-func (m *Proto_Message_CheckResult) GetVerdict() Proto_Message_Verdict {
-	if m != nil && m.Verdict != nil {
-		return *m.Verdict
-	}
-	return Proto_Message_PERMIT
-}
-
-func (m *Proto_Message_CheckResult) GetScore() float64 {
-	if m != nil && m.Score != nil {
-		return *m.Score
-	}
-	return 0
-}
-
-func (m *Proto_Message_CheckResult) GetWeightedScore() float64 {
-	if m != nil && m.WeightedScore != nil {
-		return *m.WeightedScore
-	}
-	return 0
-}
-
-func (m *Proto_Message_CheckResult) GetDuration() float64 {
-	if m != nil && m.Duration != nil {
-		return *m.Duration
-	}
-	return 0
-}
-
-func (m *Proto_Message_CheckResult) GetDeterminants() []byte {
-	if m != nil {
-		return m.Determinants
-	}
-	return nil
-}
-
 type Proto_Message_Header struct {
-	Key              *string `protobuf:"bytes,1,req,name=key" json:"key,omitempty"`
-	Value            *string `protobuf:"bytes,2,req,name=value" json:"value,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	Key   string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 }
 
 func (m *Proto_Message_Header) Reset()         { *m = Proto_Message_Header{} }
@@ -267,40 +130,25 @@ func (*Proto_Message_Header) Descriptor() ([]byte, []int) {
 	return fileDescriptorCluegetter, []int{0, 1}
 }
 
-func (m *Proto_Message_Header) GetKey() string {
-	if m != nil && m.Key != nil {
-		return *m.Key
-	}
-	return ""
-}
-
-func (m *Proto_Message_Header) GetValue() string {
-	if m != nil && m.Value != nil {
-		return *m.Value
-	}
-	return ""
-}
-
 type Proto_Session struct {
-	InstanceId       *uint64 `protobuf:"varint,1,req,name=instanceId" json:"instanceId,omitempty"`
-	Id               []byte  `protobuf:"bytes,2,req,name=id" json:"id,omitempty"`
-	TimeStart        *uint64 `protobuf:"varint,3,req,name=timeStart" json:"timeStart,omitempty"`
-	TimeEnd          *uint64 `protobuf:"varint,4,opt,name=timeEnd" json:"timeEnd,omitempty"`
-	SaslUsername     *string `protobuf:"bytes,5,opt,name=saslUsername" json:"saslUsername,omitempty"`
-	SaslSender       *string `protobuf:"bytes,6,opt,name=saslSender" json:"saslSender,omitempty"`
-	SaslMethod       *string `protobuf:"bytes,7,opt,name=saslMethod" json:"saslMethod,omitempty"`
-	CertIssuer       *string `protobuf:"bytes,8,opt,name=certIssuer" json:"certIssuer,omitempty"`
-	CertSubject      *string `protobuf:"bytes,9,opt,name=certSubject" json:"certSubject,omitempty"`
-	CipherBits       *uint32 `protobuf:"varint,10,opt,name=cipherBits" json:"cipherBits,omitempty"`
-	Cipher           *string `protobuf:"bytes,11,opt,name=cipher" json:"cipher,omitempty"`
-	TlsVersion       *string `protobuf:"bytes,12,opt,name=tlsVersion" json:"tlsVersion,omitempty"`
-	Ip               *string `protobuf:"bytes,13,req,name=ip" json:"ip,omitempty"`
-	ReverseDns       *string `protobuf:"bytes,14,opt,name=reverseDns" json:"reverseDns,omitempty"`
-	Hostname         *string `protobuf:"bytes,15,opt,name=hostname" json:"hostname,omitempty"`
-	Helo             *string `protobuf:"bytes,16,opt,name=helo" json:"helo,omitempty"`
-	MtaHostName      *string `protobuf:"bytes,17,opt,name=mtaHostName" json:"mtaHostName,omitempty"`
-	MtaDaemonName    *string `protobuf:"bytes,18,opt,name=mtaDaemonName" json:"mtaDaemonName,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	InstanceId    uint64 `protobuf:"varint,1,opt,name=instanceId,proto3" json:"instanceId,omitempty"`
+	Id            []byte `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
+	TimeStart     uint64 `protobuf:"varint,3,opt,name=timeStart,proto3" json:"timeStart,omitempty"`
+	TimeEnd       uint64 `protobuf:"varint,4,opt,name=timeEnd,proto3" json:"timeEnd,omitempty"`
+	SaslUsername  string `protobuf:"bytes,5,opt,name=saslUsername,proto3" json:"saslUsername,omitempty"`
+	SaslSender    string `protobuf:"bytes,6,opt,name=saslSender,proto3" json:"saslSender,omitempty"`
+	SaslMethod    string `protobuf:"bytes,7,opt,name=saslMethod,proto3" json:"saslMethod,omitempty"`
+	CertIssuer    string `protobuf:"bytes,8,opt,name=certIssuer,proto3" json:"certIssuer,omitempty"`
+	CertSubject   string `protobuf:"bytes,9,opt,name=certSubject,proto3" json:"certSubject,omitempty"`
+	CipherBits    uint32 `protobuf:"varint,10,opt,name=cipherBits,proto3" json:"cipherBits,omitempty"`
+	Cipher        string `protobuf:"bytes,11,opt,name=cipher,proto3" json:"cipher,omitempty"`
+	TlsVersion    string `protobuf:"bytes,12,opt,name=tlsVersion,proto3" json:"tlsVersion,omitempty"`
+	Ip            string `protobuf:"bytes,13,opt,name=ip,proto3" json:"ip,omitempty"`
+	ReverseDns    string `protobuf:"bytes,14,opt,name=reverseDns,proto3" json:"reverseDns,omitempty"`
+	Hostname      string `protobuf:"bytes,15,opt,name=hostname,proto3" json:"hostname,omitempty"`
+	Helo          string `protobuf:"bytes,16,opt,name=helo,proto3" json:"helo,omitempty"`
+	MtaHostName   string `protobuf:"bytes,17,opt,name=mtaHostName,proto3" json:"mtaHostName,omitempty"`
+	MtaDaemonName string `protobuf:"bytes,18,opt,name=mtaDaemonName,proto3" json:"mtaDaemonName,omitempty"`
 }
 
 func (m *Proto_Session) Reset()                    { *m = Proto_Session{} }
@@ -308,154 +156,20 @@ func (m *Proto_Session) String() string            { return proto.CompactTextStr
 func (*Proto_Session) ProtoMessage()               {}
 func (*Proto_Session) Descriptor() ([]byte, []int) { return fileDescriptorCluegetter, []int{1} }
 
-func (m *Proto_Session) GetInstanceId() uint64 {
-	if m != nil && m.InstanceId != nil {
-		return *m.InstanceId
-	}
-	return 0
-}
-
-func (m *Proto_Session) GetId() []byte {
-	if m != nil {
-		return m.Id
-	}
-	return nil
-}
-
-func (m *Proto_Session) GetTimeStart() uint64 {
-	if m != nil && m.TimeStart != nil {
-		return *m.TimeStart
-	}
-	return 0
-}
-
-func (m *Proto_Session) GetTimeEnd() uint64 {
-	if m != nil && m.TimeEnd != nil {
-		return *m.TimeEnd
-	}
-	return 0
-}
-
-func (m *Proto_Session) GetSaslUsername() string {
-	if m != nil && m.SaslUsername != nil {
-		return *m.SaslUsername
-	}
-	return ""
-}
-
-func (m *Proto_Session) GetSaslSender() string {
-	if m != nil && m.SaslSender != nil {
-		return *m.SaslSender
-	}
-	return ""
-}
-
-func (m *Proto_Session) GetSaslMethod() string {
-	if m != nil && m.SaslMethod != nil {
-		return *m.SaslMethod
-	}
-	return ""
-}
-
-func (m *Proto_Session) GetCertIssuer() string {
-	if m != nil && m.CertIssuer != nil {
-		return *m.CertIssuer
-	}
-	return ""
-}
-
-func (m *Proto_Session) GetCertSubject() string {
-	if m != nil && m.CertSubject != nil {
-		return *m.CertSubject
-	}
-	return ""
-}
-
-func (m *Proto_Session) GetCipherBits() uint32 {
-	if m != nil && m.CipherBits != nil {
-		return *m.CipherBits
-	}
-	return 0
-}
-
-func (m *Proto_Session) GetCipher() string {
-	if m != nil && m.Cipher != nil {
-		return *m.Cipher
-	}
-	return ""
-}
-
-func (m *Proto_Session) GetTlsVersion() string {
-	if m != nil && m.TlsVersion != nil {
-		return *m.TlsVersion
-	}
-	return ""
-}
-
-func (m *Proto_Session) GetIp() string {
-	if m != nil && m.Ip != nil {
-		return *m.Ip
-	}
-	return ""
-}
-
-func (m *Proto_Session) GetReverseDns() string {
-	if m != nil && m.ReverseDns != nil {
-		return *m.ReverseDns
-	}
-	return ""
-}
-
-func (m *Proto_Session) GetHostname() string {
-	if m != nil && m.Hostname != nil {
-		return *m.Hostname
-	}
-	return ""
-}
-
-func (m *Proto_Session) GetHelo() string {
-	if m != nil && m.Helo != nil {
-		return *m.Helo
-	}
-	return ""
-}
-
-func (m *Proto_Session) GetMtaHostName() string {
-	if m != nil && m.MtaHostName != nil {
-		return *m.MtaHostName
-	}
-	return ""
-}
-
-func (m *Proto_Session) GetMtaDaemonName() string {
-	if m != nil && m.MtaDaemonName != nil {
-		return *m.MtaDaemonName
-	}
-	return ""
-}
-
 type Rpc struct {
 	// For all intents and purposes this field should be
 	// considered required. But we may change that in a
 	// far away feature, and we like to be forward
 	// compatible with our proto buffers.
-	Name                   *string                      `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	Bayes_Learn_Message    *Rpc__Bayes_Learn_Message    `protobuf:"bytes,1024,opt,name=Bayes_Learn_Message" json:"Bayes_Learn_Message,omitempty"`
-	Bayes_Learn_Message_Id *Rpc__Bayes_Learn_Message_Id `protobuf:"bytes,1025,opt,name=Bayes_Learn_Message_Id" json:"Bayes_Learn_Message_Id,omitempty"`
-	XXX_unrecognized       []byte                       `json:"-"`
+	Name                   string                       `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Bayes_Learn_Message    *Rpc__Bayes_Learn_Message    `protobuf:"bytes,1024,opt,name=Bayes_Learn_Message,json=bayesLearnMessage" json:"Bayes_Learn_Message,omitempty"`
+	Bayes_Learn_Message_Id *Rpc__Bayes_Learn_Message_Id `protobuf:"bytes,1025,opt,name=Bayes_Learn_Message_Id,json=bayesLearnMessageId" json:"Bayes_Learn_Message_Id,omitempty"`
 }
 
 func (m *Rpc) Reset()                    { *m = Rpc{} }
 func (m *Rpc) String() string            { return proto.CompactTextString(m) }
 func (*Rpc) ProtoMessage()               {}
 func (*Rpc) Descriptor() ([]byte, []int) { return fileDescriptorCluegetter, []int{2} }
-
-func (m *Rpc) GetName() string {
-	if m != nil && m.Name != nil {
-		return *m.Name
-	}
-	return ""
-}
 
 func (m *Rpc) GetBayes_Learn_Message() *Rpc__Bayes_Learn_Message {
 	if m != nil {
@@ -472,12 +186,11 @@ func (m *Rpc) GetBayes_Learn_Message_Id() *Rpc__Bayes_Learn_Message_Id {
 }
 
 type Rpc__Bayes_Learn_Message struct {
-	IsSpam           *bool          `protobuf:"varint,1,req,name=is_spam" json:"is_spam,omitempty"`
-	Message          *Proto_Message `protobuf:"bytes,2,req,name=message" json:"message,omitempty"`
-	Host             *string        `protobuf:"bytes,17,opt,name=host" json:"host,omitempty"`
-	Reporter         *string        `protobuf:"bytes,18,opt,name=reporter" json:"reporter,omitempty"`
-	Reason           *string        `protobuf:"bytes,19,opt,name=reason" json:"reason,omitempty"`
-	XXX_unrecognized []byte         `json:"-"`
+	IsSpam   bool           `protobuf:"varint,1,opt,name=is_spam,json=isSpam,proto3" json:"is_spam,omitempty"`
+	Message  *Proto_Message `protobuf:"bytes,2,opt,name=message" json:"message,omitempty"`
+	Host     string         `protobuf:"bytes,17,opt,name=host,proto3" json:"host,omitempty"`
+	Reporter string         `protobuf:"bytes,18,opt,name=reporter,proto3" json:"reporter,omitempty"`
+	Reason   string         `protobuf:"bytes,19,opt,name=reason,proto3" json:"reason,omitempty"`
 }
 
 func (m *Rpc__Bayes_Learn_Message) Reset()         { *m = Rpc__Bayes_Learn_Message{} }
@@ -487,13 +200,6 @@ func (*Rpc__Bayes_Learn_Message) Descriptor() ([]byte, []int) {
 	return fileDescriptorCluegetter, []int{2, 0}
 }
 
-func (m *Rpc__Bayes_Learn_Message) GetIsSpam() bool {
-	if m != nil && m.IsSpam != nil {
-		return *m.IsSpam
-	}
-	return false
-}
-
 func (m *Rpc__Bayes_Learn_Message) GetMessage() *Proto_Message {
 	if m != nil {
 		return m.Message
@@ -501,34 +207,12 @@ func (m *Rpc__Bayes_Learn_Message) GetMessage() *Proto_Message {
 	return nil
 }
 
-func (m *Rpc__Bayes_Learn_Message) GetHost() string {
-	if m != nil && m.Host != nil {
-		return *m.Host
-	}
-	return ""
-}
-
-func (m *Rpc__Bayes_Learn_Message) GetReporter() string {
-	if m != nil && m.Reporter != nil {
-		return *m.Reporter
-	}
-	return ""
-}
-
-func (m *Rpc__Bayes_Learn_Message) GetReason() string {
-	if m != nil && m.Reason != nil {
-		return *m.Reason
-	}
-	return ""
-}
-
 type Rpc__Bayes_Learn_Message_Id struct {
-	IsSpam           *bool   `protobuf:"varint,1,req,name=is_spam" json:"is_spam,omitempty"`
-	MessageId        *string `protobuf:"bytes,2,req,name=message_id" json:"message_id,omitempty"`
-	Host             *string `protobuf:"bytes,17,opt,name=host" json:"host,omitempty"`
-	Reporter         *string `protobuf:"bytes,18,opt,name=reporter" json:"reporter,omitempty"`
-	Reason           *string `protobuf:"bytes,19,opt,name=reason" json:"reason,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
+	IsSpam    bool   `protobuf:"varint,1,opt,name=is_spam,json=isSpam,proto3" json:"is_spam,omitempty"`
+	MessageId string `protobuf:"bytes,2,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	Host      string `protobuf:"bytes,17,opt,name=host,proto3" json:"host,omitempty"`
+	Reporter  string `protobuf:"bytes,18,opt,name=reporter,proto3" json:"reporter,omitempty"`
+	Reason    string `protobuf:"bytes,19,opt,name=reason,proto3" json:"reason,omitempty"`
 }
 
 func (m *Rpc__Bayes_Learn_Message_Id) Reset()         { *m = Rpc__Bayes_Learn_Message_Id{} }
@@ -536,41 +220,6 @@ func (m *Rpc__Bayes_Learn_Message_Id) String() string { return proto.CompactText
 func (*Rpc__Bayes_Learn_Message_Id) ProtoMessage()    {}
 func (*Rpc__Bayes_Learn_Message_Id) Descriptor() ([]byte, []int) {
 	return fileDescriptorCluegetter, []int{2, 1}
-}
-
-func (m *Rpc__Bayes_Learn_Message_Id) GetIsSpam() bool {
-	if m != nil && m.IsSpam != nil {
-		return *m.IsSpam
-	}
-	return false
-}
-
-func (m *Rpc__Bayes_Learn_Message_Id) GetMessageId() string {
-	if m != nil && m.MessageId != nil {
-		return *m.MessageId
-	}
-	return ""
-}
-
-func (m *Rpc__Bayes_Learn_Message_Id) GetHost() string {
-	if m != nil && m.Host != nil {
-		return *m.Host
-	}
-	return ""
-}
-
-func (m *Rpc__Bayes_Learn_Message_Id) GetReporter() string {
-	if m != nil && m.Reporter != nil {
-		return *m.Reporter
-	}
-	return ""
-}
-
-func (m *Rpc__Bayes_Learn_Message_Id) GetReason() string {
-	if m != nil && m.Reason != nil {
-		return *m.Reason
-	}
-	return ""
 }
 
 func init() {
@@ -598,9 +247,7 @@ func (m *Proto_Message) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Session == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.Session != nil {
 		data[i] = 0xa
 		i++
 		i = encodeVarintCluegetter(data, i, uint64(m.Session.Size()))
@@ -610,21 +257,17 @@ func (m *Proto_Message) MarshalTo(data []byte) (int, error) {
 		}
 		i += n1
 	}
-	if m.Id == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.Id) > 0 {
 		data[i] = 0x12
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.Id)))
-		i += copy(data[i:], *m.Id)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.Id)))
+		i += copy(data[i:], m.Id)
 	}
-	if m.From == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.From) > 0 {
 		data[i] = 0x1a
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.From)))
-		i += copy(data[i:], *m.From)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.From)))
+		i += copy(data[i:], m.From)
 	}
 	if len(m.Rcpt) > 0 {
 		for _, s := range m.Rcpt {
@@ -653,54 +296,42 @@ func (m *Proto_Message) MarshalTo(data []byte) (int, error) {
 			i += n
 		}
 	}
-	if m.Body != nil {
+	if len(m.Body) > 0 {
 		data[i] = 0x32
 		i++
 		i = encodeVarintCluegetter(data, i, uint64(len(m.Body)))
 		i += copy(data[i:], m.Body)
 	}
-	if m.Verdict == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.Verdict != 0 {
 		data[i] = 0x38
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(*m.Verdict))
+		i = encodeVarintCluegetter(data, i, uint64(m.Verdict))
 	}
-	if m.VerdictMsg == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.VerdictMsg) > 0 {
 		data[i] = 0x42
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.VerdictMsg)))
-		i += copy(data[i:], *m.VerdictMsg)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.VerdictMsg)))
+		i += copy(data[i:], m.VerdictMsg)
 	}
-	if m.RejectScore == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.RejectScore != 0 {
 		data[i] = 0x49
 		i++
-		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(float64(*m.RejectScore))))
+		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(float64(m.RejectScore))))
 	}
-	if m.RejectScoreThreshold == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.RejectScoreThreshold != 0 {
 		data[i] = 0x51
 		i++
-		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(float64(*m.RejectScoreThreshold))))
+		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(float64(m.RejectScoreThreshold))))
 	}
-	if m.TempfailScore == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.TempfailScore != 0 {
 		data[i] = 0x59
 		i++
-		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(float64(*m.TempfailScore))))
+		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(float64(m.TempfailScore))))
 	}
-	if m.TempfailScoreThreshold == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.TempfailScoreThreshold != 0 {
 		data[i] = 0x61
 		i++
-		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(float64(*m.TempfailScoreThreshold))))
+		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(float64(m.TempfailScoreThreshold))))
 	}
 	if len(m.CheckResults) > 0 {
 		for _, msg := range m.CheckResults {
@@ -713,9 +344,6 @@ func (m *Proto_Message) MarshalTo(data []byte) (int, error) {
 			}
 			i += n
 		}
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
@@ -735,58 +363,43 @@ func (m *Proto_Message_CheckResult) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.MessageId == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.MessageId) > 0 {
 		data[i] = 0xa
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.MessageId)))
-		i += copy(data[i:], *m.MessageId)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.MessageId)))
+		i += copy(data[i:], m.MessageId)
 	}
-	if m.Module == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.Module) > 0 {
 		data[i] = 0x12
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.Module)))
-		i += copy(data[i:], *m.Module)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.Module)))
+		i += copy(data[i:], m.Module)
 	}
-	if m.Verdict == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.Verdict != 0 {
 		data[i] = 0x18
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(*m.Verdict))
+		i = encodeVarintCluegetter(data, i, uint64(m.Verdict))
 	}
-	if m.Score == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.Score != 0 {
 		data[i] = 0x21
 		i++
-		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(float64(*m.Score))))
+		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(float64(m.Score))))
 	}
-	if m.WeightedScore == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.WeightedScore != 0 {
 		data[i] = 0x29
 		i++
-		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(float64(*m.WeightedScore))))
+		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(float64(m.WeightedScore))))
 	}
-	if m.Duration == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.Duration != 0 {
 		data[i] = 0x31
 		i++
-		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(float64(*m.Duration))))
+		i = encodeFixed64Cluegetter(data, i, uint64(math.Float64bits(float64(m.Duration))))
 	}
-	if m.Determinants != nil {
+	if len(m.Determinants) > 0 {
 		data[i] = 0x3a
 		i++
 		i = encodeVarintCluegetter(data, i, uint64(len(m.Determinants)))
 		i += copy(data[i:], m.Determinants)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
@@ -806,24 +419,17 @@ func (m *Proto_Message_Header) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Key == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.Key) > 0 {
 		data[i] = 0xa
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.Key)))
-		i += copy(data[i:], *m.Key)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.Key)))
+		i += copy(data[i:], m.Key)
 	}
-	if m.Value == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.Value) > 0 {
 		data[i] = 0x12
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.Value)))
-		i += copy(data[i:], *m.Value)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.Value)))
+		i += copy(data[i:], m.Value)
 	}
 	return i, nil
 }
@@ -843,126 +449,115 @@ func (m *Proto_Session) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.InstanceId == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.InstanceId != 0 {
 		data[i] = 0x8
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(*m.InstanceId))
+		i = encodeVarintCluegetter(data, i, uint64(m.InstanceId))
 	}
-	if m.Id == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.Id) > 0 {
 		data[i] = 0x12
 		i++
 		i = encodeVarintCluegetter(data, i, uint64(len(m.Id)))
 		i += copy(data[i:], m.Id)
 	}
-	if m.TimeStart == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.TimeStart != 0 {
 		data[i] = 0x18
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(*m.TimeStart))
+		i = encodeVarintCluegetter(data, i, uint64(m.TimeStart))
 	}
-	if m.TimeEnd != nil {
+	if m.TimeEnd != 0 {
 		data[i] = 0x20
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(*m.TimeEnd))
+		i = encodeVarintCluegetter(data, i, uint64(m.TimeEnd))
 	}
-	if m.SaslUsername != nil {
+	if len(m.SaslUsername) > 0 {
 		data[i] = 0x2a
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.SaslUsername)))
-		i += copy(data[i:], *m.SaslUsername)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.SaslUsername)))
+		i += copy(data[i:], m.SaslUsername)
 	}
-	if m.SaslSender != nil {
+	if len(m.SaslSender) > 0 {
 		data[i] = 0x32
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.SaslSender)))
-		i += copy(data[i:], *m.SaslSender)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.SaslSender)))
+		i += copy(data[i:], m.SaslSender)
 	}
-	if m.SaslMethod != nil {
+	if len(m.SaslMethod) > 0 {
 		data[i] = 0x3a
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.SaslMethod)))
-		i += copy(data[i:], *m.SaslMethod)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.SaslMethod)))
+		i += copy(data[i:], m.SaslMethod)
 	}
-	if m.CertIssuer != nil {
+	if len(m.CertIssuer) > 0 {
 		data[i] = 0x42
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.CertIssuer)))
-		i += copy(data[i:], *m.CertIssuer)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.CertIssuer)))
+		i += copy(data[i:], m.CertIssuer)
 	}
-	if m.CertSubject != nil {
+	if len(m.CertSubject) > 0 {
 		data[i] = 0x4a
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.CertSubject)))
-		i += copy(data[i:], *m.CertSubject)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.CertSubject)))
+		i += copy(data[i:], m.CertSubject)
 	}
-	if m.CipherBits != nil {
+	if m.CipherBits != 0 {
 		data[i] = 0x50
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(*m.CipherBits))
+		i = encodeVarintCluegetter(data, i, uint64(m.CipherBits))
 	}
-	if m.Cipher != nil {
+	if len(m.Cipher) > 0 {
 		data[i] = 0x5a
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.Cipher)))
-		i += copy(data[i:], *m.Cipher)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.Cipher)))
+		i += copy(data[i:], m.Cipher)
 	}
-	if m.TlsVersion != nil {
+	if len(m.TlsVersion) > 0 {
 		data[i] = 0x62
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.TlsVersion)))
-		i += copy(data[i:], *m.TlsVersion)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.TlsVersion)))
+		i += copy(data[i:], m.TlsVersion)
 	}
-	if m.Ip == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.Ip) > 0 {
 		data[i] = 0x6a
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.Ip)))
-		i += copy(data[i:], *m.Ip)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.Ip)))
+		i += copy(data[i:], m.Ip)
 	}
-	if m.ReverseDns != nil {
+	if len(m.ReverseDns) > 0 {
 		data[i] = 0x72
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.ReverseDns)))
-		i += copy(data[i:], *m.ReverseDns)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.ReverseDns)))
+		i += copy(data[i:], m.ReverseDns)
 	}
-	if m.Hostname != nil {
+	if len(m.Hostname) > 0 {
 		data[i] = 0x7a
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.Hostname)))
-		i += copy(data[i:], *m.Hostname)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.Hostname)))
+		i += copy(data[i:], m.Hostname)
 	}
-	if m.Helo != nil {
+	if len(m.Helo) > 0 {
 		data[i] = 0x82
 		i++
 		data[i] = 0x1
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.Helo)))
-		i += copy(data[i:], *m.Helo)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.Helo)))
+		i += copy(data[i:], m.Helo)
 	}
-	if m.MtaHostName != nil {
+	if len(m.MtaHostName) > 0 {
 		data[i] = 0x8a
 		i++
 		data[i] = 0x1
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.MtaHostName)))
-		i += copy(data[i:], *m.MtaHostName)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.MtaHostName)))
+		i += copy(data[i:], m.MtaHostName)
 	}
-	if m.MtaDaemonName != nil {
+	if len(m.MtaDaemonName) > 0 {
 		data[i] = 0x92
 		i++
 		data[i] = 0x1
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.MtaDaemonName)))
-		i += copy(data[i:], *m.MtaDaemonName)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.MtaDaemonName)))
+		i += copy(data[i:], m.MtaDaemonName)
 	}
 	return i, nil
 }
@@ -982,11 +577,11 @@ func (m *Rpc) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Name != nil {
+	if len(m.Name) > 0 {
 		data[i] = 0xa
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.Name)))
-		i += copy(data[i:], *m.Name)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.Name)))
+		i += copy(data[i:], m.Name)
 	}
 	if m.Bayes_Learn_Message != nil {
 		data[i] = 0x82
@@ -1012,9 +607,6 @@ func (m *Rpc) MarshalTo(data []byte) (int, error) {
 		}
 		i += n3
 	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
-	}
 	return i, nil
 }
 
@@ -1033,21 +625,17 @@ func (m *Rpc__Bayes_Learn_Message) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.IsSpam == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.IsSpam {
 		data[i] = 0x8
 		i++
-		if *m.IsSpam {
+		if m.IsSpam {
 			data[i] = 1
 		} else {
 			data[i] = 0
 		}
 		i++
 	}
-	if m.Message == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.Message != nil {
 		data[i] = 0x12
 		i++
 		i = encodeVarintCluegetter(data, i, uint64(m.Message.Size()))
@@ -1057,32 +645,29 @@ func (m *Rpc__Bayes_Learn_Message) MarshalTo(data []byte) (int, error) {
 		}
 		i += n4
 	}
-	if m.Host != nil {
+	if len(m.Host) > 0 {
 		data[i] = 0x8a
 		i++
 		data[i] = 0x1
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.Host)))
-		i += copy(data[i:], *m.Host)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.Host)))
+		i += copy(data[i:], m.Host)
 	}
-	if m.Reporter != nil {
+	if len(m.Reporter) > 0 {
 		data[i] = 0x92
 		i++
 		data[i] = 0x1
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.Reporter)))
-		i += copy(data[i:], *m.Reporter)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.Reporter)))
+		i += copy(data[i:], m.Reporter)
 	}
-	if m.Reason != nil {
+	if len(m.Reason) > 0 {
 		data[i] = 0x9a
 		i++
 		data[i] = 0x1
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.Reason)))
-		i += copy(data[i:], *m.Reason)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.Reason)))
+		i += copy(data[i:], m.Reason)
 	}
 	return i, nil
 }
@@ -1102,52 +687,45 @@ func (m *Rpc__Bayes_Learn_Message_Id) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.IsSpam == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if m.IsSpam {
 		data[i] = 0x8
 		i++
-		if *m.IsSpam {
+		if m.IsSpam {
 			data[i] = 1
 		} else {
 			data[i] = 0
 		}
 		i++
 	}
-	if m.MessageId == nil {
-		return 0, new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	} else {
+	if len(m.MessageId) > 0 {
 		data[i] = 0x12
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.MessageId)))
-		i += copy(data[i:], *m.MessageId)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.MessageId)))
+		i += copy(data[i:], m.MessageId)
 	}
-	if m.Host != nil {
+	if len(m.Host) > 0 {
 		data[i] = 0x8a
 		i++
 		data[i] = 0x1
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.Host)))
-		i += copy(data[i:], *m.Host)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.Host)))
+		i += copy(data[i:], m.Host)
 	}
-	if m.Reporter != nil {
+	if len(m.Reporter) > 0 {
 		data[i] = 0x92
 		i++
 		data[i] = 0x1
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.Reporter)))
-		i += copy(data[i:], *m.Reporter)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.Reporter)))
+		i += copy(data[i:], m.Reporter)
 	}
-	if m.Reason != nil {
+	if len(m.Reason) > 0 {
 		data[i] = 0x9a
 		i++
 		data[i] = 0x1
 		i++
-		i = encodeVarintCluegetter(data, i, uint64(len(*m.Reason)))
-		i += copy(data[i:], *m.Reason)
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(data[i:], m.XXX_unrecognized)
+		i = encodeVarintCluegetter(data, i, uint64(len(m.Reason)))
+		i += copy(data[i:], m.Reason)
 	}
 	return i, nil
 }
@@ -1186,12 +764,12 @@ func (m *Proto_Message) Size() (n int) {
 		l = m.Session.Size()
 		n += 1 + l + sovCluegetter(uint64(l))
 	}
-	if m.Id != nil {
-		l = len(*m.Id)
+	l = len(m.Id)
+	if l > 0 {
 		n += 1 + l + sovCluegetter(uint64(l))
 	}
-	if m.From != nil {
-		l = len(*m.From)
+	l = len(m.From)
+	if l > 0 {
 		n += 1 + l + sovCluegetter(uint64(l))
 	}
 	if len(m.Rcpt) > 0 {
@@ -1206,27 +784,27 @@ func (m *Proto_Message) Size() (n int) {
 			n += 1 + l + sovCluegetter(uint64(l))
 		}
 	}
-	if m.Body != nil {
-		l = len(m.Body)
+	l = len(m.Body)
+	if l > 0 {
 		n += 1 + l + sovCluegetter(uint64(l))
 	}
-	if m.Verdict != nil {
-		n += 1 + sovCluegetter(uint64(*m.Verdict))
+	if m.Verdict != 0 {
+		n += 1 + sovCluegetter(uint64(m.Verdict))
 	}
-	if m.VerdictMsg != nil {
-		l = len(*m.VerdictMsg)
+	l = len(m.VerdictMsg)
+	if l > 0 {
 		n += 1 + l + sovCluegetter(uint64(l))
 	}
-	if m.RejectScore != nil {
+	if m.RejectScore != 0 {
 		n += 9
 	}
-	if m.RejectScoreThreshold != nil {
+	if m.RejectScoreThreshold != 0 {
 		n += 9
 	}
-	if m.TempfailScore != nil {
+	if m.TempfailScore != 0 {
 		n += 9
 	}
-	if m.TempfailScoreThreshold != nil {
+	if m.TempfailScoreThreshold != 0 {
 		n += 9
 	}
 	if len(m.CheckResults) > 0 {
@@ -1235,41 +813,35 @@ func (m *Proto_Message) Size() (n int) {
 			n += 1 + l + sovCluegetter(uint64(l))
 		}
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
 func (m *Proto_Message_CheckResult) Size() (n int) {
 	var l int
 	_ = l
-	if m.MessageId != nil {
-		l = len(*m.MessageId)
+	l = len(m.MessageId)
+	if l > 0 {
 		n += 1 + l + sovCluegetter(uint64(l))
 	}
-	if m.Module != nil {
-		l = len(*m.Module)
+	l = len(m.Module)
+	if l > 0 {
 		n += 1 + l + sovCluegetter(uint64(l))
 	}
-	if m.Verdict != nil {
-		n += 1 + sovCluegetter(uint64(*m.Verdict))
+	if m.Verdict != 0 {
+		n += 1 + sovCluegetter(uint64(m.Verdict))
 	}
-	if m.Score != nil {
+	if m.Score != 0 {
 		n += 9
 	}
-	if m.WeightedScore != nil {
+	if m.WeightedScore != 0 {
 		n += 9
 	}
-	if m.Duration != nil {
+	if m.Duration != 0 {
 		n += 9
 	}
-	if m.Determinants != nil {
-		l = len(m.Determinants)
+	l = len(m.Determinants)
+	if l > 0 {
 		n += 1 + l + sovCluegetter(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -1277,16 +849,13 @@ func (m *Proto_Message_CheckResult) Size() (n int) {
 func (m *Proto_Message_Header) Size() (n int) {
 	var l int
 	_ = l
-	if m.Key != nil {
-		l = len(*m.Key)
+	l = len(m.Key)
+	if l > 0 {
 		n += 1 + l + sovCluegetter(uint64(l))
 	}
-	if m.Value != nil {
-		l = len(*m.Value)
+	l = len(m.Value)
+	if l > 0 {
 		n += 1 + l + sovCluegetter(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -1294,76 +863,73 @@ func (m *Proto_Message_Header) Size() (n int) {
 func (m *Proto_Session) Size() (n int) {
 	var l int
 	_ = l
-	if m.InstanceId != nil {
-		n += 1 + sovCluegetter(uint64(*m.InstanceId))
+	if m.InstanceId != 0 {
+		n += 1 + sovCluegetter(uint64(m.InstanceId))
 	}
-	if m.Id != nil {
-		l = len(m.Id)
+	l = len(m.Id)
+	if l > 0 {
 		n += 1 + l + sovCluegetter(uint64(l))
 	}
-	if m.TimeStart != nil {
-		n += 1 + sovCluegetter(uint64(*m.TimeStart))
+	if m.TimeStart != 0 {
+		n += 1 + sovCluegetter(uint64(m.TimeStart))
 	}
-	if m.TimeEnd != nil {
-		n += 1 + sovCluegetter(uint64(*m.TimeEnd))
+	if m.TimeEnd != 0 {
+		n += 1 + sovCluegetter(uint64(m.TimeEnd))
 	}
-	if m.SaslUsername != nil {
-		l = len(*m.SaslUsername)
+	l = len(m.SaslUsername)
+	if l > 0 {
 		n += 1 + l + sovCluegetter(uint64(l))
 	}
-	if m.SaslSender != nil {
-		l = len(*m.SaslSender)
+	l = len(m.SaslSender)
+	if l > 0 {
 		n += 1 + l + sovCluegetter(uint64(l))
 	}
-	if m.SaslMethod != nil {
-		l = len(*m.SaslMethod)
+	l = len(m.SaslMethod)
+	if l > 0 {
 		n += 1 + l + sovCluegetter(uint64(l))
 	}
-	if m.CertIssuer != nil {
-		l = len(*m.CertIssuer)
+	l = len(m.CertIssuer)
+	if l > 0 {
 		n += 1 + l + sovCluegetter(uint64(l))
 	}
-	if m.CertSubject != nil {
-		l = len(*m.CertSubject)
+	l = len(m.CertSubject)
+	if l > 0 {
 		n += 1 + l + sovCluegetter(uint64(l))
 	}
-	if m.CipherBits != nil {
-		n += 1 + sovCluegetter(uint64(*m.CipherBits))
+	if m.CipherBits != 0 {
+		n += 1 + sovCluegetter(uint64(m.CipherBits))
 	}
-	if m.Cipher != nil {
-		l = len(*m.Cipher)
+	l = len(m.Cipher)
+	if l > 0 {
 		n += 1 + l + sovCluegetter(uint64(l))
 	}
-	if m.TlsVersion != nil {
-		l = len(*m.TlsVersion)
+	l = len(m.TlsVersion)
+	if l > 0 {
 		n += 1 + l + sovCluegetter(uint64(l))
 	}
-	if m.Ip != nil {
-		l = len(*m.Ip)
+	l = len(m.Ip)
+	if l > 0 {
 		n += 1 + l + sovCluegetter(uint64(l))
 	}
-	if m.ReverseDns != nil {
-		l = len(*m.ReverseDns)
+	l = len(m.ReverseDns)
+	if l > 0 {
 		n += 1 + l + sovCluegetter(uint64(l))
 	}
-	if m.Hostname != nil {
-		l = len(*m.Hostname)
+	l = len(m.Hostname)
+	if l > 0 {
 		n += 1 + l + sovCluegetter(uint64(l))
 	}
-	if m.Helo != nil {
-		l = len(*m.Helo)
+	l = len(m.Helo)
+	if l > 0 {
 		n += 2 + l + sovCluegetter(uint64(l))
 	}
-	if m.MtaHostName != nil {
-		l = len(*m.MtaHostName)
+	l = len(m.MtaHostName)
+	if l > 0 {
 		n += 2 + l + sovCluegetter(uint64(l))
 	}
-	if m.MtaDaemonName != nil {
-		l = len(*m.MtaDaemonName)
+	l = len(m.MtaDaemonName)
+	if l > 0 {
 		n += 2 + l + sovCluegetter(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -1371,8 +937,8 @@ func (m *Proto_Session) Size() (n int) {
 func (m *Rpc) Size() (n int) {
 	var l int
 	_ = l
-	if m.Name != nil {
-		l = len(*m.Name)
+	l = len(m.Name)
+	if l > 0 {
 		n += 1 + l + sovCluegetter(uint64(l))
 	}
 	if m.Bayes_Learn_Message != nil {
@@ -1383,36 +949,30 @@ func (m *Rpc) Size() (n int) {
 		l = m.Bayes_Learn_Message_Id.Size()
 		n += 2 + l + sovCluegetter(uint64(l))
 	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
 	return n
 }
 
 func (m *Rpc__Bayes_Learn_Message) Size() (n int) {
 	var l int
 	_ = l
-	if m.IsSpam != nil {
+	if m.IsSpam {
 		n += 2
 	}
 	if m.Message != nil {
 		l = m.Message.Size()
 		n += 1 + l + sovCluegetter(uint64(l))
 	}
-	if m.Host != nil {
-		l = len(*m.Host)
+	l = len(m.Host)
+	if l > 0 {
 		n += 2 + l + sovCluegetter(uint64(l))
 	}
-	if m.Reporter != nil {
-		l = len(*m.Reporter)
+	l = len(m.Reporter)
+	if l > 0 {
 		n += 2 + l + sovCluegetter(uint64(l))
 	}
-	if m.Reason != nil {
-		l = len(*m.Reason)
+	l = len(m.Reason)
+	if l > 0 {
 		n += 2 + l + sovCluegetter(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -1420,27 +980,24 @@ func (m *Rpc__Bayes_Learn_Message) Size() (n int) {
 func (m *Rpc__Bayes_Learn_Message_Id) Size() (n int) {
 	var l int
 	_ = l
-	if m.IsSpam != nil {
+	if m.IsSpam {
 		n += 2
 	}
-	if m.MessageId != nil {
-		l = len(*m.MessageId)
+	l = len(m.MessageId)
+	if l > 0 {
 		n += 1 + l + sovCluegetter(uint64(l))
 	}
-	if m.Host != nil {
-		l = len(*m.Host)
+	l = len(m.Host)
+	if l > 0 {
 		n += 2 + l + sovCluegetter(uint64(l))
 	}
-	if m.Reporter != nil {
-		l = len(*m.Reporter)
+	l = len(m.Reporter)
+	if l > 0 {
 		n += 2 + l + sovCluegetter(uint64(l))
 	}
-	if m.Reason != nil {
-		l = len(*m.Reason)
+	l = len(m.Reason)
+	if l > 0 {
 		n += 2 + l + sovCluegetter(uint64(l))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -1459,7 +1016,6 @@ func sozCluegetter(x uint64) (n int) {
 	return sovCluegetter(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
 func (m *Proto_Message) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1521,7 +1077,6 @@ func (m *Proto_Message) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
@@ -1549,10 +1104,8 @@ func (m *Proto_Message) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Id = &s
+			m.Id = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
 		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field From", wireType)
@@ -1580,10 +1133,8 @@ func (m *Proto_Message) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.From = &s
+			m.From = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000004)
 		case 4:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Rcpt", wireType)
@@ -1679,7 +1230,7 @@ func (m *Proto_Message) Unmarshal(data []byte) error {
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Verdict", wireType)
 			}
-			var v Proto_Message_Verdict
+			m.Verdict = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowCluegetter
@@ -1689,13 +1240,11 @@ func (m *Proto_Message) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				v |= (Proto_Message_Verdict(b) & 0x7F) << shift
+				m.Verdict |= (Proto_Message_Verdict(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.Verdict = &v
-			hasFields[0] |= uint64(0x00000008)
 		case 8:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field VerdictMsg", wireType)
@@ -1723,10 +1272,8 @@ func (m *Proto_Message) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.VerdictMsg = &s
+			m.VerdictMsg = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000010)
 		case 9:
 			if wireType != 1 {
 				return fmt.Errorf("proto: wrong wireType = %d for field RejectScore", wireType)
@@ -1744,9 +1291,7 @@ func (m *Proto_Message) Unmarshal(data []byte) error {
 			v |= uint64(data[iNdEx-3]) << 40
 			v |= uint64(data[iNdEx-2]) << 48
 			v |= uint64(data[iNdEx-1]) << 56
-			v2 := float64(math.Float64frombits(v))
-			m.RejectScore = &v2
-			hasFields[0] |= uint64(0x00000020)
+			m.RejectScore = float64(math.Float64frombits(v))
 		case 10:
 			if wireType != 1 {
 				return fmt.Errorf("proto: wrong wireType = %d for field RejectScoreThreshold", wireType)
@@ -1764,9 +1309,7 @@ func (m *Proto_Message) Unmarshal(data []byte) error {
 			v |= uint64(data[iNdEx-3]) << 40
 			v |= uint64(data[iNdEx-2]) << 48
 			v |= uint64(data[iNdEx-1]) << 56
-			v2 := float64(math.Float64frombits(v))
-			m.RejectScoreThreshold = &v2
-			hasFields[0] |= uint64(0x00000040)
+			m.RejectScoreThreshold = float64(math.Float64frombits(v))
 		case 11:
 			if wireType != 1 {
 				return fmt.Errorf("proto: wrong wireType = %d for field TempfailScore", wireType)
@@ -1784,9 +1327,7 @@ func (m *Proto_Message) Unmarshal(data []byte) error {
 			v |= uint64(data[iNdEx-3]) << 40
 			v |= uint64(data[iNdEx-2]) << 48
 			v |= uint64(data[iNdEx-1]) << 56
-			v2 := float64(math.Float64frombits(v))
-			m.TempfailScore = &v2
-			hasFields[0] |= uint64(0x00000080)
+			m.TempfailScore = float64(math.Float64frombits(v))
 		case 12:
 			if wireType != 1 {
 				return fmt.Errorf("proto: wrong wireType = %d for field TempfailScoreThreshold", wireType)
@@ -1804,9 +1345,7 @@ func (m *Proto_Message) Unmarshal(data []byte) error {
 			v |= uint64(data[iNdEx-3]) << 40
 			v |= uint64(data[iNdEx-2]) << 48
 			v |= uint64(data[iNdEx-1]) << 56
-			v2 := float64(math.Float64frombits(v))
-			m.TempfailScoreThreshold = &v2
-			hasFields[0] |= uint64(0x00000100)
+			m.TempfailScoreThreshold = float64(math.Float64frombits(v))
 		case 13:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field CheckResults", wireType)
@@ -1850,36 +1389,8 @@ func (m *Proto_Message) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000004) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000008) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000010) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000020) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000040) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000080) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000100) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -1888,7 +1399,6 @@ func (m *Proto_Message) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Proto_Message_CheckResult) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1944,10 +1454,8 @@ func (m *Proto_Message_CheckResult) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.MessageId = &s
+			m.MessageId = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Module", wireType)
@@ -1975,15 +1483,13 @@ func (m *Proto_Message_CheckResult) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Module = &s
+			m.Module = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
 		case 3:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Verdict", wireType)
 			}
-			var v Proto_Message_Verdict
+			m.Verdict = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowCluegetter
@@ -1993,13 +1499,11 @@ func (m *Proto_Message_CheckResult) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				v |= (Proto_Message_Verdict(b) & 0x7F) << shift
+				m.Verdict |= (Proto_Message_Verdict(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.Verdict = &v
-			hasFields[0] |= uint64(0x00000004)
 		case 4:
 			if wireType != 1 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Score", wireType)
@@ -2017,9 +1521,7 @@ func (m *Proto_Message_CheckResult) Unmarshal(data []byte) error {
 			v |= uint64(data[iNdEx-3]) << 40
 			v |= uint64(data[iNdEx-2]) << 48
 			v |= uint64(data[iNdEx-1]) << 56
-			v2 := float64(math.Float64frombits(v))
-			m.Score = &v2
-			hasFields[0] |= uint64(0x00000008)
+			m.Score = float64(math.Float64frombits(v))
 		case 5:
 			if wireType != 1 {
 				return fmt.Errorf("proto: wrong wireType = %d for field WeightedScore", wireType)
@@ -2037,9 +1539,7 @@ func (m *Proto_Message_CheckResult) Unmarshal(data []byte) error {
 			v |= uint64(data[iNdEx-3]) << 40
 			v |= uint64(data[iNdEx-2]) << 48
 			v |= uint64(data[iNdEx-1]) << 56
-			v2 := float64(math.Float64frombits(v))
-			m.WeightedScore = &v2
-			hasFields[0] |= uint64(0x00000010)
+			m.WeightedScore = float64(math.Float64frombits(v))
 		case 6:
 			if wireType != 1 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Duration", wireType)
@@ -2057,9 +1557,7 @@ func (m *Proto_Message_CheckResult) Unmarshal(data []byte) error {
 			v |= uint64(data[iNdEx-3]) << 40
 			v |= uint64(data[iNdEx-2]) << 48
 			v |= uint64(data[iNdEx-1]) << 56
-			v2 := float64(math.Float64frombits(v))
-			m.Duration = &v2
-			hasFields[0] |= uint64(0x00000020)
+			m.Duration = float64(math.Float64frombits(v))
 		case 7:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Determinants", wireType)
@@ -2103,27 +1601,8 @@ func (m *Proto_Message_CheckResult) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000004) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000008) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000010) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000020) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -2132,7 +1611,6 @@ func (m *Proto_Message_CheckResult) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Proto_Message_Header) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2188,10 +1666,8 @@ func (m *Proto_Message_Header) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Key = &s
+			m.Key = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
@@ -2219,10 +1695,8 @@ func (m *Proto_Message_Header) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Value = &s
+			m.Value = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipCluegetter(data[iNdEx:])
@@ -2235,15 +1709,8 @@ func (m *Proto_Message_Header) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -2252,7 +1719,6 @@ func (m *Proto_Message_Header) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Proto_Session) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2285,7 +1751,7 @@ func (m *Proto_Session) Unmarshal(data []byte) error {
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field InstanceId", wireType)
 			}
-			var v uint64
+			m.InstanceId = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowCluegetter
@@ -2295,13 +1761,11 @@ func (m *Proto_Session) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				v |= (uint64(b) & 0x7F) << shift
+				m.InstanceId |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.InstanceId = &v
-			hasFields[0] |= uint64(0x00000001)
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
@@ -2333,12 +1797,11 @@ func (m *Proto_Session) Unmarshal(data []byte) error {
 				m.Id = []byte{}
 			}
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
 		case 3:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field TimeStart", wireType)
 			}
-			var v uint64
+			m.TimeStart = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowCluegetter
@@ -2348,18 +1811,16 @@ func (m *Proto_Session) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				v |= (uint64(b) & 0x7F) << shift
+				m.TimeStart |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.TimeStart = &v
-			hasFields[0] |= uint64(0x00000004)
 		case 4:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field TimeEnd", wireType)
 			}
-			var v uint64
+			m.TimeEnd = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowCluegetter
@@ -2369,12 +1830,11 @@ func (m *Proto_Session) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				v |= (uint64(b) & 0x7F) << shift
+				m.TimeEnd |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.TimeEnd = &v
 		case 5:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SaslUsername", wireType)
@@ -2402,8 +1862,7 @@ func (m *Proto_Session) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.SaslUsername = &s
+			m.SaslUsername = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 6:
 			if wireType != 2 {
@@ -2432,8 +1891,7 @@ func (m *Proto_Session) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.SaslSender = &s
+			m.SaslSender = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 7:
 			if wireType != 2 {
@@ -2462,8 +1920,7 @@ func (m *Proto_Session) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.SaslMethod = &s
+			m.SaslMethod = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 8:
 			if wireType != 2 {
@@ -2492,8 +1949,7 @@ func (m *Proto_Session) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.CertIssuer = &s
+			m.CertIssuer = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 9:
 			if wireType != 2 {
@@ -2522,14 +1978,13 @@ func (m *Proto_Session) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.CertSubject = &s
+			m.CertSubject = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 10:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field CipherBits", wireType)
 			}
-			var v uint32
+			m.CipherBits = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowCluegetter
@@ -2539,12 +1994,11 @@ func (m *Proto_Session) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				v |= (uint32(b) & 0x7F) << shift
+				m.CipherBits |= (uint32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.CipherBits = &v
 		case 11:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Cipher", wireType)
@@ -2572,8 +2026,7 @@ func (m *Proto_Session) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Cipher = &s
+			m.Cipher = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 12:
 			if wireType != 2 {
@@ -2602,8 +2055,7 @@ func (m *Proto_Session) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.TlsVersion = &s
+			m.TlsVersion = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 13:
 			if wireType != 2 {
@@ -2632,10 +2084,8 @@ func (m *Proto_Session) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Ip = &s
+			m.Ip = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000008)
 		case 14:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ReverseDns", wireType)
@@ -2663,8 +2113,7 @@ func (m *Proto_Session) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.ReverseDns = &s
+			m.ReverseDns = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 15:
 			if wireType != 2 {
@@ -2693,8 +2142,7 @@ func (m *Proto_Session) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Hostname = &s
+			m.Hostname = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 16:
 			if wireType != 2 {
@@ -2723,8 +2171,7 @@ func (m *Proto_Session) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Helo = &s
+			m.Helo = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 17:
 			if wireType != 2 {
@@ -2753,8 +2200,7 @@ func (m *Proto_Session) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.MtaHostName = &s
+			m.MtaHostName = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 18:
 			if wireType != 2 {
@@ -2783,8 +2229,7 @@ func (m *Proto_Session) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.MtaDaemonName = &s
+			m.MtaDaemonName = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -2798,21 +2243,8 @@ func (m *Proto_Session) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000004) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000008) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -2876,8 +2308,7 @@ func (m *Rpc) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Name = &s
+			m.Name = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 1024:
 			if wireType != 2 {
@@ -2957,7 +2388,6 @@ func (m *Rpc) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -2968,7 +2398,6 @@ func (m *Rpc) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Rpc__Bayes_Learn_Message) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -3016,9 +2445,7 @@ func (m *Rpc__Bayes_Learn_Message) Unmarshal(data []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.IsSpam = &b
-			hasFields[0] |= uint64(0x00000001)
+			m.IsSpam = bool(v != 0)
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
@@ -3052,7 +2479,6 @@ func (m *Rpc__Bayes_Learn_Message) Unmarshal(data []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
 		case 17:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Host", wireType)
@@ -3080,8 +2506,7 @@ func (m *Rpc__Bayes_Learn_Message) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Host = &s
+			m.Host = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 18:
 			if wireType != 2 {
@@ -3110,8 +2535,7 @@ func (m *Rpc__Bayes_Learn_Message) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Reporter = &s
+			m.Reporter = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 19:
 			if wireType != 2 {
@@ -3140,8 +2564,7 @@ func (m *Rpc__Bayes_Learn_Message) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Reason = &s
+			m.Reason = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -3155,15 +2578,8 @@ func (m *Rpc__Bayes_Learn_Message) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -3172,7 +2588,6 @@ func (m *Rpc__Bayes_Learn_Message) Unmarshal(data []byte) error {
 	return nil
 }
 func (m *Rpc__Bayes_Learn_Message_Id) Unmarshal(data []byte) error {
-	var hasFields [1]uint64
 	l := len(data)
 	iNdEx := 0
 	for iNdEx < l {
@@ -3220,9 +2635,7 @@ func (m *Rpc__Bayes_Learn_Message_Id) Unmarshal(data []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.IsSpam = &b
-			hasFields[0] |= uint64(0x00000001)
+			m.IsSpam = bool(v != 0)
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field MessageId", wireType)
@@ -3250,10 +2663,8 @@ func (m *Rpc__Bayes_Learn_Message_Id) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.MessageId = &s
+			m.MessageId = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000002)
 		case 17:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Host", wireType)
@@ -3281,8 +2692,7 @@ func (m *Rpc__Bayes_Learn_Message_Id) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Host = &s
+			m.Host = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 18:
 			if wireType != 2 {
@@ -3311,8 +2721,7 @@ func (m *Rpc__Bayes_Learn_Message_Id) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Reporter = &s
+			m.Reporter = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 19:
 			if wireType != 2 {
@@ -3341,8 +2750,7 @@ func (m *Rpc__Bayes_Learn_Message_Id) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			s := string(data[iNdEx:postIndex])
-			m.Reason = &s
+			m.Reason = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -3356,15 +2764,8 @@ func (m *Rpc__Bayes_Learn_Message_Id) Unmarshal(data []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, data[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
-	}
-	if hasFields[0]&uint64(0x00000002) == 0 {
-		return new(github_com_golang_protobuf_proto.RequiredNotSetError)
 	}
 
 	if iNdEx > l {
@@ -3478,53 +2879,62 @@ var (
 )
 
 var fileDescriptorCluegetter = []byte{
-	// 759 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x94, 0x54, 0x4d, 0x6f, 0xdb, 0x46,
-	0x10, 0x35, 0xf5, 0xad, 0x91, 0x64, 0xd3, 0x94, 0xeb, 0x12, 0x6a, 0xa1, 0xba, 0x82, 0x0f, 0x06,
-	0x5a, 0xe8, 0x20, 0xa0, 0x97, 0xa2, 0x97, 0xca, 0x56, 0x61, 0x15, 0x56, 0x6b, 0x48, 0x4a, 0xae,
-	0xc2, 0x9a, 0x1c, 0x8b, 0x8c, 0xf9, 0x85, 0xdd, 0x95, 0x03, 0x1f, 0x02, 0x24, 0x40, 0xae, 0xb9,
-	0xe7, 0x4f, 0xe4, 0x7f, 0xe4, 0x98, 0x5f, 0x10, 0x04, 0xc9, 0x1f, 0xc9, 0xec, 0x92, 0xb4, 0xe5,
-	0x44, 0x49, 0x90, 0x83, 0x00, 0xed, 0xdb, 0xb7, 0xb3, 0xf3, 0xe6, 0xbd, 0x25, 0x98, 0x4e, 0xb0,
-	0xc2, 0x25, 0x4a, 0x89, 0xbc, 0x9f, 0xf0, 0x58, 0xc6, 0x56, 0x29, 0x64, 0x7e, 0xd4, 0x7b, 0x51,
-	0x86, 0xd6, 0xb9, 0x5a, 0x2f, 0x26, 0x28, 0x04, 0x5b, 0xa2, 0x75, 0x08, 0x55, 0x41, 0x7f, 0xfd,
-	0x38, 0xb2, 0x8d, 0x83, 0xc2, 0x51, 0x63, 0xd0, 0xee, 0x2b, 0x66, 0x3f, 0x65, 0xcd, 0xd2, 0x2d,
-	0x0b, 0xa0, 0xe0, 0xbb, 0x76, 0x81, 0x08, 0x75, 0xab, 0x09, 0xa5, 0x4b, 0x1e, 0x87, 0x76, 0x31,
-	0x5f, 0x71, 0x27, 0x91, 0x76, 0xe9, 0xa0, 0x48, 0xab, 0xdf, 0xa0, 0xea, 0x21, 0x73, 0x91, 0x0b,
-	0xbb, 0x4c, 0x40, 0x63, 0xd0, 0x59, 0xaf, 0x96, 0xdd, 0xd9, 0x3f, 0xd5, 0x14, 0x75, 0xf4, 0x22,
-	0x76, 0x6f, 0xec, 0xca, 0x81, 0x71, 0xd4, 0xb4, 0x7e, 0x87, 0xea, 0x35, 0x72, 0xd7, 0x77, 0xa4,
-	0x5d, 0xa5, 0xca, 0xdb, 0x83, 0x9f, 0x36, 0x1d, 0x7d, 0x98, 0x52, 0x2c, 0xea, 0x28, 0x63, 0x4f,
-	0xc4, 0xd2, 0xae, 0xe9, 0x56, 0xda, 0xd0, 0xe0, 0xf8, 0x08, 0x1d, 0x39, 0x73, 0x62, 0x8e, 0x76,
-	0x9d, 0x40, 0xc3, 0xfa, 0x19, 0xf6, 0xd6, 0xc0, 0xb9, 0xc7, 0x51, 0x78, 0x71, 0xe0, 0xda, 0xa0,
-	0x77, 0x7f, 0x80, 0x96, 0xc4, 0x30, 0xb9, 0x64, 0x7e, 0x90, 0x1e, 0x6a, 0x68, 0xb8, 0x0b, 0xfb,
-	0xf7, 0xe0, 0xbb, 0x63, 0x4d, 0xbd, 0xff, 0x07, 0x34, 0x1d, 0x0f, 0x9d, 0xab, 0x29, 0x8a, 0x55,
-	0x20, 0x85, 0xdd, 0xd2, 0x5a, 0x7f, 0xd9, 0xd4, 0xf0, 0xf1, 0x1d, 0xaf, 0xf3, 0xca, 0x80, 0xc6,
-	0xda, 0x5a, 0x89, 0x08, 0x53, 0xda, 0x82, 0xa6, 0x6b, 0x68, 0x11, 0xdb, 0x50, 0x09, 0x63, 0x77,
-	0x15, 0x60, 0x36, 0xed, 0xb5, 0xb1, 0x14, 0xbf, 0x3d, 0x96, 0x16, 0x94, 0x85, 0xd6, 0x51, 0xca,
-	0xe5, 0x3d, 0x46, 0x7f, 0xe9, 0x49, 0x74, 0x53, 0x79, 0x65, 0x0d, 0x9b, 0x50, 0x73, 0x57, 0x9c,
-	0x49, 0x65, 0x7a, 0x45, 0x23, 0x7b, 0xd0, 0x74, 0x91, 0xc2, 0x12, 0xfa, 0x11, 0x8b, 0x48, 0x50,
-	0x55, 0x59, 0xd2, 0x39, 0x84, 0x4a, 0x66, 0x55, 0x03, 0x8a, 0x57, 0x78, 0x93, 0xb5, 0x48, 0x97,
-	0x5c, 0x33, 0xca, 0x57, 0xda, 0x61, 0xef, 0x4f, 0xa8, 0xe6, 0xd7, 0x03, 0x54, 0xce, 0x47, 0xd3,
-	0xc9, 0x78, 0x6e, 0x6e, 0x91, 0xbb, 0xb5, 0xf9, 0x68, 0x72, 0xfe, 0xcf, 0xdf, 0xe3, 0x33, 0xd3,
-	0x50, 0x3b, 0xd3, 0xd1, 0xbf, 0xa3, 0xe3, 0xb9, 0x59, 0xb0, 0xea, 0x50, 0x1e, 0x4d, 0xa7, 0xff,
-	0x4f, 0xcd, 0x62, 0xef, 0x6d, 0x21, 0xcf, 0x63, 0x9e, 0x34, 0x62, 0xfa, 0x91, 0x90, 0x2c, 0x72,
-	0x70, 0x9c, 0xce, 0xa4, 0xb4, 0x96, 0xbe, 0xa6, 0xb5, 0x0b, 0x75, 0xe9, 0x87, 0x38, 0x93, 0x8c,
-	0xa7, 0x13, 0x29, 0x59, 0x3b, 0x50, 0x55, 0xd0, 0x28, 0x72, 0x49, 0xb6, 0x41, 0x00, 0xa9, 0x11,
-	0x4c, 0x04, 0x0f, 0x04, 0xf2, 0x88, 0x85, 0x4a, 0xb5, 0x41, 0x6d, 0x53, 0x19, 0x85, 0xce, 0x30,
-	0x22, 0x45, 0x3a, 0x74, 0xb7, 0xd8, 0x04, 0xa5, 0x17, 0xbb, 0x5a, 0xb5, 0xc6, 0x1c, 0xe4, 0x72,
-	0x2c, 0xc4, 0x8a, 0x78, 0x35, 0x8d, 0x51, 0xb4, 0x14, 0x36, 0x5b, 0x5d, 0xa8, 0x28, 0x51, 0xb4,
-	0x72, 0xa2, 0x9f, 0x78, 0xc8, 0x87, 0x3e, 0x8d, 0x0c, 0x08, 0x6b, 0x29, 0xfb, 0x52, 0x8c, 0x92,
-	0x94, 0x71, 0x64, 0x20, 0x68, 0x3e, 0xfa, 0x85, 0x35, 0x35, 0xa6, 0xe4, 0x24, 0x94, 0x99, 0x42,
-	0xba, 0xcf, 0x91, 0x0c, 0x16, 0x78, 0x12, 0x09, 0x7b, 0x5b, 0xef, 0x93, 0x3d, 0x5e, 0x2c, 0xa4,
-	0x6e, 0x7d, 0x47, 0x23, 0xf4, 0x52, 0x3c, 0x0c, 0x62, 0xdb, 0xcc, 0x9b, 0x09, 0x25, 0x3b, 0x25,
-	0xca, 0x7f, 0x8a, 0xb2, 0xab, 0x41, 0xb2, 0x9a, 0xc0, 0x13, 0x86, 0x61, 0x1c, 0x69, 0xd8, 0x52,
-	0x70, 0xef, 0x79, 0x11, 0x8a, 0xd3, 0xc4, 0x51, 0x15, 0x74, 0x3d, 0x43, 0x93, 0xff, 0x82, 0xf6,
-	0x90, 0xdd, 0xa0, 0x58, 0x9c, 0x21, 0xe3, 0x51, 0x9e, 0x22, 0xfb, 0xa9, 0x12, 0xdb, 0x18, 0x74,
-	0xd3, 0x84, 0xd1, 0xb1, 0xfe, 0x62, 0x03, 0xcd, 0x1a, 0xc2, 0xfe, 0x06, 0x78, 0x41, 0x76, 0x3d,
-	0x4b, 0x0b, 0xfc, 0xfa, 0xf5, 0x02, 0xc4, 0xec, 0x3c, 0x81, 0xbd, 0x8d, 0xb5, 0xc9, 0x4b, 0x5f,
-	0x2c, 0x44, 0xc2, 0x42, 0xed, 0x7d, 0x4d, 0x7d, 0x9f, 0xb2, 0x37, 0xa2, 0x03, 0xf0, 0xc9, 0xf7,
-	0x29, 0x3f, 0xa6, 0x06, 0x44, 0xf3, 0xc8, 0x66, 0x41, 0x03, 0xe4, 0x98, 0xc4, 0x9c, 0x02, 0x9d,
-	0x8e, 0x41, 0xd9, 0xc2, 0x91, 0x09, 0xb2, 0xa0, 0xad, 0xd6, 0x9d, 0x08, 0x7e, 0xfc, 0x42, 0x67,
-	0x9f, 0x77, 0x70, 0xff, 0x95, 0xde, 0x7e, 0x03, 0xbf, 0xe7, 0xbe, 0xa1, 0xf9, 0xfa, 0x7d, 0xd7,
-	0x78, 0x43, 0xbf, 0x77, 0xf4, 0x7b, 0xf9, 0xa1, 0xbb, 0xf5, 0x31, 0x00, 0x00, 0xff, 0xff, 0x54,
-	0x8c, 0xe9, 0x72, 0xa2, 0x05, 0x00, 0x00,
+	// 901 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xac, 0x55, 0xcd, 0x6e, 0x23, 0x45,
+	0x10, 0x5e, 0xc7, 0x13, 0xff, 0x94, 0x9d, 0xe0, 0xed, 0x44, 0xd9, 0x91, 0x81, 0x10, 0x2c, 0x0e,
+	0x5c, 0xb0, 0x50, 0xf8, 0x39, 0x70, 0x23, 0x59, 0xa3, 0x35, 0x5a, 0xb3, 0x51, 0x3b, 0xc0, 0xd1,
+	0x9a, 0xcc, 0xd4, 0x66, 0x86, 0xf5, 0xfc, 0xa8, 0xbb, 0xbd, 0x28, 0x37, 0xb8, 0xf1, 0x08, 0x70,
+	0xe0, 0xca, 0xb3, 0x70, 0xe4, 0x11, 0x10, 0x3c, 0x04, 0x1c, 0xe9, 0xaa, 0x9e, 0x89, 0xc7, 0xc1,
+	0x41, 0x42, 0xda, 0xc3, 0x48, 0x55, 0x5f, 0x7f, 0x5d, 0xdd, 0xf5, 0x75, 0x55, 0x0d, 0x0c, 0xc2,
+	0xe5, 0x0a, 0xaf, 0xd1, 0x18, 0x54, 0xe3, 0x42, 0xe5, 0x26, 0x17, 0x5e, 0x1a, 0x24, 0xd9, 0xe8,
+	0xef, 0x16, 0xec, 0x5d, 0x90, 0xbf, 0x98, 0xa1, 0xd6, 0xc1, 0x35, 0x8a, 0xf7, 0xa0, 0xad, 0xad,
+	0x99, 0xe4, 0x99, 0xdf, 0x38, 0x69, 0xbc, 0xdb, 0x3b, 0x3d, 0x18, 0x13, 0x73, 0xec, 0x58, 0x73,
+	0xb7, 0x24, 0x2b, 0x8e, 0xd8, 0x87, 0x9d, 0x24, 0xf2, 0x77, 0x2c, 0xb3, 0x2b, 0xad, 0x25, 0x04,
+	0x78, 0xcf, 0x55, 0x9e, 0xfa, 0x4d, 0x46, 0xd8, 0x26, 0x4c, 0x85, 0x85, 0xf1, 0xbd, 0x93, 0x26,
+	0x61, 0x64, 0x8b, 0x0f, 0xa1, 0x1d, 0x63, 0x10, 0xa1, 0xd2, 0xfe, 0xae, 0x85, 0x7b, 0xa7, 0xc3,
+	0xfa, 0x31, 0xe5, 0x65, 0xc6, 0x4f, 0x98, 0x22, 0x2b, 0x2a, 0x45, 0xba, 0xca, 0xa3, 0x1b, 0xbf,
+	0x65, 0xa3, 0xf7, 0x25, 0xdb, 0xe2, 0x23, 0x68, 0xbf, 0x44, 0x15, 0x25, 0xa1, 0xf1, 0xdb, 0x16,
+	0xde, 0x3f, 0x7d, 0x7d, 0x5b, 0xa4, 0xaf, 0x1c, 0x45, 0x56, 0x5c, 0x71, 0x0c, 0x50, 0x9a, 0x33,
+	0x7d, 0xed, 0x77, 0xf8, 0xba, 0x35, 0x44, 0x9c, 0x40, 0x4f, 0xe1, 0x37, 0x18, 0x9a, 0x79, 0x98,
+	0x2b, 0xf4, 0xbb, 0x96, 0xd0, 0x90, 0x75, 0x48, 0x9c, 0xc2, 0x61, 0xcd, 0xbd, 0x8c, 0x15, 0xea,
+	0x38, 0x5f, 0x46, 0x3e, 0x30, 0x75, 0xeb, 0x9a, 0x78, 0x07, 0xf6, 0x0c, 0xa6, 0xc5, 0xf3, 0x20,
+	0x59, 0xba, 0xb8, 0x3d, 0x26, 0x6f, 0x82, 0xe2, 0x63, 0x38, 0xda, 0x00, 0xd6, 0xb1, 0xfb, 0x4c,
+	0xbf, 0x67, 0x55, 0x9c, 0x43, 0x3f, 0x8c, 0x31, 0x7c, 0x21, 0x51, 0xaf, 0x96, 0x46, 0xfb, 0x7b,
+	0xac, 0xec, 0x5b, 0xdb, 0xf4, 0x38, 0x5f, 0xf3, 0xe4, 0xc6, 0xa6, 0xe1, 0x5f, 0x0d, 0xe8, 0xd5,
+	0x56, 0xc5, 0x9b, 0x00, 0xa9, 0xdb, 0xb4, 0xb0, 0x2f, 0xdd, 0x60, 0xa1, 0xba, 0x25, 0x32, 0x8d,
+	0xc4, 0x11, 0xb4, 0xd2, 0x3c, 0x5a, 0x2d, 0xb1, 0x2c, 0x82, 0xd2, 0xab, 0x3f, 0x4b, 0xf3, 0x7f,
+	0x3c, 0xcb, 0x21, 0xec, 0x6a, 0x16, 0xc6, 0xe3, 0x4c, 0x9d, 0x43, 0xb2, 0x7d, 0x8b, 0xc9, 0x75,
+	0x6c, 0x30, 0x72, 0xb2, 0xed, 0x3a, 0xd9, 0x36, 0x40, 0x31, 0x84, 0x4e, 0xb4, 0x52, 0x81, 0xa1,
+	0xda, 0x6d, 0x31, 0xe1, 0xd6, 0x17, 0x23, 0xe8, 0x47, 0x68, 0xab, 0x3f, 0x4d, 0xb2, 0x20, 0xb3,
+	0xd2, 0xb4, 0xb9, 0x82, 0x36, 0xb0, 0xe1, 0xfb, 0xd0, 0x72, 0x05, 0x27, 0x06, 0xd0, 0x7c, 0x81,
+	0x37, 0x65, 0xb2, 0x64, 0xd2, 0xbd, 0x5e, 0x06, 0xb6, 0x87, 0xca, 0x2c, 0x9d, 0x33, 0xfa, 0x04,
+	0xda, 0x65, 0x06, 0x02, 0xa0, 0x75, 0x31, 0x91, 0xb3, 0xe9, 0xe5, 0xe0, 0x81, 0xe8, 0x43, 0xe7,
+	0x72, 0x32, 0xbb, 0xf8, 0xec, 0xd3, 0xe9, 0xd3, 0x41, 0x83, 0x56, 0xe4, 0xe4, 0xf3, 0xc9, 0xf9,
+	0xe5, 0x60, 0x47, 0x74, 0x61, 0x77, 0x22, 0xe5, 0x33, 0x39, 0x68, 0x8e, 0x7e, 0xf6, 0xaa, 0xd6,
+	0x2b, 0x9b, 0x8a, 0x4a, 0x32, 0xc9, 0xb4, 0x09, 0xb2, 0xd0, 0x0a, 0xcb, 0x87, 0x7b, 0xb2, 0x86,
+	0xd4, 0x7a, 0xad, 0xcf, 0xbd, 0xf6, 0x06, 0x74, 0x4d, 0x92, 0xe2, 0xdc, 0x04, 0xca, 0x89, 0xec,
+	0xc9, 0x35, 0x20, 0x7c, 0x68, 0x93, 0x33, 0xc9, 0x22, 0xd6, 0xd2, 0x93, 0x95, 0x4b, 0x5a, 0xe8,
+	0x40, 0x2f, 0xbf, 0xd4, 0xa8, 0xb2, 0x20, 0x75, 0x62, 0x76, 0xe5, 0x06, 0x46, 0x77, 0x21, 0x7f,
+	0x8e, 0x99, 0xd5, 0x83, 0xd5, 0xb4, 0xed, 0xb1, 0x46, 0xaa, 0xf5, 0x19, 0x9a, 0x38, 0x8f, 0x58,
+	0xcd, 0x72, 0xdd, 0x21, 0xb4, 0x1e, 0xa2, 0x32, 0x53, 0xad, 0x57, 0x76, 0x7f, 0xd9, 0x5e, 0x6b,
+	0x84, 0xda, 0x8b, 0xbc, 0xf9, 0xea, 0x8a, 0xba, 0x84, 0xdb, 0xab, 0x2b, 0xeb, 0x10, 0x47, 0x48,
+	0x8a, 0x18, 0xd5, 0x59, 0x62, 0xdf, 0x8b, 0x9a, 0x6a, 0x4f, 0xd6, 0x10, 0x2a, 0x3c, 0xe7, 0x71,
+	0x0f, 0xd9, 0xc2, 0x73, 0x1e, 0xed, 0x33, 0x4b, 0x6d, 0x9f, 0x85, 0x67, 0x58, 0xdf, 0x9d, 0xbc,
+	0x46, 0x58, 0xc5, 0xc2, 0xb6, 0x86, 0x9b, 0x58, 0x05, 0xf1, 0x15, 0xda, 0xf2, 0xd3, 0xf8, 0x38,
+	0xd3, 0xfe, 0xbe, 0xe3, 0xaf, 0x11, 0xaa, 0xaa, 0x38, 0xd7, 0x86, 0x95, 0x7a, 0x8d, 0x57, 0x6f,
+	0x7d, 0x9a, 0x47, 0x31, 0x2e, 0x73, 0x7f, 0xe0, 0xa6, 0x1d, 0xd9, 0x94, 0x59, 0x6a, 0x82, 0x27,
+	0x96, 0xf2, 0x05, 0x6d, 0x79, 0xe8, 0x32, 0xab, 0x41, 0x54, 0xcd, 0xd6, 0x7d, 0x1c, 0x60, 0x9a,
+	0x67, 0xcc, 0x11, 0xcc, 0xd9, 0x04, 0x47, 0x3f, 0x78, 0xd0, 0x94, 0x45, 0x48, 0x67, 0xf0, 0xd9,
+	0xae, 0x18, 0xd9, 0x16, 0xcf, 0xe0, 0xe0, 0x2c, 0xb8, 0x41, 0xbd, 0x78, 0x8a, 0x81, 0xca, 0xaa,
+	0x6e, 0xf2, 0xbf, 0xeb, 0xf0, 0xc4, 0x3e, 0x76, 0x9d, 0x66, 0x37, 0x8f, 0x17, 0x5b, 0x68, 0xf2,
+	0xe1, 0x15, 0x81, 0x8c, 0x55, 0x53, 0xff, 0x6b, 0x38, 0xda, 0xc2, 0x5c, 0xd8, 0x32, 0xfc, 0xde,
+	0xc5, 0x7c, 0xfb, 0xbf, 0x63, 0x5a, 0xa6, 0x3c, 0xf8, 0x57, 0xd8, 0x69, 0x34, 0xfc, 0xa5, 0x01,
+	0x87, 0xdb, 0x36, 0x88, 0x47, 0xd0, 0x4e, 0xf4, 0x42, 0x17, 0x41, 0xca, 0x99, 0x75, 0x64, 0x2b,
+	0xd1, 0x73, 0xeb, 0xd1, 0x0f, 0xa8, 0x9c, 0x2e, 0x5c, 0xea, 0x77, 0x7e, 0x40, 0x55, 0x0e, 0x15,
+	0x87, 0x9f, 0xc0, 0x0a, 0x5b, 0xea, 0xcc, 0x36, 0x3d, 0x99, 0xc2, 0x22, 0x57, 0xb6, 0xb7, 0x4b,
+	0x6d, 0x6f, 0x7d, 0x2a, 0x1b, 0x85, 0x81, 0xb6, 0xa5, 0x71, 0xe0, 0xca, 0xc6, 0x79, 0xc3, 0x9f,
+	0x1a, 0xf0, 0xe8, 0x9e, 0xcc, 0xee, 0xbf, 0xeb, 0xe6, 0x6c, 0xdc, 0xb9, 0x3b, 0x1b, 0x5f, 0xd1,
+	0xdd, 0xce, 0x06, 0xbf, 0xfe, 0x71, 0xdc, 0xf8, 0xcd, 0x7e, 0xbf, 0xdb, 0xef, 0xc7, 0x3f, 0x8f,
+	0x1f, 0x5c, 0xb5, 0xf8, 0x27, 0xfe, 0xc1, 0x3f, 0x01, 0x00, 0x00, 0xff, 0xff, 0x08, 0x3a, 0xa2,
+	0x0f, 0xd8, 0x07, 0x00, 0x00,
 }

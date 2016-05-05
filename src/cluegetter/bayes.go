@@ -8,7 +8,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
 	"strings"
@@ -61,14 +60,17 @@ func bayesHandleReportMessageIdQueueItem(item string) {
 		Log.Error("Could not unmarshal RPC Message Bayes_Learn_Message_Id:", err.Error())
 		return
 	}
-	if rpc.GetName() != "Bayes_Learn_Message_Id" || rpc.Bayes_Learn_Message_Id == nil {
+
+	if rpc.Name != "Bayes_Learn_Message_Id" || rpc.Bayes_Learn_Message_Id == nil {
 		Log.Error("Invalid RPC Message Bayes_Learn_Message_Id")
 		return
 	}
+	rpcMsg := rpc.Bayes_Learn_Message_Id
 
-	msgBytes := messagePersistCache.getByMessageId(rpc.Bayes_Learn_Message_Id.MessageId)
+	msgBytes := messagePersistCache.getByMessageId(rpcMsg.MessageId)
 	if len(msgBytes) == 0 {
-		Log.Error("Could not retrieve message from cache with message-id %s", dat["messageId"])
+		Log.Error("Could not retrieve message from cache with message-id %s",
+			rpcMsg.MessageId)
 		return
 	}
 
@@ -78,22 +80,21 @@ func bayesHandleReportMessageIdQueueItem(item string) {
 		return
 	}
 	rpcName := "Bayes_Learn_Message"
-	rpcOut := &Rpc {
-		Name: &rpcName,
-		Bayes_Learn_Message_Id: &Rpc__Bayes_Learn_Message{
-			IsSpam: rpc.Bayes_Learn_Message_Id.GetIsSpam(),
-			Message: msg,
-			Host: rpc.Bayes_Learn_Message_Id.GetHost(),
-			Reporter: rpc.Bayes_Learn_Message_Id.GetReporter(),
-			Reason: rpc.Bayes_Learn_Message_Id.GetReason(),
-			Reason: rpc.Bayes_Learn_Message_Id.GetReason(),
+	rpcOut := &Rpc{
+		Name: rpcName,
+		Bayes_Learn_Message: &Rpc__Bayes_Learn_Message{
+			IsSpam:   rpcMsg.IsSpam,
+			Message:  msg,
+			Host:     rpcMsg.Host,
+			Reporter: rpcMsg.Reporter,
+			Reason:   rpcMsg.Reason,
 		},
 	}
 
-	if rpc.Bayes_Learn_Message_Id.IsSpam {
-		bayesAddToCorpus(true, msg, rpc.Bayes_Learn_Message_Id, rpc.Bayes_Learn_Message_Id.GetHost(), rpc.Bayes_Learn_Message_Id.GetReporter(), rpc.Bayes_Learn_Message_Id.GetReason())
+	if rpcMsg.IsSpam {
+		bayesAddToCorpus(true, msg, rpcMsg.MessageId, rpcMsg.Host, rpcMsg.Reporter, rpcMsg.Reason)
 	} else {
-		bayesAddToCorpus(false, msg, rpc.Bayes_Learn_Message_Id, rpc.Bayes_Learn_Message_Id.GetHost(), rpc.Bayes_Learn_Message_Id.GetReporter(), rpc.Bayes_Learn_Message_Id.GetReason())
+		bayesAddToCorpus(false, msg, rpcMsg.MessageId, rpcMsg.Host, rpcMsg.Reporter, rpcMsg.Reason)
 	}
 
 	payload, err := rpcOut.Marshal()
@@ -118,14 +119,14 @@ func bayesReportMessageId(spam bool, messageId, host, reporter, reason string) {
 	}
 
 	rpcName := "Bayes_Learn_Message_Id"
-	payload := &Rpc {
-		Name: &rpcName,
+	payload := &Rpc{
+		Name: rpcName,
 		Bayes_Learn_Message_Id: &Rpc__Bayes_Learn_Message_Id{
-			IsSpam: &spam,
-			MessageId: &messageId,
-			Host: &host,
-			Reporter: &reporter,
-			Reason: &reason,
+			IsSpam:    spam,
+			MessageId: messageId,
+			Host:      host,
+			Reporter:  reporter,
+			Reason:    reason,
 		},
 	}
 
@@ -139,25 +140,19 @@ func bayesReportMessageId(spam bool, messageId, host, reporter, reason string) {
 }
 
 func bayesLearn(item string) {
-	cluegetterRecover("bayesHandleReportMessageIdQueueItem")
-
-	var dat map[string]string
-	err := json.Unmarshal([]byte(item), &dat)
+	rpc := &Rpc{}
+	err := rpc.Unmarshal([]byte(item))
 	if err != nil {
-		Log.Error("Could not unmarshal map in bayesLearn(): %s", err.Error())
+		Log.Error("Could not unmarshal RPC Message Bayes_Learn_Message:", err.Error())
 		return
 	}
 
-	msgBytes := messagePersistCache.getByMessageId(dat["messageId"])
-	dat["message"] = string(msgBytes)
-
-	msg, err := messagePersistUnmarshalProto(msgBytes)
-	if err != nil {
-		Log.Error("Could not unmarshal message in bayesLearn(): %s", err.Error())
+	if rpc.Name != "Bayes_Learn_Message" || rpc.Bayes_Learn_Message == nil {
+		Log.Error("Invalid RPC Message Bayes_Learn_Message")
 		return
 	}
 
-	saLearn(msg, dat["spam"] == "spam")
+	saLearn(rpc.Bayes_Learn_Message.Message, rpc.Bayes_Learn_Message.IsSpam)
 }
 
 // This shows the disadvantage of having both a Message and Proto_Message
@@ -166,7 +161,7 @@ func bayesLearn(item string) {
 func bayesRenderProtoMsg(msg *Proto_Message) []byte {
 	sess := *msg.Session
 	fqdn := sess.Hostname
-	revdns, err := net.LookupAddr(*sess.Ip)
+	revdns, err := net.LookupAddr(sess.Ip)
 	revdnsStr := "unknown"
 	if err == nil {
 		revdnsStr = strings.Join(revdns, "")
@@ -175,15 +170,15 @@ func bayesRenderProtoMsg(msg *Proto_Message) []byte {
 	body := make([]string, 0)
 
 	body = append(body, fmt.Sprintf("Received: from %s (%s [%s])\r\n\tby %s with SMTP id %s; %s\r\n",
-		*sess.Helo,
+		sess.Helo,
 		revdnsStr,
-		*sess.Ip,
-		*fqdn,
-		*msg.Id,
+		sess.Ip,
+		fqdn,
+		msg.Id,
 		time.Now().Format(time.RFC1123Z)))
 
 	for _, header := range msg.Headers {
-		body = append(body, *(header).Key+": "+*(header).Value+"\r\n")
+		body = append(body, (header).Key+": "+(header).Value+"\r\n")
 	}
 
 	body = append(body, "\r\n")

@@ -298,6 +298,7 @@ func redisRpc() {
 		if len(logMsg) > 128 {
 			logMsg = logMsg[:128] + "..."
 		}
+		logMsg = strings.Replace(logMsg, "\n", "\\n", -1)
 
 		elements := strings.SplitN(msg.Channel, "!", 3)
 		if len(elements) < 3 || elements[0] != "cluegetter" {

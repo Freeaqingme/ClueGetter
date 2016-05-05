@@ -242,12 +242,12 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 		duration := result.duration.Seconds()
 		verdict := Proto_Message_Verdict(result.suggestedAction)
 		protoStruct := &Proto_Message_CheckResult{
-			MessageId:     &msg.QueueId,
-			Module:        &result.module,
-			Verdict:       &verdict,
-			Score:         &result.score,
-			WeightedScore: &result.weightedScore,
-			Duration:      &duration,
+			MessageId:     msg.QueueId,
+			Module:        result.module,
+			Verdict:       verdict,
+			Score:         result.score,
+			WeightedScore: result.weightedScore,
+			Duration:      duration,
 			Determinants:  determinants,
 		}
 
@@ -412,22 +412,22 @@ func messageSave(msg *Message, checkResults []*Proto_Message_CheckResult, verdic
 	for k, v := range msg.Headers {
 		headerKey := v.getKey()
 		headerValue := v.getValue()
-		headers[k] = &Proto_Message_Header{Key: &headerKey, Value: &headerValue}
+		headers[k] = &Proto_Message_Header{Key: headerKey, Value: headerValue}
 	}
 
 	verdictEnum := Proto_Message_Verdict(verdict)
 	protoStruct := &Proto_Message{
-		Id:                     &msg.QueueId,
-		From:                   &msg.From,
+		Id:                     msg.QueueId,
+		From:                   msg.From,
 		Rcpt:                   msg.Rcpt,
 		Headers:                headers,
 		Body:                   msg.Body,
-		Verdict:                &verdictEnum,
-		VerdictMsg:             &verdictMsg,
-		RejectScore:            &rejectScore,
-		RejectScoreThreshold:   &msg.session.config.ClueGetter.Message_Reject_Score,
-		TempfailScore:          &tempfailScore,
-		TempfailScoreThreshold: &msg.session.config.ClueGetter.Message_Tempfail_Score,
+		Verdict:                verdictEnum,
+		VerdictMsg:             verdictMsg,
+		RejectScore:            rejectScore,
+		RejectScoreThreshold:   msg.session.config.ClueGetter.Message_Reject_Score,
+		TempfailScore:          tempfailScore,
+		TempfailScoreThreshold: msg.session.config.ClueGetter.Message_Tempfail_Score,
 		CheckResults:           checkResults,
 		Session:                msg.session.getProtoBufStruct(),
 	}

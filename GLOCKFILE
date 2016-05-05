@@ -5,7 +5,7 @@ cmd github.com/golang/lint/golint
 cmd github.com/jteeuwen/go-bindata/go-bindata
 cmd github.com/robfig/glock
 github.com/cockroachdb/c-protobuf 4feb192131ea08dfbd7253a00868ad69cbb61b81
-github.com/gogo/protobuf 74b6e9deaff6ba6da1389ec97351d337f0d08b06
+github.com/gogo/protobuf 43a2e0b1c32252bfbbdf81f7faa7a88fb3fa4028
 github.com/golang/lint 32a87160691b3c96046c0c678fe57c5bef761456
 github.com/jteeuwen/go-bindata a0ff2567cfb70903282db057e799fd826784d41d
 

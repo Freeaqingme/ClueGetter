@@ -72,7 +72,8 @@ func milterSessionPrepStmt() {
 	stmt, err := Rdbms.Prepare(`
 		INSERT INTO session(id, cluegetter_instance, cluegetter_client, date_connect,
 							date_disconnect, ip, reverse_dns, helo, sasl_username,
-							sasl_method, cert_issuer, cert_subject, cipher_bits, cipher, tls_version)
+							sasl_method, cert_issuer, cert_subject, cipher_bits, cipher,
+							tls_version)
 			VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON DUPLICATE KEY UPDATE date_disconnect=?
 	`)
@@ -241,18 +242,19 @@ func milterSessionPersistProtoBuf(protoBuf []byte) {
 }
 
 func milterSessionPersist(sess *Proto_Session) {
-	client := milterSessionGetClient(sess.GetMtaHostName(), sess.GetMtaDaemonName())
+	client := milterSessionGetClient(sess.MtaHostName, sess.MtaDaemonName)
 
 	var date_disconnect time.Time
-	if sess.GetTimeEnd() != 0 {
-		date_disconnect = time.Unix(int64(*sess.TimeEnd), 0)
+	if sess.TimeEnd != 0 {
+		date_disconnect = time.Unix(int64(sess.TimeEnd), 0)
 	}
 
 	StatsCounters["RdbmsQueries"].increase(1)
 	_, err := milterSessionInsertStmt.Exec(
-		string(sess.Id[:]), sess.InstanceId, client.id, time.Unix(int64(*sess.TimeStart), 0), date_disconnect, sess.GetIp(),
-		sess.ReverseDns, sess.GetHelo(), sess.GetSaslUsername(), sess.GetSaslMethod(), sess.GetCertIssuer(),
-		sess.GetCertSubject(), sess.GetCipherBits(), sess.GetCipher(), sess.GetTlsVersion(), date_disconnect,
+		string(sess.Id[:]), sess.InstanceId, client.id, time.Unix(int64(sess.TimeStart), 0),
+		date_disconnect, sess.Ip, sess.ReverseDns, sess.Helo, sess.SaslUsername,
+		sess.SaslMethod, sess.CertIssuer, sess.CertSubject, sess.CipherBits, sess.Cipher,
+		sess.TlsVersion, date_disconnect,
 	)
 	if err != nil {
 		panic("Could not execute milterSessionInsertStmt in milterSession.persist(): " + err.Error())
@@ -277,24 +279,24 @@ func (sess *milterSession) getProtoBufStruct() *Proto_Session {
 	}
 	instanceId := uint64(instance)
 	return &Proto_Session{
-		InstanceId:    &instanceId,
+		InstanceId:    instanceId,
 		Id:            sess.id[:],
-		TimeStart:     &timeStart,
-		TimeEnd:       &timeEnd,
-		SaslUsername:  &sess.SaslUsername,
-		SaslSender:    &sess.SaslSender,
-		SaslMethod:    &sess.SaslMethod,
-		CertIssuer:    &sess.CertIssuer,
-		CertSubject:   &sess.CertSubject,
-		CipherBits:    &sess.CipherBits,
-		Cipher:        &sess.Cipher,
-		TlsVersion:    &sess.TlsVersion,
-		Ip:            &sess.Ip,
-		ReverseDns:    &sess.ReverseDns,
-		Hostname:      &sess.Hostname,
-		Helo:          &sess.Helo,
-		MtaHostName:   &sess.MtaHostName,
-		MtaDaemonName: &sess.MtaDaemonName,
+		TimeStart:     timeStart,
+		TimeEnd:       timeEnd,
+		SaslUsername:  sess.SaslUsername,
+		SaslSender:    sess.SaslSender,
+		SaslMethod:    sess.SaslMethod,
+		CertIssuer:    sess.CertIssuer,
+		CertSubject:   sess.CertSubject,
+		CipherBits:    sess.CipherBits,
+		Cipher:        sess.Cipher,
+		TlsVersion:    sess.TlsVersion,
+		Ip:            sess.Ip,
+		ReverseDns:    sess.ReverseDns,
+		Hostname:      sess.Hostname,
+		Helo:          sess.Helo,
+		MtaHostName:   sess.MtaHostName,
+		MtaDaemonName: sess.MtaDaemonName,
 	}
 }
 
