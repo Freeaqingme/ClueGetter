@@ -127,7 +127,7 @@ CREATE TABLE quota_profile (
 
 CREATE TABLE quota (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  selector enum('sender','recipient','client_address','sasl_username') NOT NULL,
+  selector enum('sender','recipient','client_address','sasl_username','sender_domain','recipient_domain') NOT NULL,
   value varchar(255) DEFAULT NULL,
   is_regex tinyint(1) DEFAULT '0',
   profile bigint(20) unsigned NOT NULL,

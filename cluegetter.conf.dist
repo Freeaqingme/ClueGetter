@@ -239,7 +239,8 @@ enabled = false
 # at least one quota_profile and quota_profile_period should be configured.
 account-client-address = true
 account-sender = false
-account-recipient = false
+account-sender-domain = false
+account-recipient-domain = false
 account-sasl-username = false
 
 [rspamd]

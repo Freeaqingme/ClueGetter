@@ -568,10 +568,13 @@ func messageGenerateMessageId(queueId, host string) string {
 		time.Now().Unix(), queueId, hostname)
 }
 
-func messageParseAddress(address string) (local, domain string) {
+func messageParseAddress(address string, singleIsUser bool) (local, domain string) {
 	if strings.Index(address, "@") != -1 {
 		local = strings.SplitN(address, "@", 2)[0]
 		domain = strings.SplitN(address, "@", 2)[1]
+	} else if singleIsUser {
+		local = address
+		domain = ""
 	} else {
 		local = ""
 		domain = address

@@ -157,8 +157,8 @@ func mailQueueGetFromDataStore(options *mailQueueGetOptions) map[string][]*mailQ
 		return false
 	}
 
-	senderLocal, senderDomain := messageParseAddress(options.Sender)
-	rcptLocal, rcptDomain := messageParseAddress(options.Recipient)
+	senderLocal, senderDomain := messageParseAddress(options.Sender, false)
+	rcptLocal, rcptDomain := messageParseAddress(options.Recipient, false)
 
 	out := make(map[string][]*mailQueueItem, 0)
 	for _, queueName := range mailQueueNames {
@@ -185,8 +185,8 @@ func mailQueueGetFromDataStore(options *mailQueueGetOptions) map[string][]*mailQ
 					continue
 				}
 
-				itemSenderLocal, itemSenderDomain := messageParseAddress(item.Kv["sender"])
-				itemRcptLocal, itemRcptDomain := messageParseAddress(item.Kv["recipient"])
+				itemSenderLocal, itemSenderDomain := messageParseAddress(item.Kv["sender"], false)
+				itemRcptLocal, itemRcptDomain := messageParseAddress(item.Kv["recipient"], false)
 
 				if ((senderLocal == "" || strings.EqualFold(itemSenderLocal, senderLocal)) &&
 					strings.EqualFold(itemSenderDomain, senderDomain)) || options.Sender == "" {

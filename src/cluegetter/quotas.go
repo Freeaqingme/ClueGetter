@@ -49,8 +49,15 @@ type quotasRegex struct {
 var QuotaGetAllQuotasStmt = *new(*sql.Stmt)
 var QuotaGetAllRegexesStmt = *new(*sql.Stmt)
 
-var quotasRegexes *[]*quotasRegex
+var quotasRegexes []*quotasRegex
 var quotasRegexesLock *sync.RWMutex
+
+const QUOTA_FACTOR_SENDER = "sender"
+const QUOTA_FACTOR_SENDER_DOMAIN = "sender_domain"
+const QUOTA_FACTOR_RECIPIENT = "recipient"
+const QUOTA_FACTOR_RECIPIENT_DOMAIN = "recipient_domain"
+const QUOTA_FACTOR_CLIENT_ADDRESS = "client_address"
+const QUOTA_FACTOR_SASL_USERNAME = "sasl_username"
 
 func init() {
 	enable := func() bool { return Config.Quotas.Enabled }
@@ -143,7 +150,7 @@ func quotasRegexesLoad() {
 	quotasRegexesLock.Lock()
 	defer quotasRegexesLock.Unlock()
 
-	quotasRegexes = &regexCollection
+	quotasRegexes = regexCollection
 	Log.Info("Imported %d regexes in %.2f seconds", i, time.Now().Sub(t0).Seconds())
 }
 
@@ -274,7 +281,7 @@ func quotasRedisIsAllowed(msg *Message) *MessageCheckResult {
 	for selector, selectorValues := range quotasGetMsgFactors(msg) {
 		var extra_count int
 
-		if selector != "recipient" {
+		if selector != QUOTA_FACTOR_RECIPIENT && selector != QUOTA_FACTOR_RECIPIENT_DOMAIN {
 			extra_count = len(msg.Rcpt)
 		} else {
 			extra_count = int(1)
@@ -380,7 +387,7 @@ func quotasRedisPollQuotasBySelector(c chan *quotasResult, selector, selectorVal
 
 func quotasRedisInsertRegexesForSelector(selector, selectorValue *string) bool {
 	quotasRegexesLock.RLock()
-	regexes := *quotasRegexes
+	regexes := quotasRegexes
 	quotasRegexesLock.RUnlock()
 
 	inserted := 0
@@ -452,18 +459,29 @@ func quotasGetMsgFactors(msg *Message) map[string][]string {
 	factors := make(map[string][]string)
 
 	if Config.Quotas.Account_Sender {
-		factors["sender"] = []string{msg.From}
+		factors[QUOTA_FACTOR_SENDER] = []string{msg.From}
+	}
+	if Config.Quotas.Account_Sender_Domain {
+		_, domain := messageParseAddress(msg.From, true)
+		factors[QUOTA_FACTOR_SENDER_DOMAIN] = []string{domain}
 	}
 	if Config.Quotas.Account_Recipient {
 		rcpts := make([]string, len(msg.Rcpt))
 		copy(rcpts, msg.Rcpt)
-		factors["recipient"] = rcpts
+		factors[QUOTA_FACTOR_RECIPIENT] = rcpts
+	}
+	if Config.Quotas.Account_Recipient_Domain {
+		rcptDomains := make([]string, len(msg.Rcpt))
+		for k, v := range msg.Rcpt {
+			_, rcptDomains[k] = messageParseAddress(v, true)
+		}
+		factors[QUOTA_FACTOR_RECIPIENT_DOMAIN] = rcptDomains
 	}
 	if Config.Quotas.Account_Client_Address {
-		factors["client_address"] = []string{sess.getIp()}
+		factors[QUOTA_FACTOR_CLIENT_ADDRESS] = []string{sess.getIp()}
 	}
 	if Config.Quotas.Account_Sasl_Username {
-		factors["sasl_username"] = []string{sess.getSaslUsername()}
+		factors[QUOTA_FACTOR_SASL_USERNAME] = []string{sess.getSaslUsername()}
 	}
 
 	return factors

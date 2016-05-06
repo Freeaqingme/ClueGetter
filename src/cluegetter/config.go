@@ -85,11 +85,13 @@ type config struct {
 		Whitelist_Spf  []string
 	}
 	Quotas struct {
-		Enabled                bool
-		Account_Sender         bool
-		Account_Recipient      bool
-		Account_Client_Address bool
-		Account_Sasl_Username  bool
+		Enabled                  bool
+		Account_Sender           bool
+		Account_Sender_Domain    bool
+		Account_Recipient        bool
+		Account_Recipient_Domain bool
+		Account_Client_Address   bool
+		Account_Sasl_Username    bool
 	}
 	Rspamd struct {
 		Enabled    bool
@@ -244,7 +246,9 @@ func DefaultConfig(cfg *config) {
 
 	cfg.Quotas.Account_Client_Address = true
 	cfg.Quotas.Account_Sender = false
+	cfg.Quotas.Account_Sender_Domain = false
 	cfg.Quotas.Account_Recipient = false
+	cfg.Quotas.Account_Recipient_Domain = false
 	cfg.Quotas.Account_Sasl_Username = false
 
 	cfg.Rspamd.Host = "127.0.0.1"

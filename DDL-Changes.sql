@@ -1,4 +1,5 @@
 -- v0.5.5
+ALTER TABLE quota CHANGE selector selector enum('sender','recipient','client_address','sasl_username','sender_domain','recipient_domain') NOT NULL;
 ALTER TABLE message ADD INDEX message_senderdomain_date(sender_domain, date);
 ALTER TABLE message DROP INDEX message_sender_domain;
 ALTER TABLE recipient ADD UNIQUE INDEX domain (domain, local);
