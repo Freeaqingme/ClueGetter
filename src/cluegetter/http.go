@@ -194,26 +194,33 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rows, err := Rdbms.Query(`
-	SELECT m.id, m.date, CONCAT(m.sender_local, '@', m.sender_domain) sender, m.rcpt_count, m.verdict,
-		GROUP_CONCAT(DISTINCT IF(r.domain = '', r.local, (CONCAT(r.local, '@', r.domain)))) recipients
-		FROM message m
-			LEFT JOIN session s ON s.id = m.session
-			LEFT JOIN message_recipient mr on mr.message = m.id
-			LEFT JOIN recipient r ON r.id = mr.recipient
-			INNER JOIN (
-				SELECT DISTINCT id FROM (
-						SELECT m.id
-							FROM message m
-							WHERE (m.sender_domain = ? AND (m.sender_local = ? OR ? = ''))
-					UNION
-						SELECT mr.message
-							FROM message_recipient mr
-								LEFT JOIN recipient r ON r.id = mr.recipient
-							WHERE (r.domain = ? AND (r.local = ? OR ? = ''))
-				) t2
-			) t1 ON t1.id = m.id
-                        WHERE s.cluegetter_instance IN (`+strings.Join(instances, ",")+`)
-		GROUP BY m.id
+		(
+			SELECT m.id, m.date, CONCAT(m.sender_local, '@', m.sender_domain) sender, m.rcpt_count, m.verdict,
+				GROUP_CONCAT(DISTINCT IF(r.domain = '', r.local, (CONCAT(r.local, '@', r.domain)))) recipients
+			FROM message m
+				INNER JOIN session s ON s.id = m.session
+				INNER JOIN message_recipient mr on mr.message = m.id
+				INNER JOIN recipient r ON r.id = mr.recipient
+			WHERE (m.sender_domain = ? AND (m.sender_local = ? OR ? = '')) AND
+					s.cluegetter_instance IN (`+strings.Join(instances, ",")+`)
+				AND m.date >= CURDATE()-INTERVAL 1 WEEK
+			GROUP BY m.id
+			ORDER BY date DESC
+			LIMIT 0,250
+		) UNION (
+		    SELECT m.id, m.date, CONCAT(m.sender_local, '@', m.sender_domain) sender, m.rcpt_count, m.verdict,
+				GROUP_CONCAT(DISTINCT IF(r.domain = '', r.local, (CONCAT(r.local, '@', r.domain)))) recipients
+			FROM message m
+				INNER JOIN session s ON s.id = m.session
+				INNER JOIN message_recipient mr on mr.message = m.id
+				INNER JOIN recipient r ON r.id = mr.recipient
+			WHERE (r.domain = ? AND (r.local = ? OR ? = ''))
+				AND s.cluegetter_instance IN (`+strings.Join(instances, ",")+`)
+				AND m.date >= CURDATE()-INTERVAL 1 WEEK
+			GROUP BY m.id
+			ORDER BY date DESC
+			LIMIT 0,250
+		)
 		ORDER BY date DESC
 		LIMIT 0,250
 	`, domain, local, local, domain, local, local)

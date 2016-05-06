@@ -71,7 +71,7 @@ CREATE TABLE message (
   KEY session (session),
   KEY messageId (messageId(25)),
   KEY message_date_session (date,session),
-  KEY message_sender_domain (sender_domain),
+  KEY message_senderdomain_date (sender_domain, date),
   CONSTRAINT message_ibfk_1 FOREIGN KEY (session) REFERENCES session (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
@@ -164,7 +164,7 @@ CREATE TABLE recipient (
   local varchar(255) NOT NULL,
   domain varchar(253) DEFAULT NULL,
   PRIMARY KEY (id),
-  UNIQUE KEY local (local,domain)
+  UNIQUE KEY domain (domain,local)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE message_recipient (
