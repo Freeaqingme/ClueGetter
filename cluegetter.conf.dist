@@ -265,7 +265,7 @@ connect-timeout = 0.1
 timeout = 10.0
 
 # The max message size (in bytes) to send to SpamAssassin.
-max-size = 8388608
+max-size = 500000
 
 # You can script your own modules using Lua.
 # [luaModule "something"]

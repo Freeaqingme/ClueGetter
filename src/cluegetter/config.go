@@ -259,5 +259,5 @@ func DefaultConfig(cfg *config) {
 	cfg.SpamAssassin.Port = 783
 	cfg.SpamAssassin.Timeout = 10
 	cfg.SpamAssassin.Connect_Timeout = 0.1
-	cfg.SpamAssassin.Max_Size = 8388608
+	cfg.SpamAssassin.Max_Size = 500000 // Default SA max file size: 512 KB
 }
