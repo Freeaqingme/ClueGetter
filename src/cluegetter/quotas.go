@@ -10,6 +10,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"sync"
@@ -73,6 +74,9 @@ func init() {
 		init:        &init,
 		stop:        &stop,
 		milterCheck: &milterCheck,
+		httpHandlers: map[string]httpCallback{
+			"/quotas/sasl_username/": quotasSasluserStats,
+		},
 	})
 }
 
@@ -487,4 +491,34 @@ func quotasGetMsgFactors(msg *Message) map[string][]string {
 	}
 
 	return factors
+}
+
+func quotasSasluserStats(w http.ResponseWriter, r *http.Request) {
+	saslUser := r.URL.Path[len("/quotas/sasl_username/"):]
+	if len(saslUser) == 0 {
+		http.Error(w, "No sasl username provided", http.StatusNotFound)
+		return
+	}
+
+	results := make(chan *quotasResult)
+	go func() {
+		selector := QUOTA_FACTOR_SASL_USERNAME
+		quotasRedisPollQuotasBySelector(results, &selector, &saslUser, 0)
+		close(results)
+	}()
+
+	jsonData := make([]interface{}, 0)
+	for result := range results {
+		jsonData = append(jsonData, struct {
+			Curb         uint64
+			CurrentCount uint64
+			Period       uint64
+		}{
+			result.Curb,
+			result.FutureTotalCount,
+			result.Period,
+		})
+	}
+
+	httpRenderOutput(w, r, "", nil, &jsonData)
 }

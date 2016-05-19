@@ -623,6 +623,12 @@ func httpRenderOutput(w http.ResponseWriter, r *http.Request, templateFile strin
 		}
 		httpReturnJson(w, jsonData)
 		return
+	} else if templateFile == "" {
+		http.Error(w, "Parameter 'json' required", http.StatusBadRequest)
+		return
+	} else if data == nil {
+		http.Error(w, "Data was nil for non-json request", http.StatusInternalServerError)
+		return
 	}
 
 	tplPage, _ := assets.Asset("htmlTemplates/" + templateFile)
