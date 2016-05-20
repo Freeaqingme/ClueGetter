@@ -1,5 +1,15 @@
 # Change Log
 
+### 2016-05-20 Version 0.5.5
+* New Feature: Qutoas for sender and recipient domain
+* New Feature: Show current quota usage through HTTP interface
+* New Feature: Truncate messages sent to ClamAv by default to 10M
+* Improvement: Optimized some queries used for http interface
+* Change: Use protobuf for RPC communication
+* Change: Default SpamAssassin max size now is 500K instead of 8M bytes
+* Change: Also include REJECTed messaged when counting quotas
+
+
 ### 2016-04-03 Version 0.5.4
 * New Feature: ClamAV integration
 * New Feature: Support multiple http frontends
