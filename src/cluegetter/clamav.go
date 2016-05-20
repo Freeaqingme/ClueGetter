@@ -69,7 +69,13 @@ func clamavMilterCheck(msg *Message, abort chan bool) *MessageCheckResult {
 		return nil
 	}
 
-	res, err := clamdClient.ScanStream(bytes.NewReader(msg.String()), abort)
+	sconf := msg.session.config.Clamav
+	msgStr := msg.String()
+	if len(msgStr) > sconf.Max_Size {
+		msgStr = msgStr[:sconf.Max_Size]
+	}
+
+	res, err := clamdClient.ScanStream(bytes.NewReader(msgStr), abort)
 	if err != nil {
 		Log.Error("Problem while talking to Clamd while checking for %s: %s", msg.QueueId, err.Error())
 		return &MessageCheckResult{

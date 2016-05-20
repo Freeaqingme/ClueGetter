@@ -77,6 +77,7 @@ type config struct {
 		Enabled       bool
 		Address       string
 		Default_Score float64
+		Max_Size      int
 	}
 	Greylisting struct {
 		Enabled        bool
@@ -132,6 +133,7 @@ type SessionConfig struct {
 	Clamav struct {
 		Enabled       bool
 		Default_Score float64
+		Max_Size      int
 	}
 	Greylisting struct {
 		Enabled        bool
@@ -168,6 +170,7 @@ func (conf *config) sessionConfig() (sconf *SessionConfig) {
 
 	sconf.Clamav.Enabled = conf.Clamav.Enabled
 	sconf.Clamav.Default_Score = conf.Clamav.Default_Score
+	sconf.Clamav.Max_Size = conf.Clamav.Max_Size
 
 	sconf.Greylisting.Enabled = conf.Greylisting.Enabled
 	sconf.Greylisting.Initial_Score = conf.Greylisting.Initial_Score
@@ -239,6 +242,7 @@ func DefaultConfig(cfg *config) {
 	cfg.MailQueue.Update_Interval = 5
 
 	cfg.Clamav.Default_Score = 10.0
+	cfg.Clamav.Max_Size = 10485760
 
 	cfg.Greylisting.Initial_Score = 7.0
 	cfg.Greylisting.Initial_Period = 5

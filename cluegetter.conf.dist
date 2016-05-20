@@ -205,6 +205,10 @@ address = "/var/run/clamav/clamd.ctl"
 # Score that should be given when a message gives a hit with ClamAV
 # default-score = 10
 
+# The max message size (in bytes) to send to ClamAv. If it's any larger
+# the message will be truncated.
+max-size = 10485760
+
 [greylisting]
 # When the greylisting module is enabled, hosts that haven not been seen
 # before and that seem a little spammy are temporarily rejected until
