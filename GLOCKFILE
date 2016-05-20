@@ -4,11 +4,12 @@ cmd github.com/gogo/protobuf/protoc-gen-gogo
 cmd github.com/golang/lint/golint
 cmd github.com/jteeuwen/go-bindata/go-bindata
 cmd github.com/robfig/glock
-github.com/cockroachdb/c-protobuf 6a18bfcdd5169966cd1235edb71d749c950216e8
-github.com/gogo/protobuf d3235f01ecae4901dd9f7ea6af57a352c0189deb
+github.com/cockroachdb/c-protobuf 4feb192131ea08dfbd7253a00868ad69cbb61b81
+github.com/gogo/protobuf 43a2e0b1c32252bfbbdf81f7faa7a88fb3fa4028
 github.com/golang/lint 32a87160691b3c96046c0c678fe57c5bef761456
 github.com/jteeuwen/go-bindata a0ff2567cfb70903282db057e799fd826784d41d
 
+github.com/allegro/bigcache 6e32dc0344493b1cecc7f7d5a519f52ba011e3ac
 github.com/dustin/go-humanize 8929fe90cee4b2cb9deb468b51fb34eba64d1bf0
 github.com/Freeaqingme/golang-sql-driver-mysql cc60643cc960cb640e30d95b87d61aa4ca6ef3fb
 github.com/Freeaqingme/go-libspf2 b6690e62a7ecafbe84c3a722351015563089de1a
@@ -17,7 +18,7 @@ github.com/Freeaqingme/gomilter ec6c4f311354d82c74260255dbe8a0ab6705939a
 github.com/Freeaqingme/go-spamc baaefdc3478cdf09e5db128b45e7597f51a69ff3
 github.com/Freeaqingme/go-proxyproto 673e5fd897f42e9212ca2495bd0c43d9ab872619
 github.com/glenn-brown/golang-pkg-pcre 48bb82a8b8ceea98f4e97825b43870f6ba1970d6
-github.com/golang/protobuf 221834dcb89c96e4b057ed8bb878bfe569dfacf4
+github.com/golang/protobuf dda510ac0fd43b39770f22ac6260eb91d377bce3
 github.com/golang/snappy 723cc1e459b8eea2dea4583200fd60757d40097a
 github.com/hailocab/go-hostpool 0637eae892be221164aff5fcbccc57171aea6406
 github.com/miekg/dns f8964231a81dcbe9fc5f13a228c7f10a933acc50

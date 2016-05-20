@@ -77,6 +77,7 @@ type config struct {
 		Enabled       bool
 		Address       string
 		Default_Score float64
+		Max_Size      int
 	}
 	Greylisting struct {
 		Enabled        bool
@@ -85,11 +86,13 @@ type config struct {
 		Whitelist_Spf  []string
 	}
 	Quotas struct {
-		Enabled                bool
-		Account_Sender         bool
-		Account_Recipient      bool
-		Account_Client_Address bool
-		Account_Sasl_Username  bool
+		Enabled                  bool
+		Account_Sender           bool
+		Account_Sender_Domain    bool
+		Account_Recipient        bool
+		Account_Recipient_Domain bool
+		Account_Client_Address   bool
+		Account_Sasl_Username    bool
 	}
 	Rspamd struct {
 		Enabled    bool
@@ -130,6 +133,7 @@ type SessionConfig struct {
 	Clamav struct {
 		Enabled       bool
 		Default_Score float64
+		Max_Size      int
 	}
 	Greylisting struct {
 		Enabled        bool
@@ -166,6 +170,7 @@ func (conf *config) sessionConfig() (sconf *SessionConfig) {
 
 	sconf.Clamav.Enabled = conf.Clamav.Enabled
 	sconf.Clamav.Default_Score = conf.Clamav.Default_Score
+	sconf.Clamav.Max_Size = conf.Clamav.Max_Size
 
 	sconf.Greylisting.Enabled = conf.Greylisting.Enabled
 	sconf.Greylisting.Initial_Score = conf.Greylisting.Initial_Score
@@ -237,6 +242,7 @@ func DefaultConfig(cfg *config) {
 	cfg.MailQueue.Update_Interval = 5
 
 	cfg.Clamav.Default_Score = 10.0
+	cfg.Clamav.Max_Size = 10485760
 
 	cfg.Greylisting.Initial_Score = 7.0
 	cfg.Greylisting.Initial_Period = 5
@@ -244,7 +250,9 @@ func DefaultConfig(cfg *config) {
 
 	cfg.Quotas.Account_Client_Address = true
 	cfg.Quotas.Account_Sender = false
+	cfg.Quotas.Account_Sender_Domain = false
 	cfg.Quotas.Account_Recipient = false
+	cfg.Quotas.Account_Recipient_Domain = false
 	cfg.Quotas.Account_Sasl_Username = false
 
 	cfg.Rspamd.Host = "127.0.0.1"
@@ -255,5 +263,5 @@ func DefaultConfig(cfg *config) {
 	cfg.SpamAssassin.Port = 783
 	cfg.SpamAssassin.Timeout = 10
 	cfg.SpamAssassin.Connect_Timeout = 0.1
-	cfg.SpamAssassin.Max_Size = 8388608
+	cfg.SpamAssassin.Max_Size = 500000 // Default SA max file size: 512 KB
 }

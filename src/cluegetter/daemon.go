@@ -53,6 +53,7 @@ func daemonStart() {
 	foreground := flag.Bool("foreground", false, "Run in Foreground")
 	flag.Parse()
 
+	fmt.Println(foreground)
 	if !*foreground {
 		logFile = *logFileTmp
 		logRedirectStdOutToFile(logFile)

@@ -205,6 +205,10 @@ address = "/var/run/clamav/clamd.ctl"
 # Score that should be given when a message gives a hit with ClamAV
 # default-score = 10
 
+# The max message size (in bytes) to send to ClamAv. If it's any larger
+# the message will be truncated.
+max-size = 10485760
+
 [greylisting]
 # When the greylisting module is enabled, hosts that haven not been seen
 # before and that seem a little spammy are temporarily rejected until
@@ -239,7 +243,8 @@ enabled = false
 # at least one quota_profile and quota_profile_period should be configured.
 account-client-address = true
 account-sender = false
-account-recipient = false
+account-sender-domain = false
+account-recipient-domain = false
 account-sasl-username = false
 
 [rspamd]
@@ -264,7 +269,7 @@ connect-timeout = 0.1
 timeout = 10.0
 
 # The max message size (in bytes) to send to SpamAssassin.
-max-size = 8388608
+max-size = 500000
 
 # You can script your own modules using Lua.
 # [luaModule "something"]

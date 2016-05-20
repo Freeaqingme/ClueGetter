@@ -1,3 +1,10 @@
+-- v0.5.5
+ALTER TABLE quota CHANGE selector selector enum('sender','recipient','client_address','sasl_username','sender_domain','recipient_domain') NOT NULL;
+ALTER TABLE message ADD INDEX message_senderdomain_date(sender_domain, date);
+ALTER TABLE message DROP INDEX message_sender_domain;
+ALTER TABLE recipient ADD UNIQUE INDEX domain (domain, local);
+ALTER TABLE recipient DROP INDEX local;
+
 -- v0.5.3
 ALTER TABLE bounce ADD messageId varchar(255) NOT NULL COMMENT 'Value of Message-ID header' AFTER queueId;
 ALTER TABLE bounce ADD KEY messageId (messageId);
