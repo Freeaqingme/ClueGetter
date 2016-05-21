@@ -298,7 +298,7 @@ func quotasRedisIsAllowed(msg *Message) *MessageCheckResult {
 			lselectorValue := selectorValue
 			wg.Add(1)
 			go func() {
-				quotasRedisPollQuotasBySelector(c, &lselector, &lselectorValue, extra_count)
+				quotasRedisPollQuotasBySelector(c, &lselector, &lselectorValue, instance, extra_count)
 				wg.Done()
 			}()
 		}
@@ -355,8 +355,8 @@ func quotasRedisIsAllowed(msg *Message) *MessageCheckResult {
 	}
 }
 
-func quotasRedisPollQuotasBySelector(c chan *quotasResult, selector, selectorValue *string, extra_count int) {
-	key := fmt.Sprintf("{cluegetter-%d-quotas-%s_%s}-definitions", instance, *selector, *selectorValue)
+func quotasRedisPollQuotasBySelector(c chan *quotasResult, selector, selectorValue *string, findInstance uint, extra_count int) {
+	key := fmt.Sprintf("{cluegetter-%d-quotas-%s_%s}-definitions", findInstance, *selector, *selectorValue)
 
 	var wg sync.WaitGroup
 	i := 0
@@ -364,14 +364,14 @@ func quotasRedisPollQuotasBySelector(c chan *quotasResult, selector, selectorVal
 		wg.Add(1)
 		i++
 		go func(quota string) {
-			quotasRedisPollQuotasBySelectorAndPeriod(c, quota, selector, selectorValue, extra_count)
+			quotasRedisPollQuotasBySelectorAndPeriod(c, quota, selector, selectorValue, findInstance, extra_count)
 			wg.Done()
 		}(quota)
 	}
 
 	wg.Wait()
 
-	if i != 0 {
+	if i != 0 || findInstance != instance {
 		return
 	}
 
@@ -383,7 +383,7 @@ func quotasRedisPollQuotasBySelector(c chan *quotasResult, selector, selectorVal
 		wg.Add(1)
 		lquota := quota
 		go func() {
-			quotasRedisPollQuotasBySelectorAndPeriod(c, lquota, selector, selectorValue, extra_count)
+			quotasRedisPollQuotasBySelectorAndPeriod(c, lquota, selector, selectorValue, instance, extra_count)
 			wg.Done()
 		}()
 	}
@@ -417,7 +417,7 @@ func quotasRedisInsertRegexesForSelector(selector, selectorValue *string) bool {
 }
 
 func quotasRedisPollQuotasBySelectorAndPeriod(c chan *quotasResult, quota string,
-	selector, selectorValue *string, extra_count int) {
+	selector, selectorValue *string, instance uint, extra_count int) {
 	now := time.Now().Unix()
 	period, _ := strconv.Atoi(strings.Split(quota, "_")[0])
 	curb, _ := strconv.Atoi(strings.Split(quota, "_")[1])
@@ -500,10 +500,24 @@ func quotasSasluserStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.FormValue("instance") == "" {
+		q := r.URL.Query()
+		q.Set("instance", strconv.FormatUint(uint64(instance), 10))
+		r.URL.RawQuery = q.Encode()
+		http.Redirect(w, r, r.URL.String(), 301)
+		return
+	}
+
+	instance, err := strconv.ParseUint(r.FormValue("instance"), 10, 64)
+	if err != nil {
+		http.Error(w, "Parameter 'instance' could not be parsed", http.StatusBadRequest)
+		return
+	}
+
 	results := make(chan *quotasResult)
 	go func() {
 		selector := QUOTA_FACTOR_SASL_USERNAME
-		quotasRedisPollQuotasBySelector(results, &selector, &saslUser, 0)
+		quotasRedisPollQuotasBySelector(results, &selector, &saslUser, uint(instance), 0)
 		close(results)
 	}()
 
