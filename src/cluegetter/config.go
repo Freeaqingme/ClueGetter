@@ -118,8 +118,9 @@ type ConfigHttpFrontend struct {
 }
 
 type ConfigLuaModule struct {
-	Enabled bool
-	Script  string
+	Enabled        bool
+	Script         string
+	ScriptContents string
 }
 
 type SessionConfig struct {
@@ -264,4 +265,15 @@ func DefaultConfig(cfg *config) {
 	cfg.SpamAssassin.Timeout = 10
 	cfg.SpamAssassin.Connect_Timeout = 0.1
 	cfg.SpamAssassin.Max_Size = 500000 // Default SA max file size: 512 KB
+}
+
+func GetNewConfig() *config {
+	out := &config{}
+	DefaultConfig(out)
+
+	return out
+}
+
+func SetConfig(config *config) {
+	Config = *config
 }

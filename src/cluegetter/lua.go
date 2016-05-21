@@ -17,7 +17,7 @@ import (
 var luaModules = make(map[string]string, 0)
 
 func init() {
-	init := luaStart
+	init := LuaStart
 
 	ModuleRegister(&module{
 		name: "lua",
@@ -25,26 +25,43 @@ func init() {
 	})
 }
 
-func luaStart() {
+func LuaStart() {
 	for name, conf := range Config.LuaModule {
 		luaStartModule(name, conf)
 	}
 }
 
+func LuaReset() {
+	luaModules = make(map[string]string, 0)
+}
+
 func luaStartModule(name string, conf *ConfigLuaModule) {
 	enable := func() bool { return conf.Enabled }
 	milterCheck := func(msg *Message, done chan bool) *MessageCheckResult {
-		return luaMilterCheck(name, msg, done)
+		return LuaMilterCheck(name, msg, done)
 	}
 
-	script, err := ioutil.ReadFile(conf.Script)
-	if err != nil {
-		panic("Could not load LUA script: " + err.Error())
+	if conf.Script != "" && conf.ScriptContents != "" {
+		panic("Cannot specify both Script as well as scriptContents in " + name)
+	} else if conf.Script == "" && conf.ScriptContents == "" {
+		panic("Either a Script or ScriptContents must be specified in " + name)
 	}
-	if _, err := luaCanParse(string(script)); err != nil {
+
+	var scriptContents string
+	if conf.Script != "" {
+		scriptContentsBytes, err := ioutil.ReadFile(conf.Script)
+		if err != nil {
+			panic("Could not load LUA script: " + err.Error())
+		}
+		scriptContents = string(scriptContentsBytes)
+	} else {
+		scriptContents = conf.ScriptContents
+	}
+
+	if _, err := luaCanParse(string(scriptContents)); err != nil {
 		panic("Could not parse LUA module '" + name + "': " + err.Error())
 	}
-	luaModules[name] = string(script)
+	luaModules[name] = string(scriptContents)
 
 	ModuleRegister(&module{
 		name:        "lua-" + name,
@@ -53,7 +70,7 @@ func luaStartModule(name string, conf *ConfigLuaModule) {
 	})
 }
 
-func luaMilterCheck(luaModuleName string, msg *Message, done chan bool) *MessageCheckResult {
+func LuaMilterCheck(luaModuleName string, msg *Message, done chan bool) *MessageCheckResult {
 	L := luaGetState()
 
 	if err := L.DoString(luaModules[luaModuleName]); err != nil {

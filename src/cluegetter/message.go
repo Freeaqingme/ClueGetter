@@ -63,6 +63,22 @@ type MessageCheckResult struct {
 	callbacks       []*func(*Message, int)
 }
 
+func (r *MessageCheckResult) Module() string {
+	return r.module
+}
+
+func (r *MessageCheckResult) SuggestedAction() int {
+	return r.suggestedAction
+}
+
+func (r *MessageCheckResult) Message() string {
+	return r.message
+}
+
+func (r *MessageCheckResult) Score() float64 {
+	return r.score
+}
+
 type MessageModuleGroup struct {
 	modules     []*MessageModuleGroupMember
 	name        string
