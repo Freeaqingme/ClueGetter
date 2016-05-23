@@ -48,6 +48,11 @@ func init() {
 	})
 }
 
+func DaemonReset() {
+	modules = make([]*module, 0)
+	ipcHandlers = make(map[string]func(string), 0)
+}
+
 func daemonStart() {
 	logFileTmp := flag.String("logfile", defaultLogFile, "Log file to use.")
 	foreground := flag.Bool("foreground", false, "Run in Foreground")

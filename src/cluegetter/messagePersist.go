@@ -435,12 +435,21 @@ func messageCacheNew(maxEntrySize uint64) *messageCache {
 		MaxEntriesInWindow: 1000 * 10 * 60,
 		MaxEntrySize:       500,
 		Verbose:            true,
-		HardMaxCacheSize:   1024, // Value in MB
+		HardMaxCacheSize:   Config.ClueGetter.Message_Cache_Size, // Value in MB
 	}
 
 	cache, initErr := bigcache.NewBigCache(config)
 	if initErr != nil {
 		Log.Fatal(initErr)
+	}
+
+	config = bigcache.Config{
+		Shards:             1024,
+		LifeWindow:         10 * time.Minute,
+		MaxEntriesInWindow: 1000 * 10 * 60,
+		MaxEntrySize:       500,
+		Verbose:            true,
+		HardMaxCacheSize:   Config.ClueGetter.Message_Cache_Size / 100, // Value in MB
 	}
 
 	msgIdIdx, initErr := bigcache.NewBigCache(config)

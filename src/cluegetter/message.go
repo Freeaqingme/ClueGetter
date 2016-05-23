@@ -63,6 +63,22 @@ type MessageCheckResult struct {
 	callbacks       []*func(*Message, int)
 }
 
+func (r *MessageCheckResult) Module() string {
+	return r.module
+}
+
+func (r *MessageCheckResult) SuggestedAction() int {
+	return r.suggestedAction
+}
+
+func (r *MessageCheckResult) Message() string {
+	return r.message
+}
+
+func (r *MessageCheckResult) Score() float64 {
+	return r.score
+}
+
 type MessageModuleGroup struct {
 	modules     []*MessageModuleGroupMember
 	name        string
@@ -208,6 +224,10 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 	errorCount := 0
 	resultsChan := messageGetResults(msg, done)
 	for result := range resultsChan {
+		if result.score == 0.0 {
+			result.suggestedAction = messagePermit // This is purely aesthetic but prevents confusion
+		}
+
 		results[result.suggestedAction] = append(results[result.suggestedAction], result)
 		flatResults = append(flatResults, result)
 		breakerScore[result.suggestedAction] += result.score
