@@ -1,5 +1,8 @@
 # Change Log
 
+### 2016-05-23 Version 0.5.7
+* Change: Don't use allegro/bigcache as for some reason it's leaking huge amounts of memory
+
 ### 2016-05-23 Version 0.5.6
 * New Feature: Allow to configure Message Cache Size
 * New Feature: Allow to specify a custom instance in quota http interface
