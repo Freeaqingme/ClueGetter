@@ -307,7 +307,7 @@ func luaMessageFuncQueueId(L *lua.LState) int {
 
 func luaMessageFuncFrom(L *lua.LState) int {
 	p := luaMessageGetFromVM(L)
-	L.Push(lua.LString(p.From))
+	L.Push(lua.LString(p.From.String()))
 	return 1
 }
 
@@ -316,7 +316,7 @@ func luaMessageFuncRcpt(L *lua.LState) int {
 
 	t := L.NewTable()
 	for _, v := range p.Rcpt {
-		t.Append(lua.LString(v))
+		t.Append(lua.LString(v.String()))
 	}
 
 	L.Push(t)

@@ -156,11 +156,11 @@ func rspamdGetRawResult(msg *Message) (interface{}, error) {
 		return nil, err
 	}
 	for _, rcpt := range msg.Rcpt {
-		req.Header.Add("Rcpt", rcpt)
+		req.Header.Add("Rcpt", rcpt.String())
 	}
 	req.Header.Set("IP", sess.getIp())
 	req.Header.Set("Helo", sess.getHelo())
-	req.Header.Set("From", msg.From)
+	req.Header.Set("From", msg.From.String())
 	req.Header.Set("Queue-Id", msg.QueueId)
 	req.Header.Set("User", sess.getSaslUsername())
 	res, err := client.Do(req)

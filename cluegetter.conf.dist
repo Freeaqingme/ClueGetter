@@ -127,6 +127,14 @@ archive-retention-message = 52
 module = 0.9 spamassassin
 module = 0.1 rspamd
 
+[elasticsearch]
+# To improve searching and do trend analysis you can opt to index
+# everything in ElasticSearch.
+enabled = false
+
+# It's possible to specify multiple URL's by simply repeating them
+url = "http://127.0.0.1:9200"
+
 [http]
 # Cluegetter can provide an HTTP interface that displays some runtime
 # statistics and errors, and allows to search for processed messages.

@@ -85,7 +85,7 @@ func saGetRawReply(msg *Message, abort chan bool) (*spamc.SpamDOut, error) {
 		bodyStr = bodyStr[:sconf.Max_Size]
 	}
 
-	return client.Report(abort, bodyStr, msg.Rcpt[0])
+	return client.Report(abort, bodyStr, msg.Rcpt[0].String())
 }
 
 /*

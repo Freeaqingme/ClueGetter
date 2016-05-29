@@ -12,7 +12,6 @@ import (
 	"fmt"
 	libspf2 "github.com/Freeaqingme/go-libspf2"
 	"net"
-	"strings"
 	"time"
 )
 
@@ -345,28 +344,12 @@ func greylistIsSpfWhitelisted(ip net.IP, done chan bool, whitelist []string) (bo
 }
 
 func greylistGetRecentVerdicts(msg *Message) *[]greylistVerdict {
-	fromLocal := ""
-	fromDomain := ""
-	if strings.Index(msg.From, "@") != -1 {
-		fromLocal = strings.Split(msg.From, "@")[0]
-		fromDomain = strings.Split(msg.From, "@")[1]
-	} else {
-		fromLocal = msg.From
-	}
-
-	rcptLocal := msg.Rcpt[0]
-	rcptDomain := ""
-	if strings.Index(msg.Rcpt[0], "@") != -1 {
-		rcptLocal = strings.Split(msg.Rcpt[0], "@")[0]
-		rcptDomain = strings.Split(msg.Rcpt[0], "@")[1]
-	}
-
 	StatsCounters["RdbmsQueries"].increase(1)
 	verdictRows, err := greylistGetRecentVerdictsStmt.Query(
-		fromLocal,
-		fromDomain,
-		rcptLocal,
-		rcptDomain,
+		msg.From.Local(),
+		msg.From.Domain(),
+		msg.Rcpt[0].Local(),
+		msg.Rcpt[0].Domain(),
 		(*msg.session).getIp(),
 	)
 

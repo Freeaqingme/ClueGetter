@@ -8,6 +8,8 @@
 package main
 
 import (
+	"cluegetter/address"
+	"crypto/md5"
 	"encoding/hex"
 	"fmt"
 	m "github.com/Freeaqingme/gomilter"
@@ -37,10 +39,8 @@ func (di *milterDataIndex) addNewSession(sess *milterSession) *milterSession {
 }
 
 func (di *milterDataIndex) delete(s *milterSession, lock bool) {
-	s.timeEnd = time.Now()
-	if !s.persisted {
-		s.persist()
-	}
+	s.DateDisconnect = time.Now()
+	s.persist()
 
 	if lock {
 		di.mu.Lock()
@@ -55,7 +55,7 @@ func (di *milterDataIndex) prune() {
 	defer di.mu.Unlock()
 
 	for k, v := range di.sessions {
-		if now.Sub(v.timeStart).Minutes() > 15 {
+		if now.Sub(v.DateConnect).Minutes() > 15 {
 			Log.Debug("Pruning session %d", k)
 			di.delete(v, false)
 		}
@@ -130,10 +130,9 @@ func (milter *milter) Connect(ctx uintptr, hostname string, ip net.IP) (sfsistat
 	defer milterHandleError(ctx, &sfsistat)
 
 	sess := &milterSession{
-		id:        milterGetNewSessionId(),
-		timeStart: time.Now(),
-		persisted: false,
-		config:    Config.sessionConfig(),
+		id:          milterGetNewSessionId(),
+		DateConnect: time.Now(),
+		config:      Config.sessionConfig(),
 	}
 	sess.Hostname = hostname
 	sess.Ip = ip.String()
@@ -190,7 +189,7 @@ func (milter *milter) EnvFrom(ctx uintptr, from []string) (sfsistat int8) {
 		Log.Critical("%s Milter.EnvFrom() callback received %d elements", d.milterGetDisplayId(), len(from))
 		panic(fmt.Sprint("%s Milter.EnvFrom() callback received %d elements", d.milterGetDisplayId(), len(from)))
 	}
-	msg.From = strings.ToLower(strings.Trim(from[0], "<>"))
+	msg.From = address.FromString(strings.ToLower(strings.Trim(from[0], "<>")))
 	return
 }
 
@@ -199,7 +198,9 @@ func (milter *milter) EnvRcpt(ctx uintptr, rcpt []string) (sfsistat int8) {
 
 	d := milterGetSession(ctx, true, false)
 	msg := d.getLastMessage()
-	msg.Rcpt = append(msg.Rcpt, strings.ToLower(strings.Trim(rcpt[0], "<>")))
+	msg.Rcpt = append(msg.Rcpt,
+		address.FromString(strings.ToLower(strings.Trim(rcpt[0], "<>"))),
+	)
 
 	StatsCounters["MilterCallbackEnvRcpt"].increase(1)
 	Log.Debug("%s Milter.EnvRcpt() called: rcpt = %s", d.milterGetDisplayId(), fmt.Sprint(rcpt))
@@ -257,7 +258,12 @@ func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
 	StatsCounters["MilterCallbackEom"].increase(1)
 	Log.Debug("%s milter.Eom() was called", s.milterGetDisplayId())
 
-	verdict, msg, results := messageGetVerdict(s.getLastMessage())
+	msg := s.getLastMessage()
+	msg.Date = time.Now()
+	msg.BodySize = len(msg.Body)
+	msg.BodyHash = fmt.Sprintf("%x", md5.Sum(msg.Body))
+
+	verdict, msgOut, results := messageGetVerdict(msg)
 	headersAdd, headersDelete := messageGetMutableHeaders(s.getLastMessage(), results)
 	for _, hdr := range headersDelete {
 		var delete string // Must be null to delete
@@ -277,23 +283,23 @@ func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
 
 	if s.isWhitelisted() {
 		verdict = messagePermit
-		msg = "Whitelisted"
+		msgOut = "Whitelisted"
 	}
 
 	switch {
 	case verdict == messagePermit:
-		Log.Info("Message Permit: sess=%s message=%s %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msg)
+		Log.Info("Message Permit: sess=%s message=%s %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msgOut)
 		return
 	case verdict == messageTempFail:
-		m.SetReply(ctx, "421", "4.7.0", fmt.Sprintf("%s (%s)", msg, s.getLastMessage().QueueId))
-		Log.Info("Message TempFail: sess=%s message=%s msg: %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msg)
+		m.SetReply(ctx, "421", "4.7.0", fmt.Sprintf("%s (%s)", msgOut, s.getLastMessage().QueueId))
+		Log.Info("Message TempFail: sess=%s message=%s msg: %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msgOut)
 		if Config.ClueGetter.Noop {
 			return
 		}
 		return m.Tempfail
 	case verdict == messageReject:
-		m.SetReply(ctx, "550", "5.7.1", fmt.Sprintf("%s (%s)", msg, s.getLastMessage().QueueId))
-		Log.Info("Message Reject: sess=%s message=%s msg: %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msg)
+		m.SetReply(ctx, "550", "5.7.1", fmt.Sprintf("%s (%s)", msgOut, s.getLastMessage().QueueId))
+		Log.Info("Message Reject: sess=%s message=%s msg: %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msgOut)
 		if Config.ClueGetter.Noop {
 			return
 		}

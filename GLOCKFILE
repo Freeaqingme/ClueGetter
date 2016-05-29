@@ -1,10 +1,8 @@
 # To update the references run: ./bin/glock save -n cluegetter
 # cmd github.com/cockroachdb/c-protobuf/cmd/protoc
-cmd github.com/gogo/protobuf/protoc-gen-gogo
 cmd github.com/golang/lint/golint
 cmd github.com/jteeuwen/go-bindata/go-bindata
 cmd github.com/robfig/glock
-github.com/cockroachdb/c-protobuf 4feb192131ea08dfbd7253a00868ad69cbb61b81
 github.com/gogo/protobuf 43a2e0b1c32252bfbbdf81f7faa7a88fb3fa4028
 github.com/golang/lint 32a87160691b3c96046c0c678fe57c5bef761456
 github.com/jteeuwen/go-bindata a0ff2567cfb70903282db057e799fd826784d41d
@@ -17,8 +15,9 @@ github.com/Freeaqingme/go-clamd 4ca7e7b82651009473ab23a8a24bf7f5700f61bd
 github.com/Freeaqingme/gomilter ec6c4f311354d82c74260255dbe8a0ab6705939a
 github.com/Freeaqingme/go-spamc baaefdc3478cdf09e5db128b45e7597f51a69ff3
 github.com/Freeaqingme/go-proxyproto 673e5fd897f42e9212ca2495bd0c43d9ab872619
+github.com/Freeaqingme/golang-ring edcf891e47f5c80e802428956cbc88ab802758c6
 github.com/glenn-brown/golang-pkg-pcre 48bb82a8b8ceea98f4e97825b43870f6ba1970d6
-github.com/golang/protobuf dda510ac0fd43b39770f22ac6260eb91d377bce3
+github.com/golang/protobuf 9e6977f30c91c78396e719e164e57f9287fff42c
 github.com/golang/snappy 723cc1e459b8eea2dea4583200fd60757d40097a
 github.com/hailocab/go-hostpool 0637eae892be221164aff5fcbccc57171aea6406
 github.com/miekg/dns f8964231a81dcbe9fc5f13a228c7f10a933acc50
@@ -28,4 +27,5 @@ github.com/scalingdata/gcfg 37aabad69cfd3d20b8390d902a8b10e245c615ff
 github.com/yuin/gopher-lua e5faab4db06a81efb60d8e16c1d205e1d93736a9
 gopkg.in/bsm/ratelimit.v1 f14ad9c78b155f69b480cfa41cb655259baac260
 gopkg.in/inf.v0 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
+gopkg.in/olivere/elastic.v3 aa80db5ac257057adde4efdafb4aad58ef495acc
 gopkg.in/redis.v3 d2ae7d870764d131887fa31a743bb50abbcf9384

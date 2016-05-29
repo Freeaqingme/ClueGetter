@@ -465,21 +465,23 @@ func quotasGetMsgFactors(msg *Message) map[string][]string {
 	factors := make(map[string][]string)
 
 	if Config.Quotas.Account_Sender {
-		factors[QUOTA_FACTOR_SENDER] = []string{msg.From}
+		factors[QUOTA_FACTOR_SENDER] = []string{msg.From.String()}
 	}
 	if Config.Quotas.Account_Sender_Domain {
-		_, domain := messageParseAddress(msg.From, true)
+		_, domain := messageParseAddress(msg.From.String(), true)
 		factors[QUOTA_FACTOR_SENDER_DOMAIN] = []string{domain}
 	}
 	if Config.Quotas.Account_Recipient {
 		rcpts := make([]string, len(msg.Rcpt))
-		copy(rcpts, msg.Rcpt)
+		for _, v := range msg.Rcpt {
+			rcpts = append(rcpts, v.String())
+		}
 		factors[QUOTA_FACTOR_RECIPIENT] = rcpts
 	}
 	if Config.Quotas.Account_Recipient_Domain {
 		rcptDomains := make([]string, len(msg.Rcpt))
 		for k, v := range msg.Rcpt {
-			_, rcptDomains[k] = messageParseAddress(v, true)
+			rcptDomains[k] = v.Domain()
 		}
 		factors[QUOTA_FACTOR_RECIPIENT_DOMAIN] = rcptDomains
 	}

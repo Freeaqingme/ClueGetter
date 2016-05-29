@@ -48,8 +48,12 @@ type config struct {
 		Dump_Dir string
 		Dump_Key []string
 	}
-	ModuleGroup map[string]*ConfigModuleGroup
-	Http        struct {
+	ModuleGroup   map[string]*ConfigModuleGroup
+	Elasticsearch struct {
+		Enabled bool
+		Url     []string
+	}
+	Http struct {
 		Enabled          bool
 		Listen_Port      string
 		Listen_Host      string
@@ -230,6 +234,8 @@ func DefaultConfig(cfg *config) {
 	cfg.Redis.Host = []string{}
 	cfg.Redis.Method = "standalone"
 	cfg.Redis.Dump_Key = []string{}
+
+	cfg.Elasticsearch.Url = []string{}
 
 	cfg.Http.Enabled = true
 	cfg.Http.Listen_Port = "0"
