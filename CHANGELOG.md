@@ -1,5 +1,14 @@
 # Change Log
 
+### 2016-05-23 Version 0.5.7
+* Change: Don't use allegro/bigcache as for some reason it's leaking huge amounts of memory
+
+### 2016-05-23 Version 0.5.6
+* New Feature: Allow to configure Message Cache Size
+* New Feature: Allow to specify a custom instance in quota http interface
+* Improvement: Do not show a non-permitting check result when it scores 0.0
+
+
 ### 2016-05-20 Version 0.5.5
 * New Feature: Qutoas for sender and recipient domain
 * New Feature: Show current quota usage through HTTP interface

@@ -40,6 +40,7 @@ type config struct {
 		Archive_Retention_Message_Result float64
 		Archive_Retention_Message        float64
 		Archive_Retention_Safeguard      float64
+		Message_Cache_Size               int
 	}
 	Redis struct {
 		Enabled  bool
@@ -230,6 +231,7 @@ func DefaultConfig(cfg *config) {
 	cfg.ClueGetter.Archive_Retention_Header = 26
 	cfg.ClueGetter.Archive_Retention_Message_Result = 2
 	cfg.ClueGetter.Archive_Retention_Message = 52
+	cfg.ClueGetter.Message_Cache_Size = 256
 
 	cfg.Redis.Host = []string{}
 	cfg.Redis.Method = "standalone"

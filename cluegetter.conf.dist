@@ -123,6 +123,9 @@ archive-retention-header = 26
 archive-retention-message-result = 2
 archive-retention-message = 52
 
+# Internal message cache size in MB
+message-cache-size = 256
+
 [moduleGroup "spam"]
 module = 0.9 spamassassin
 module = 0.1 rspamd
