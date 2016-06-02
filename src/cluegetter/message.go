@@ -329,6 +329,10 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 		statusMsg = getDecidingResultWithMessage(results[messageTempFail]).message
 	}
 
+	if statusMsg == "" {
+		statusMsg = "Reason Unspecified"
+	}
+
 	for _, result := range flatResults {
 		for _, callback := range result.callbacks {
 			go func(callback *func(*Message, int), msg *Message, verdict int) {

@@ -220,6 +220,18 @@ address = "/var/run/clamav/clamd.ctl"
 # the message will be truncated.
 max-size = 10485760
 
+[contacts]
+# Sometimes global settings and access lists just don't cut it.
+# As such, you can import address books into Redis. And depending
+# if it's in a white- or blacklist ease up or tighten down
+# acceptance of a message.
+enabled = true
+
+whitelist-address-score = -2.5
+whitelist-domain-score = -0.85
+blacklist-address-score = 6
+blacklist-domain-score = 1
+
 [greylisting]
 # When the greylisting module is enabled, hosts that haven not been seen
 # before and that seem a little spammy are temporarily rejected until
