@@ -7,7 +7,6 @@
 //
 package main
 
-import ()
 import (
 	"fmt"
 	"gopkg.in/redis.v3"
@@ -75,9 +74,9 @@ func contactsGetResult(msg *Message, abort chan bool) *MessageCheckResult {
 			message: "This message was sent from an address that was put on a local blacklist " +
 				"by one of the recipients. Therefore, the message has been blocked.",
 			determinants: map[string]interface{}{
-				"list":     list,
-				"value":    value,
-				"template": tpl,
+				"list":  list,
+				"value": value,
+				"key":   tpl,
 			},
 		}
 	}
@@ -101,9 +100,9 @@ func contactsGetResult(msg *Message, abort chan bool) *MessageCheckResult {
 		suggestedAction: messagePermit,
 		score:           0,
 		determinants: map[string]interface{}{
-			"template": tpl,
-			"address":  msg.From.String(),
-			"domain":   msg.From.Domain(),
+			"key":     tpl,
+			"address": msg.From.String(),
+			"domain":  msg.From.Domain(),
 		},
 	}
 }

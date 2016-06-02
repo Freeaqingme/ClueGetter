@@ -329,7 +329,7 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 		statusMsg = getDecidingResultWithMessage(results[messageTempFail]).message
 	}
 
-	if statusMsg == "" {
+	if verdict != messagePermit && statusMsg == "" {
 		statusMsg = "Reason Unspecified"
 	}
 
