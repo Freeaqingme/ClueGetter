@@ -1,6 +1,5 @@
 # To update the references run: ./bin/glock save -n cluegetter
 # cmd github.com/cockroachdb/c-protobuf/cmd/protoc
-cmd github.com/golang/lint/golint
 cmd github.com/jteeuwen/go-bindata/go-bindata
 cmd github.com/robfig/glock
 github.com/gogo/protobuf 43a2e0b1c32252bfbbdf81f7faa7a88fb3fa4028
