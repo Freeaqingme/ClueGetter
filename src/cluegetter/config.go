@@ -84,6 +84,13 @@ type config struct {
 		Default_Score float64
 		Max_Size      int
 	}
+	Contacts struct {
+		Enabled                 bool
+		Whitelist_Address_Score float64
+		Whitelist_Domain_Score  float64
+		Blacklist_Address_Score float64
+		Blacklist_Domain_Score  float64
+	}
 	Greylisting struct {
 		Enabled        bool
 		Initial_Score  float64
@@ -141,6 +148,13 @@ type SessionConfig struct {
 		Default_Score float64
 		Max_Size      int
 	}
+	Contacts struct {
+		Enabled                 bool
+		Whitelist_Address_Score float64
+		Whitelist_Domain_Score  float64
+		Blacklist_Address_Score float64
+		Blacklist_Domain_Score  float64
+	}
 	Greylisting struct {
 		Enabled        bool
 		Initial_Score  float64
@@ -177,6 +191,14 @@ func (conf *config) sessionConfig() (sconf *SessionConfig) {
 	sconf.Clamav.Enabled = conf.Clamav.Enabled
 	sconf.Clamav.Default_Score = conf.Clamav.Default_Score
 	sconf.Clamav.Max_Size = conf.Clamav.Max_Size
+
+	sconf.Contacts.Enabled = conf.Contacts.Enabled
+	sconf.Contacts.Whitelist_Address_Score = conf.Contacts.Whitelist_Address_Score
+	sconf.Contacts.Whitelist_Domain_Score = conf.Contacts.Whitelist_Domain_Score
+	sconf.Contacts.Blacklist_Address_Score = conf.Contacts.Blacklist_Address_Score
+	sconf.Contacts.Blacklist_Domain_Score = conf.Contacts.Blacklist_Domain_Score
+	sconf.Contacts.Whitelist_Address_Score = conf.Contacts.Whitelist_Address_Score
+	sconf.Contacts.Whitelist_Domain_Score = conf.Contacts.Whitelist_Domain_Score
 
 	sconf.Greylisting.Enabled = conf.Greylisting.Enabled
 	sconf.Greylisting.Initial_Score = conf.Greylisting.Initial_Score
@@ -252,6 +274,11 @@ func DefaultConfig(cfg *config) {
 
 	cfg.Clamav.Default_Score = 10.0
 	cfg.Clamav.Max_Size = 10485760
+
+	cfg.Contacts.Whitelist_Address_Score = -2.5
+	cfg.Contacts.Whitelist_Domain_Score = -0.85
+	cfg.Contacts.Blacklist_Address_Score = 6
+	cfg.Contacts.Blacklist_Domain_Score = 1
 
 	cfg.Greylisting.Initial_Score = 7.0
 	cfg.Greylisting.Initial_Period = 5

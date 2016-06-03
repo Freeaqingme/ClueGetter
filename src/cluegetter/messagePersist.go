@@ -79,12 +79,6 @@ func messagePersistProtoBuf(protoBuf []byte) {
 		panic("unmarshaling error: " + err.Error())
 	}
 
-	/*	// Not sure why, but some times it's MaxInt64 when unset
-		sess := msg.Session
-		if sess.TimeEnd == 18446744011573954816 {
-			sess.TimeEnd = 0
-		}*/
-
 	messagePersist(msg)
 }
 
