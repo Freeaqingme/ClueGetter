@@ -1,12 +1,12 @@
 package address
 
 import (
-	"strings"
 	"encoding/json"
+	"strings"
 )
 
 type Address struct {
-	local string
+	local  string
 	domain string
 }
 
@@ -29,8 +29,8 @@ func (a *Address) String() string {
 func (a *Address) MarshalJSON() ([]byte, error) {
 	type Alias Address
 	return json.Marshal(&struct {
-		Local string
-		Domain string
+		Local   string
+		Domain  string
 		Address string
 	}{
 		a.Local(),
@@ -38,7 +38,6 @@ func (a *Address) MarshalJSON() ([]byte, error) {
 		a.String(),
 	})
 }
-
 
 func FromString(address string) *Address {
 	a := &Address{}

@@ -10,6 +10,7 @@ package main
 import (
 	"fmt"
 	"gopkg.in/redis.v3"
+	"strings"
 )
 
 func init() {
@@ -65,7 +66,9 @@ func contactsGetResult(msg *Message, abort chan bool) *MessageCheckResult {
 		}
 	}
 
-	tpl := fmt.Sprintf("cluegetter-%d-contacts-%%s-%%s-rcpt-domain-%s", instance, msg.Rcpt[0].Domain())
+	tplRcptDomain := fmt.Sprintf("cluegetter-%d-contacts-%%s-%%s-rcpt-domain-%s", instance, msg.Rcpt[0].Domain())
+	tplRcptAddress := fmt.Sprintf("cluegetter-%d-contacts-%%s-%%s-rcpt-address-%s", instance, msg.Rcpt[0].String())
+	tpl := []string{tplRcptDomain, tplRcptAddress}
 	ret := func(score float64, list, value string) *MessageCheckResult {
 		return &MessageCheckResult{
 			module:          "contacts",
@@ -81,17 +84,25 @@ func contactsGetResult(msg *Message, abort chan bool) *MessageCheckResult {
 		}
 	}
 
+	keys := func(tpls []string, list, scope string) []string {
+		out := []string{}
+		for _, tpl := range tpls {
+			out = append(out, fmt.Sprintf(tpl, strings.ToLower(list), strings.ToLower(scope)))
+		}
+		return out
+	}
+
 	check := contactsAppearsOnList
-	if check(fmt.Sprintf(tpl, "whitelist", "address"), msg.From.String()) {
+	if check(keys(tpl, "whitelist", "address"), msg.From.String(), true) {
 		return ret(conf.Whitelist_Address_Score, "whitelist", msg.From.String())
 	}
-	if check(fmt.Sprintf(tpl, "blacklist", "address"), msg.From.String()) {
+	if check(keys(tpl, "blacklist", "address"), msg.From.String(), true) {
 		return ret(conf.Blacklist_Address_Score, "blacklist", msg.From.String())
 	}
-	if check(fmt.Sprintf(tpl, "whitelist", "domain"), msg.From.Domain()) {
+	if check(keys(tpl, "whitelist", "domain"), msg.From.Domain(), true) {
 		return ret(conf.Whitelist_Domain_Score, "whitelist", msg.From.Domain())
 	}
-	if check(fmt.Sprintf(tpl, "blacklist", "domain"), msg.From.Domain()) {
+	if check(keys(tpl, "blacklist", "domain"), msg.From.Domain(), true) {
 		return ret(conf.Blacklist_Domain_Score, "blacklist", msg.From.Domain())
 	}
 
@@ -107,20 +118,28 @@ func contactsGetResult(msg *Message, abort chan bool) *MessageCheckResult {
 	}
 }
 
-func contactsAppearsOnList(list, entry string) bool {
-	script := redis.NewScript(`
-		local elements = redis.call('lrange', KEYS[1], 0, -1 )
-		for i=1,#elements do
-			if elements[i] == ARGV[1] then
-				return 1
+func contactsAppearsOnList(keys []string, entry string, retry bool) bool {
+	scriptStr := `
+		for x=1,#KEYS do
+			local elements = redis.call('lrange', KEYS[x], 0, -1 )
+			for i=1,#elements do
+				if elements[i] == ARGV[1] then
+					return 1
+				end
 			end
 		end
 
 		return 0
-	`)
+	`
+	script := redis.NewScript(scriptStr)
 
-	n, err := script.EvalSha(redisClient, []string{list}, []string{entry}).Result()
+	n, err := script.EvalSha(redisClient, keys, []string{strings.ToLower(entry)}).Result()
 	if err != nil {
+		if retry {
+			Log.Notice("Redis error in contactsAppearsOnList(). Retrying..: %s", err.Error())
+			script.Load(redisClient)
+			return contactsAppearsOnList(keys, entry, false)
+		}
 		Log.Error("Redis error in contactsAppearsOnList(): %s", err.Error())
 		return false
 	}
