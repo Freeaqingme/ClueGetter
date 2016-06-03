@@ -66,9 +66,11 @@ func contactsGetResult(msg *Message, abort chan bool) *MessageCheckResult {
 		}
 	}
 
-	tplRcptDomain := fmt.Sprintf("cluegetter-%d-contacts-%%s-%%s-rcpt-domain-%s", instance, msg.Rcpt[0].Domain())
-	tplRcptAddress := fmt.Sprintf("cluegetter-%d-contacts-%%s-%%s-rcpt-address-%s", instance, msg.Rcpt[0].String())
-	tpl := []string{tplRcptDomain, tplRcptAddress}
+	tpl := []string{
+		fmt.Sprintf("cluegetter-%d-contacts-%%s-%%s-rcpt-domain-%s", instance, msg.Rcpt[0].Domain()),
+		fmt.Sprintf("cluegetter-%d-contacts-%%s-%%s-rcpt-address-%s", instance, msg.Rcpt[0].String()),
+	}
+
 	ret := func(score float64, list, value string) *MessageCheckResult {
 		return &MessageCheckResult{
 			module:          "contacts",
