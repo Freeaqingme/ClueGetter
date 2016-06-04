@@ -25,6 +25,7 @@ github.com/pborman/uuid dee7705ef7b324f27ceb85a121c61f2c2e8ce988
 github.com/scalingdata/gcfg 37aabad69cfd3d20b8390d902a8b10e245c615ff
 github.com/yuin/gopher-lua e5faab4db06a81efb60d8e16c1d205e1d93736a9
 gopkg.in/bsm/ratelimit.v1 f14ad9c78b155f69b480cfa41cb655259baac260
+gopkg.in/cheggaaa/pb.v1 8808370bf63524e115da1371ba42bce6739f3a6b
 gopkg.in/inf.v0 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 gopkg.in/olivere/elastic.v3 aa80db5ac257057adde4efdafb4aad58ef495acc
 gopkg.in/redis.v3 d2ae7d870764d131887fa31a743bb50abbcf9384

@@ -26,6 +26,7 @@ type milterSession struct {
 	DateConnect    time.Time
 	DateDisconnect time.Time
 	Messages       []*Message
+	Instance       uint
 
 	SaslUsername  string
 	SaslSender    string
@@ -311,7 +312,7 @@ func (s *milterSession) persist() {
 	}
 
 	milterSessionPersistChan <- protoMsg
-	milterSessionPersistQueue.Enqueue(s)
+	milterSessionPersistQueue.Enqueue(s) // TODO: Log if ring buffer is (near) full
 }
 
 func (sess *milterSession) getProtoBufStruct() *Proto_Session {

@@ -132,6 +132,7 @@ func (milter *milter) Connect(ctx uintptr, hostname string, ip net.IP) (sfsistat
 	sess := &milterSession{
 		id:          milterGetNewSessionId(),
 		DateConnect: time.Now(),
+		Instance:    instance,
 		config:      Config.sessionConfig(),
 	}
 	sess.Hostname = hostname
