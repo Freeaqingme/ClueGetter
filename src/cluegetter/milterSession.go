@@ -11,19 +11,22 @@ import (
 	"bytes"
 	"database/sql"
 	"fmt"
-	"github.com/golang/protobuf/proto"
 	"net"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/Freeaqingme/golang-ring"
+	"github.com/golang/protobuf/proto"
 )
 
 type milterSession struct {
-	id        [16]byte
-	timeStart time.Time
-	timeEnd   time.Time
-	messages  []*Message
+	id             [16]byte
+	DateConnect    time.Time
+	DateDisconnect time.Time
+	Messages       []*Message
+	Instance       uint
 
 	SaslUsername  string
 	SaslSender    string
@@ -40,8 +43,7 @@ type milterSession struct {
 	MtaHostName   string
 	MtaDaemonName string
 
-	config    *SessionConfig
-	persisted bool
+	config *SessionConfig
 }
 
 type milterSessionWhitelistRange struct {
@@ -66,7 +68,8 @@ var milterCluegetterClientInsertStmt = *new(*sql.Stmt)
 var milterSessionWhitelist []*milterSessionWhitelistRange
 var milterSessionClients milterSessionCluegetterClients
 
-var milterSessionPersistQueue = make(chan []byte, 100)
+var milterSessionPersistChan = make(chan []byte, 100)
+var milterSessionPersistQueue ring.Ring
 
 func milterSessionPrepStmt() {
 	stmt, err := Rdbms.Prepare(`
@@ -97,12 +100,12 @@ func (s *milterSession) getNewMessage() *Message {
 	msg := &Message{}
 	msg.session = s
 
-	s.messages = append(s.messages, msg)
+	s.Messages = append(s.Messages, msg)
 	return msg
 }
 
 func (s *milterSession) getLastMessage() *Message {
-	return s.messages[len(s.messages)-1]
+	return s.Messages[len(s.Messages)-1]
 }
 
 func (s *milterSession) getId() [16]byte {
@@ -205,10 +208,50 @@ func milterSessionStart() {
 
 	messagePersistQueue = make(chan []byte)
 	in := make(chan []byte)
-	redisListSubscribe("cluegetter-"+strconv.Itoa(int(instance))+"-session-persist", milterSessionPersistQueue, in)
+	redisListSubscribe("cluegetter-"+strconv.Itoa(int(instance))+"-session-persist", milterSessionPersistChan, in)
 	go milterSessionPersistHandleQueue(in)
 
+	milterSessionPersistQueue = ring.Ring{}
+	milterSessionPersistQueue.SetCapacity(256)
+
+	go func() {
+		ticker := time.NewTicker(60 * time.Second)
+		for {
+			select {
+			case <-ticker.C:
+				Log.Info("milterSessionPersistQueue has %d items",
+					milterSessionPersistQueue.ContentSize(),
+				)
+			}
+		}
+	}()
+
+	go func() {
+		ticker := time.NewTicker(1 * time.Second)
+		for {
+			select {
+			case <-ticker.C:
+				milterSessionProcessQueue()
+			}
+		}
+	}()
+
 	Log.Info("Milter Session module started successfully")
+}
+
+func milterSessionProcessQueue() {
+	for {
+		queueItem := milterSessionPersistQueue.Dequeue()
+		if queueItem == nil {
+			break
+		}
+
+		go func(sess *milterSession) {
+			cluegetterRecover("esSaveSession")
+			esSaveSession(sess)
+		}(queueItem.(*milterSession))
+	}
+
 }
 
 func milterSessionPersistHandleQueue(queue chan []byte) {
@@ -268,21 +311,22 @@ func (s *milterSession) persist() {
 		panic("marshaling error: " + err.Error())
 	}
 
-	milterSessionPersistQueue <- protoMsg
+	milterSessionPersistChan <- protoMsg
+	milterSessionPersistQueue.Enqueue(s) // TODO: Log if ring buffer is (near) full
 }
 
 func (sess *milterSession) getProtoBufStruct() *Proto_Session {
-	timeStart := uint64(sess.timeStart.Unix())
-	var timeEnd uint64
-	if &sess.timeEnd != nil {
-		timeEnd = uint64(sess.timeEnd.Unix())
+	timeStart := sess.DateConnect.Unix()
+	var timeEnd int64
+	if &sess.DateDisconnect != nil {
+		timeEnd = sess.DateDisconnect.Unix()
 	}
 	instanceId := uint64(instance)
 	return &Proto_Session{
 		InstanceId:    instanceId,
 		Id:            sess.id[:],
-		TimeStart:     timeStart,
-		TimeEnd:       timeEnd,
+		TimeStart:     uint64(timeStart),
+		TimeEnd:       uint64(timeEnd),
 		SaslUsername:  sess.SaslUsername,
 		SaslSender:    sess.SaslSender,
 		SaslMethod:    sess.SaslMethod,

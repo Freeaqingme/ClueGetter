@@ -130,6 +130,14 @@ message-cache-size = 256
 module = 0.9 spamassassin
 module = 0.1 rspamd
 
+[elasticsearch]
+# To improve searching and do trend analysis you can opt to index
+# everything in ElasticSearch.
+enabled = false
+
+# It's possible to specify multiple URL's by simply repeating them
+url = "http://127.0.0.1:9200"
+
 [http]
 # Cluegetter can provide an HTTP interface that displays some runtime
 # statistics and errors, and allows to search for processed messages.
@@ -211,6 +219,18 @@ address = "/var/run/clamav/clamd.ctl"
 # The max message size (in bytes) to send to ClamAv. If it's any larger
 # the message will be truncated.
 max-size = 10485760
+
+[contacts]
+# Sometimes global settings and access lists just don't cut it.
+# As such, you can import address books into Redis. And depending
+# if it's in a white- or blacklist ease up or tighten down
+# acceptance of a message.
+enabled = true
+
+whitelist-address-score = -2.5
+whitelist-domain-score = -0.85
+blacklist-address-score = 6
+blacklist-domain-score = 1
 
 [greylisting]
 # When the greylisting module is enabled, hosts that haven not been seen

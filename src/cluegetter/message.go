@@ -8,6 +8,7 @@
 package main
 
 import (
+	"cluegetter/address"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -27,11 +28,23 @@ const (
 type Message struct {
 	session *milterSession
 
-	QueueId string
-	From    string
-	Rcpt    []string
-	Headers []MessageHeader
-	Body    []byte
+	QueueId  string
+	From     *address.Address
+	Rcpt     []*address.Address
+	Headers  []MessageHeader
+	Body     []byte `json:"-"`
+	Date     time.Time
+	BodySize int
+	BodyHash string
+
+	Verdict                int
+	VerdictMsg             string
+	RejectScore            float64
+	RejectScoreThreshold   float64
+	TempfailScore          float64
+	TempfailScoreThreshold float64
+
+	CheckResults []*MessageCheckResult
 
 	injectMessageId string
 }
@@ -61,6 +74,31 @@ type MessageCheckResult struct {
 	duration        time.Duration
 	weightedScore   float64
 	callbacks       []*func(*Message, int)
+}
+
+func (cr *MessageCheckResult) MarshalJSON() ([]byte, error) {
+	type Alias milterSession
+
+	determinants, _ := json.Marshal(cr.determinants)
+	out := &struct {
+		Module        string
+		Verdict       int
+		Message       string
+		Score         float64
+		Determinants  string
+		Duration      time.Duration
+		WeightedScore float64
+	}{
+		Module:        cr.module,
+		Verdict:       cr.suggestedAction,
+		Message:       cr.message,
+		Score:         cr.score,
+		Determinants:  string(determinants),
+		Duration:      cr.duration,
+		WeightedScore: cr.weightedScore,
+	}
+
+	return json.Marshal(out)
 }
 
 func (r *MessageCheckResult) Module() string {
@@ -255,25 +293,6 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 
 	errorCount = errorCount - messageWeighResults(flatResults)
 
-	checkResults := make([]*Proto_Message_CheckResult, 0)
-	for _, result := range flatResults {
-		determinants, _ := json.Marshal(result.determinants)
-
-		duration := result.duration.Seconds()
-		verdict := Proto_Message_Verdict(result.suggestedAction)
-		protoStruct := &Proto_Message_CheckResult{
-			MessageId:     msg.QueueId,
-			Module:        result.module,
-			Verdict:       verdict,
-			Score:         result.score,
-			WeightedScore: result.weightedScore,
-			Duration:      duration,
-			Determinants:  determinants,
-		}
-
-		checkResults = append(checkResults, protoStruct)
-	}
-
 	messageEnsureHasMessageId(msg)
 
 	getDecidingResultWithMessage := func(results []*MessageCheckResult) *MessageCheckResult {
@@ -310,6 +329,10 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 		statusMsg = getDecidingResultWithMessage(results[messageTempFail]).message
 	}
 
+	if verdict != messagePermit && statusMsg == "" {
+		statusMsg = "Reason Unspecified"
+	}
+
 	for _, result := range flatResults {
 		for _, callback := range result.callbacks {
 			go func(callback *func(*Message, int), msg *Message, verdict int) {
@@ -328,7 +351,15 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 		}
 	}
 
-	messageSave(msg, checkResults, verdict, statusMsg, totalScores[messageReject], totalScores[messageTempFail])
+	msg.Verdict = verdict
+	msg.VerdictMsg = statusMsg
+	msg.RejectScore = totalScores[messageReject]
+	msg.RejectScoreThreshold = sconf.ClueGetter.Message_Reject_Score
+	msg.TempfailScore = totalScores[messageTempFail]
+	msg.TempfailScoreThreshold = sconf.ClueGetter.Message_Tempfail_Score
+	msg.CheckResults = flatResults
+
+	messageSave(msg)
 	return verdict, statusMsg, results
 }
 
@@ -425,8 +456,25 @@ func messageGetResults(msg *Message, done chan bool) chan *MessageCheckResult {
 	return out
 }
 
-func messageSave(msg *Message, checkResults []*Proto_Message_CheckResult, verdict int,
-	verdictMsg string, rejectScore float64, tempfailScore float64) {
+func messageSave(msg *Message) {
+	checkResults := make([]*Proto_Message_CheckResult, 0)
+	for _, result := range msg.CheckResults {
+		determinants, _ := json.Marshal(result.determinants)
+
+		duration := result.duration.Seconds()
+		verdict := Proto_Message_Verdict(result.suggestedAction)
+		protoStruct := &Proto_Message_CheckResult{
+			MessageId:     msg.QueueId,
+			Module:        result.module,
+			Verdict:       verdict,
+			Score:         result.score,
+			WeightedScore: result.weightedScore,
+			Duration:      duration,
+			Determinants:  determinants,
+		}
+
+		checkResults = append(checkResults, protoStruct)
+	}
 
 	headers := make([]*Proto_Message_Header, len(msg.Headers))
 	for k, v := range msg.Headers {
@@ -435,19 +483,24 @@ func messageSave(msg *Message, checkResults []*Proto_Message_CheckResult, verdic
 		headers[k] = &Proto_Message_Header{Key: headerKey, Value: headerValue}
 	}
 
-	verdictEnum := Proto_Message_Verdict(verdict)
+	rcpt := []string{}
+	for _, v := range msg.Rcpt {
+		rcpt = append(rcpt, v.String())
+	}
+
+	verdictEnum := Proto_Message_Verdict(msg.Verdict)
 	protoStruct := &Proto_Message{
 		Id:                     msg.QueueId,
-		From:                   msg.From,
-		Rcpt:                   msg.Rcpt,
+		From:                   msg.From.String(),
+		Rcpt:                   rcpt,
 		Headers:                headers,
 		Body:                   msg.Body,
 		Verdict:                verdictEnum,
-		VerdictMsg:             verdictMsg,
-		RejectScore:            rejectScore,
-		RejectScoreThreshold:   msg.session.config.ClueGetter.Message_Reject_Score,
-		TempfailScore:          tempfailScore,
-		TempfailScoreThreshold: msg.session.config.ClueGetter.Message_Tempfail_Score,
+		VerdictMsg:             msg.VerdictMsg,
+		RejectScore:            msg.RejectScore,
+		RejectScoreThreshold:   msg.RejectScoreThreshold,
+		TempfailScore:          msg.TempfailScore,
+		TempfailScoreThreshold: msg.TempfailScoreThreshold,
 		CheckResults:           checkResults,
 		Session:                msg.session.getProtoBufStruct(),
 	}
@@ -588,6 +641,7 @@ func messageGenerateMessageId(queueId, host string) string {
 		time.Now().Unix(), queueId, hostname)
 }
 
+// Deprecated: Use package address instead
 func messageParseAddress(address string, singleIsUser bool) (local, domain string) {
 	if strings.Index(address, "@") != -1 {
 		local = strings.SplitN(address, "@", 2)[0]

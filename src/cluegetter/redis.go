@@ -40,6 +40,11 @@ type RedisClientBase interface {
 	ZAdd(key string, members ...redis.Z) *redis.IntCmd
 	ZCount(key, min, max string) *redis.IntCmd
 	ZRemRangeByScore(key, min, max string) *redis.IntCmd
+
+	Eval(string, []string, []string) *redis.Cmd
+	EvalSha(sha1 string, keys []string, args []string) *redis.Cmd
+	ScriptExists(scripts ...string) *redis.BoolSliceCmd
+	ScriptLoad(script string) *redis.StringCmd
 }
 
 type RedisClient interface {

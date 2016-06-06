@@ -1,5 +1,10 @@
 # Change Log
 
+### 2016-06-06 Version 0.5.8
+* Experimental ElasticSearch Support
+* New Feature: Contacts module - Whitelist acquaintances from e.g. Webmail
+
+
 ### 2016-05-23 Version 0.5.7
 * Change: Don't use allegro/bigcache as for some reason it's leaking huge amounts of memory
 

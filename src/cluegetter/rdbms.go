@@ -9,7 +9,10 @@ package main
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"fmt"
+	"time"
+
 	_ "github.com/Freeaqingme/golang-sql-driver-mysql"
 )
 
@@ -56,4 +59,35 @@ func rdbmsGetDsn(display bool) string {
 	return fmt.Sprintf("%s:%s@%s(%s)/%s?%s",
 		cfg.Rdbms_User, password, cfg.Rdbms_Protocol,
 		cfg.Rdbms_Address, cfg.Rdbms_Database, dsn_options)
+}
+
+func rdbmsRowsInTable(table string) (count int) {
+	err := Rdbms.QueryRow(`
+		SELECT TABLE_ROWS FROM information_schema.tables
+			WHERE TABLE_SCHEMA = database() AND TABLE_NAME = ?
+	`, table).Scan(&count)
+	if err != nil {
+		Log.Fatal(err)
+	}
+
+	return count
+}
+
+type NullTime struct {
+	time.Time
+	Valid bool // Valid is true if Time is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (nt *NullTime) Scan(value interface{}) error {
+	nt.Time, nt.Valid = value.(time.Time)
+	return nil
+}
+
+// Value implements the driver Valuer interface.
+func (nt NullTime) Value() (driver.Value, error) {
+	if !nt.Valid {
+		return nil, nil
+	}
+	return nt.Time, nil
 }

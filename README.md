@@ -25,6 +25,8 @@ Features:
 * MailQueue - Display an aggregate of all mail queues that reside in your ClueGetter cluster.
   Filter based on instance, recipient(/domain), sender(/domain) and delete or requeue selections
   of items in the queue.
+* Contacts - Import address books (e.g. from RoundCube) so these addresses and/or domains can be used
+  to (partially) blacklist messages from those addresses or domains.
 
 Planned modules:
 * GeoIP - Detect anomalies in the countries used to send mail from

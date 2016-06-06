@@ -327,7 +327,6 @@ func messagePersist(msg *Proto_Message) {
 	if Config.ClueGetter.Archive_Retention_Header > 0 {
 		messageSaveHeaders(msg)
 	}
-
 }
 
 func messageSaveCheckResults(msg *Proto_Message) {
