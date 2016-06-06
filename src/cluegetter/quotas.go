@@ -53,12 +53,14 @@ var QuotaGetAllRegexesStmt = *new(*sql.Stmt)
 var quotasRegexes []*quotasRegex
 var quotasRegexesLock *sync.RWMutex
 
-const QUOTA_FACTOR_SENDER = "sender"
-const QUOTA_FACTOR_SENDER_DOMAIN = "sender_domain"
-const QUOTA_FACTOR_RECIPIENT = "recipient"
-const QUOTA_FACTOR_RECIPIENT_DOMAIN = "recipient_domain"
-const QUOTA_FACTOR_CLIENT_ADDRESS = "client_address"
-const QUOTA_FACTOR_SASL_USERNAME = "sasl_username"
+const (
+	QUOTA_FACTOR_SENDER           = "sender"
+	QUOTA_FACTOR_SENDER_DOMAIN    = "sender_domain"
+	QUOTA_FACTOR_RECIPIENT        = "recipient"
+	QUOTA_FACTOR_RECIPIENT_DOMAIN = "recipient_domain"
+	QUOTA_FACTOR_CLIENT_ADDRESS   = "client_address"
+	QUOTA_FACTOR_SASL_USERNAME    = "sasl_username"
+)
 
 func init() {
 	enable := func() bool { return Config.Quotas.Enabled }
@@ -471,8 +473,8 @@ func quotasGetMsgFactors(msg *Message) map[string][]string {
 	}
 	if Config.Quotas.Account_Recipient {
 		rcpts := make([]string, len(msg.Rcpt))
-		for _, v := range msg.Rcpt {
-			rcpts = append(rcpts, v.String())
+		for k, v := range msg.Rcpt {
+			rcpts[k] = v.String()
 		}
 		factors[QUOTA_FACTOR_RECIPIENT] = rcpts
 	}
