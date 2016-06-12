@@ -94,6 +94,7 @@ whitelist = "::1"
 # %{hostname}       hostname
 # %{rejectScore}    The reject score
 # %{spamFlag}       YES/NO - Is higher than spam flag score, or not.
+# %{recipient}      The recipient(s), e.g. useful for X-Original-To
 #
 # It's possible to specify flags per header. Right now only [U]
 # (unique) is supported. It ensures that all other headers with that
@@ -107,6 +108,7 @@ add-header = X-Scanned: ClueGetter at %{hostname}
 add-header = [U] X-Report-Abuse-To: abuse@example.com
 add-header = [U] X-Spam-Score: %{rejectScore}
 add-header = [U] X-Spam-Flag: %{spamFlag}
+add-header = [U] X-Original-To: %{recipient}
 
 # Sometimes an email does not have a message-id header. Because it's a
 # convenient way to track messages across MTAs.
