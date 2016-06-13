@@ -1,5 +1,8 @@
 # Change Log
 
+### 2016-06-06 Version 0.5.9
+* Bugfix: Don't include for each message a tally for recipient '' in quota module
+
 ### 2016-06-06 Version 0.5.8
 * Experimental ElasticSearch Support
 * New Feature: Contacts module - Whitelist acquaintances from e.g. Webmail

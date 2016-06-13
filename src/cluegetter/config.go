@@ -146,9 +146,6 @@ type SessionConfig struct {
 		Breaker_Score             float64
 		Insert_Missing_Message_Id bool
 	}
-	Srs struct {
-		Enabled bool
-	}
 	Clamav struct {
 		Enabled       bool
 		Default_Score float64
@@ -193,8 +190,6 @@ func (conf *config) sessionConfig() (sconf *SessionConfig) {
 	sconf.ClueGetter.Message_Spamflag_Score = conf.ClueGetter.Message_Spamflag_Score
 	sconf.ClueGetter.Breaker_Score = conf.ClueGetter.Breaker_Score
 	sconf.ClueGetter.Insert_Missing_Message_Id = conf.ClueGetter.Insert_Missing_Message_Id
-
-	sconf.Srs.Enabled = conf.Srs.Enabled
 
 	sconf.Clamav.Enabled = conf.Clamav.Enabled
 	sconf.Clamav.Default_Score = conf.Clamav.Default_Score

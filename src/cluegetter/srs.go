@@ -13,11 +13,10 @@ import (
 
 	"cluegetter/address"
 	"regexp"
+	"time"
 )
 
 var srsMatch = regexp.MustCompile(`^(?i)SRS[0-9]+=`)
-
-// Todo: Validate in envRcpt
 
 func init() {
 	enable := func() bool { return Config.Srs.Enabled }
@@ -34,14 +33,21 @@ func srsMilterCheck(msg *Message, abort chan bool) *MessageCheckResult {
 	from := ""
 	srsIn := srsGetInboundSrsAddresses(msg)
 
+	if len(srsIn) > 0 && len(msg.Rcpt) > 1 {
+		Log.Notice("More than 1 recipient including an SRS recipient, that's weird?")
+	}
+
+	var mapped map[string]string
 	if len(srsIn) > 0 {
-		
+		mapped = srsSwapRecipients(msg, srsIn)
 	} else {
 		from = srsGetFromAddress(msg)
 		milterChangeFrom(msg.session.milterCtx, from)
+		go func() {
+			cluegetterRecover("srsPersist")
+			srsPersist(msg, from)
+		}()
 	}
-	fmt.Println(srsIn)
-
 
 	return &MessageCheckResult{
 		module:          "srs",
@@ -50,14 +56,51 @@ func srsMilterCheck(msg *Message, abort chan bool) *MessageCheckResult {
 		determinants: map[string]interface{}{
 			"from":         from,
 			"is-forwarded": srsIsForwarded(msg),
+			"mapped":       mapped,
 		},
 	}
+}
+
+func srsIsValidRecipient(address *address.Address) bool {
+	return srsLookupAddress(address) != ""
+}
+
+func srsSwapRecipients(msg *Message, srsAddresses []address.Address) map[string]string {
+	out := make(map[string]string, 0)
+	for _, srsAddress := range srsAddresses {
+		out[srsAddress.String()] = srsLookupAddress(&srsAddress)
+
+		milterDelRcpt(msg.session.milterCtx, srsAddress.String())
+		milterAddRcpt(msg.session.milterCtx, out[srsAddress.String()])
+	}
+
+	return out
+}
+
+func srsLookupAddress(address *address.Address) string {
+	key := strings.ToLower(fmt.Sprintf("cluegetter--srs-entry-%s", address.String()))
+	out, _ := redisClient.Get(key).Result()
+	return out
+}
+
+// Todo: Also persist in DB?
+func srsPersist(msg *Message, from string) {
+	key := strings.ToLower(fmt.Sprintf("cluegetter--srs-entry-%s", from))
+	redisClient.Set(key, msg.From.String(), 7*24*time.Hour)
+}
+
+func srsIsSrsAddress(address *address.Address) bool {
+	if ! Config.Srs.Enabled {
+		return false // If SRS is not enabled, nothing is an SRS address
+	}
+
+	return srsMatch.MatchString(address.Local())
 }
 
 func srsGetInboundSrsAddresses(msg *Message) []address.Address {
 	out := make([]address.Address, 0)
 	for _, rcpt := range msg.Rcpt {
-		if srsMatch.MatchString(rcpt.Local()) {
+		if srsIsSrsAddress(rcpt) {
 			out = append(out, *rcpt)
 		}
 	}
@@ -65,9 +108,8 @@ func srsGetInboundSrsAddresses(msg *Message) []address.Address {
 	return out
 }
 
-// Also invoked from milter.Eom()
 func srsGetFromAddress(msg *Message) string {
-	if !Config.Srs.Enabled || !msg.session.config.Srs.Enabled {
+	if !Config.Srs.Enabled {
 		return ""
 	}
 
