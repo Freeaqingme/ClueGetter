@@ -360,6 +360,10 @@ func milterHandleError(ctx uintptr, sfsistat *int8) {
 	return
 }
 
+func milterChangeFrom(ctx uintptr, from string) {
+	m.ChgFrom(ctx, from, "")
+}
+
 func milterGetSession(ctx uintptr, keep bool, returnNil bool) *milterSession {
 	var u [16]byte
 	res := m.GetPriv(ctx, &u)
@@ -383,6 +387,7 @@ func milterGetSession(ctx uintptr, keep bool, returnNil bool) *milterSession {
 		panic(fmt.Sprintf("Session %d could not be found in milterDataIndex", u))
 	}
 
+	out.milterCtx = ctx
 	return out
 }
 

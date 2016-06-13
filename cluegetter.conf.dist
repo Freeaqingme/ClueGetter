@@ -209,6 +209,9 @@ spool-dir = /var/spool/postfix
 # postcat-executable = /usr/sbin/postcat
 # postsuper-executable = /usr/sbin/postsuper
 
+[srs]
+enabled = true
+
 [clamav]
 # Scan for viruses, malware, etc through ClamAV
 
