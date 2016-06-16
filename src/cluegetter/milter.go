@@ -399,7 +399,9 @@ func milterGetSession(ctx uintptr, keep bool, returnNil bool) *milterSession {
 		panic(fmt.Sprintf("Session %d could not be found in milterDataIndex", u))
 	}
 
-	out.milterCtx = ctx
+	if out != nil {
+		out.milterCtx = ctx
+	}
 	return out
 }
 
