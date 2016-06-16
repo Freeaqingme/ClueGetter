@@ -90,7 +90,7 @@ func srsPersist(msg *Message, from string) {
 }
 
 func srsIsSrsAddress(address *address.Address) bool {
-	if ! Config.Srs.Enabled {
+	if !Config.Srs.Enabled {
 		return false // If SRS is not enabled, nothing is an SRS address
 	}
 
@@ -130,7 +130,7 @@ func srsGetFromAddress(msg *Message) string {
 func srsGetRewriteDomain(msg *Message) string {
 	domains := make([]string, 0)
 	for _, hdr := range msg.Headers {
-		if strings.EqualFold(hdr.Key, "x-original-to") {
+		if strings.EqualFold(hdr.Key, Config.Srs.Recipient_Header) {
 			address := address.FromString(strings.ToLower(hdr.Value))
 			domains = append(domains, address.Domain())
 		}
@@ -159,7 +159,7 @@ func srsGetRewriteDomain(msg *Message) string {
 }
 
 // Checks if the message was forwarded by comparing the recipient list
-// to the X-Original-To headers. If a recipient does not show in the
+// to the Config.Srs.Recipient_Header headers. If a recipient does not show in the
 // headers, it's safe to say the message was forwarded
 func srsIsForwarded(msg *Message) bool {
 	for _, rcpt := range msg.Rcpt {
@@ -167,7 +167,7 @@ func srsIsForwarded(msg *Message) bool {
 		match := false
 		count := 0
 		for _, hdr := range msg.Headers {
-			if strings.EqualFold(hdr.Key, "x-original-to") {
+			if strings.EqualFold(hdr.Key, Config.Srs.Recipient_Header) {
 				count++
 				if strings.EqualFold(hdr.Value, rcpt.String()) {
 
@@ -177,7 +177,7 @@ func srsIsForwarded(msg *Message) bool {
 			}
 		}
 
-		if count == 0 { // No x-original-to headers
+		if count == 0 { // No Config.Srs.Recipient_Header headers
 			return false
 		}
 

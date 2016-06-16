@@ -79,7 +79,8 @@ type config struct {
 		PostcatExecutable   string
 	}
 	Srs struct {
-		Enabled bool
+		Enabled          bool
+		Recipient_Header string
 	}
 	Clamav struct {
 		Enabled       bool
@@ -274,6 +275,8 @@ func DefaultConfig(cfg *config) {
 
 	cfg.MailQueue.Spool_Dir = "/var/spool/postfix"
 	cfg.MailQueue.Update_Interval = 5
+
+	cfg.Srs.Recipient_Header = "X-Original-To"
 
 	cfg.Clamav.Default_Score = 10.0
 	cfg.Clamav.Max_Size = 10485760
