@@ -209,6 +209,19 @@ spool-dir = /var/spool/postfix
 # postcat-executable = /usr/sbin/postcat
 # postsuper-executable = /usr/sbin/postsuper
 
+[srs]
+# Enable SRS. Currently only works in a situation where
+# MX and outbound services are situated on different
+# servers or postfix and cluegetter instances. The
+# inbound MX servers should add '[U] X-Original-To'
+# headers that can be used by the outbound machines
+# to determine which addresses were forwarded.
+
+enabled = false
+
+# Header name to use to derive original recipients
+recipient-header = X-Original-To
+
 [clamav]
 # Scan for viruses, malware, etc through ClamAV
 

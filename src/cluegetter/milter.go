@@ -199,12 +199,16 @@ func (milter *milter) EnvRcpt(ctx uintptr, rcpt []string) (sfsistat int8) {
 
 	d := milterGetSession(ctx, true, false)
 	msg := d.getLastMessage()
-	msg.Rcpt = append(msg.Rcpt,
-		address.FromString(strings.ToLower(strings.Trim(rcpt[0], "<>"))),
-	)
-
-	StatsCounters["MilterCallbackEnvRcpt"].increase(1)
 	Log.Debug("%s Milter.EnvRcpt() called: rcpt = %s", d.milterGetDisplayId(), fmt.Sprint(rcpt))
+
+	address := address.FromString(strings.ToLower(strings.Trim(rcpt[0], "<>")))
+	if srsIsSrsAddress(address) && !srsIsValidRecipient(address) {
+		Log.Debug("%s Milter.EnvRcpt() Not a valid SRS address: rcpt = %s", d.milterGetDisplayId(), fmt.Sprint(rcpt))
+		return m.Reject
+	}
+
+	msg.Rcpt = append(msg.Rcpt, address)
+
 	return
 }
 
@@ -360,6 +364,18 @@ func milterHandleError(ctx uintptr, sfsistat *int8) {
 	return
 }
 
+func milterChangeFrom(ctx uintptr, from string) {
+	m.ChgFrom(ctx, from, "")
+}
+
+func milterAddRcpt(ctx uintptr, rcpt string) int {
+	return m.AddRcpt(ctx, rcpt)
+}
+
+func milterDelRcpt(ctx uintptr, rcpt string) int {
+	return m.DelRcpt(ctx, rcpt)
+}
+
 func milterGetSession(ctx uintptr, keep bool, returnNil bool) *milterSession {
 	var u [16]byte
 	res := m.GetPriv(ctx, &u)
@@ -383,6 +399,7 @@ func milterGetSession(ctx uintptr, keep bool, returnNil bool) *milterSession {
 		panic(fmt.Sprintf("Session %d could not be found in milterDataIndex", u))
 	}
 
+	out.milterCtx = ctx
 	return out
 }
 
