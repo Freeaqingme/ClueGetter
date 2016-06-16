@@ -524,6 +524,20 @@ func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (a
 		rejectscore += result.weightedScore
 	}
 
+	// Add the recipients, duplicate lines if there's >1 recipients
+	for k, v := range add {
+		if strings.Index(v.Value, "%{recipient}") == -1 {
+			continue
+		}
+
+		for _, rcpt := range msg.Rcpt[1:] {
+			value := strings.Replace(add[k].Value, "%{recipient}", rcpt.String(), -1)
+			add = append(add, MessageHeader{Key: v.Key, Value: value})
+		}
+
+		add[k].Value = strings.Replace(add[k].Value, "%{recipient}", msg.Rcpt[0].String(), -1)
+	}
+
 	if msg.session.config.ClueGetter.Insert_Missing_Message_Id == true && msg.injectMessageId != "" {
 		add = append(add, MessageHeader{Key: "Message-Id", Value: msg.injectMessageId})
 	}

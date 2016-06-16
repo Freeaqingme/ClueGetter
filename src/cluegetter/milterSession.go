@@ -43,7 +43,8 @@ type milterSession struct {
 	MtaHostName   string
 	MtaDaemonName string
 
-	config *SessionConfig
+	config    *SessionConfig
+	milterCtx uintptr
 }
 
 type milterSessionWhitelistRange struct {
