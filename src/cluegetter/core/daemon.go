@@ -9,6 +9,7 @@ package core
 
 import (
 	"bufio"
+	"cluegetter/address"
 	"flag"
 	"fmt"
 	"github.com/Freeaqingme/GoDaemonSkeleton"
@@ -28,15 +29,16 @@ var (
 	instance       uint
 	defaultLogFile = "/var/log/cluegetter.log"
 	logFile        string
-	cg             *Cluegetter
 )
 
 type Module interface {
+	SetCluegetter(*Cluegetter)
 	Name() string
 	Enable() bool
-	Init(*Cluegetter)
+	Init()
 	Stop()
-	MilterCheck(msg *Message, done chan bool) *MessageCheckResult
+	MessageCheck(msg *Message, done chan bool) *MessageCheckResult
+	RecipientCheck(rcpt *address.Address) (verdict int, msg string)
 	Ipc() map[string]func(string)
 	Rpc() map[string]chan string
 	HttpHandlers() map[string]HttpCallback
@@ -57,10 +59,7 @@ func DaemonReset() {
 }
 
 func daemonStart() {
-	cg = &Cluegetter{
-		Config: Config,
-		Log:    Log,
-	}
+	initCg()
 
 	logFileTmp := flag.String("logfile", defaultLogFile, "Log file to use.")
 	foreground := flag.Bool("foreground", false, "Run in Foreground")
@@ -88,7 +87,7 @@ func daemonStart() {
 			Log.Info("Skipping module '%s' because it was not enabled", module.Name())
 			continue
 		}
-		module.Init(cg)
+		module.Init()
 		Log.Info("Module '%s' started successfully", module.Name())
 	}
 	milterStart()
@@ -182,7 +181,7 @@ func daemonIpc(done <-chan struct{}) {
 }
 
 func daemonIpcHandleConn(conn *net.UnixConn) {
-	defer cluegetterRecover("daemonIpcHandleConn")
+	defer CluegetterRecover("daemonIpcHandleConn")
 	defer conn.Close()
 
 	for {
@@ -244,6 +243,9 @@ func (m *ModuleOld) Name() string {
 	return m.name
 }
 
+func (m *ModuleOld) SetCluegetter(cg *Cluegetter) {
+}
+
 func (m *ModuleOld) Enable() bool {
 	if m.enable == nil {
 		return false
@@ -252,7 +254,7 @@ func (m *ModuleOld) Enable() bool {
 	return (*m.enable)()
 }
 
-func (m *ModuleOld) Init(*Cluegetter) {
+func (m *ModuleOld) Init() {
 	if m.init == nil {
 		return
 	}
@@ -268,12 +270,16 @@ func (m *ModuleOld) Stop() {
 	(*m.stop)()
 }
 
-func (m *ModuleOld) MilterCheck(msg *Message, done chan bool) *MessageCheckResult {
+func (m *ModuleOld) MessageCheck(msg *Message, done chan bool) *MessageCheckResult {
 	if m.milterCheck == nil {
 		return nil
 	}
 
 	return (*m.milterCheck)(msg, done)
+}
+
+func (m *ModuleOld) RecipientCheck(rcpt *address.Address) (verdict int, msg string) {
+	return MessagePermit, ""
 }
 
 func (m *ModuleOld) Ipc() map[string]func(string) {

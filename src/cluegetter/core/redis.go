@@ -94,6 +94,7 @@ func redisStart() {
 
 	RedisLPushChan = make(chan *RedisKeyValue, 255)
 	redisClient = redisNewClient()
+	cg.Redis = redisClient
 
 	go redisChannelListener()
 

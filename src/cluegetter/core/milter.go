@@ -202,9 +202,18 @@ func (milter *milter) EnvRcpt(ctx uintptr, rcpt []string) (sfsistat int8) {
 	Log.Debug("%s Milter.EnvRcpt() called: rcpt = %s", d.milterGetDisplayId(), fmt.Sprint(rcpt))
 
 	address := address.FromString(strings.ToLower(strings.Trim(rcpt[0], "<>")))
-	if srsIsSrsAddress(address) && !srsIsValidRecipient(address) {
-		Log.Debug("%s Milter.EnvRcpt() Not a valid SRS address: rcpt = %s", d.milterGetDisplayId(), fmt.Sprint(rcpt))
+	verdict, msgOut := messageAcceptRecipient(address)
+
+	switch {
+	case verdict == MessageTempFail:
+		Log.Debug("%s Milter.EnvRcpt() status=TempFail rcpt=%s msg=%s", d.milterGetDisplayId(), address.String(), msgOut)
+		return m.Tempfail
+	case verdict == MessageReject:
+		Log.Debug("%s Milter.EnvRcpt() status=Reject rcpt=%s msg=%s", d.milterGetDisplayId(), address.String(), msgOut)
 		return m.Reject
+	case verdict == MessageError:
+		Log.Error("%s Milter.EnvRcpt() status=Error rcpt=%s msg=%s", d.milterGetDisplayId(), address.String(), msgOut)
+		return m.Tempfail
 	}
 
 	msg.Rcpt = append(msg.Rcpt, address)
@@ -287,22 +296,22 @@ func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
 	}
 
 	if s.isWhitelisted() {
-		verdict = messagePermit
+		verdict = MessagePermit
 		msgOut = "Whitelisted"
 	}
 
 	switch {
-	case verdict == messagePermit:
+	case verdict == MessagePermit:
 		Log.Info("Message Permit: sess=%s message=%s %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msgOut)
 		return
-	case verdict == messageTempFail:
+	case verdict == MessageTempFail:
 		m.SetReply(ctx, "421", "4.7.0", fmt.Sprintf("%s (%s)", msgOut, s.getLastMessage().QueueId))
 		Log.Info("Message TempFail: sess=%s message=%s msg: %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msgOut)
 		if Config.ClueGetter.Noop {
 			return
 		}
 		return m.Tempfail
-	case verdict == messageReject:
+	case verdict == MessageReject:
 		m.SetReply(ctx, "550", "5.7.1", fmt.Sprintf("%s (%s)", msgOut, s.getLastMessage().QueueId))
 		Log.Info("Message Reject: sess=%s message=%s msg: %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msgOut)
 		if Config.ClueGetter.Noop {
@@ -364,16 +373,16 @@ func milterHandleError(ctx uintptr, sfsistat *int8) {
 	return
 }
 
-func milterChangeFrom(ctx uintptr, from string) {
-	m.ChgFrom(ctx, from, "")
+func MilterChangeFrom(sess *milterSession, from string) {
+	m.ChgFrom(sess.milterCtx, from, "")
 }
 
-func milterAddRcpt(ctx uintptr, rcpt string) int {
-	return m.AddRcpt(ctx, rcpt)
+func MilterAddRcpt(sess *milterSession, rcpt string) int {
+	return m.AddRcpt(sess.milterCtx, rcpt)
 }
 
-func milterDelRcpt(ctx uintptr, rcpt string) int {
-	return m.DelRcpt(ctx, rcpt)
+func MilterDelRcpt(sess *milterSession, rcpt string) int {
+	return m.DelRcpt(sess.milterCtx, rcpt)
 }
 
 func milterGetSession(ctx uintptr, keep bool, returnNil bool) *milterSession {

@@ -9,14 +9,16 @@ var (
 	Config      = *new(config)
 	hostname, _ = os.Hostname()
 	Log         *log.Logger
+	cg          *Cluegetter
 )
 
 type Cluegetter struct {
 	Config config
 	Log    *log.Logger
+	Redis  RedisClient
 }
 
-func cluegetterRecover(funcName string) {
+func CluegetterRecover(funcName string) {
 	if Config.ClueGetter.Exit_On_Panic {
 		return
 	}
@@ -25,4 +27,15 @@ func cluegetterRecover(funcName string) {
 		return
 	}
 	Log.Error("Panic caught in %s(). Recovering. Error: %s", funcName, r)
+}
+
+func initCg() {
+	cg = &Cluegetter{
+		Config: Config,
+		Log:    Log,
+	}
+
+	for _, module := range modules {
+		module.SetCluegetter(cg)
+	}
 }

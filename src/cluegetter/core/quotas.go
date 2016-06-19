@@ -336,22 +336,22 @@ func quotasRedisIsAllowed(msg *Message) *MessageCheckResult {
 
 	if rejectMsg != "" {
 		return &MessageCheckResult{
-			module:          "quotas",
-			suggestedAction: messageTempFail,
-			message:         rejectMsg,
-			score:           100,
-			determinants:    determinants,
-			callbacks:       callbacks,
+			Module:          "quotas",
+			SuggestedAction: MessageTempFail,
+			Message:         rejectMsg,
+			Score:           100,
+			Determinants:    determinants,
+			Callbacks:       callbacks,
 		}
 	}
 
 	return &MessageCheckResult{
-		module:          "quotas",
-		suggestedAction: messagePermit,
-		message:         "",
-		score:           1,
-		determinants:    determinants,
-		callbacks:       callbacks,
+		Module:          "quotas",
+		SuggestedAction: MessagePermit,
+		Message:         "",
+		Score:           1,
+		Determinants:    determinants,
+		Callbacks:       callbacks,
 	}
 }
 

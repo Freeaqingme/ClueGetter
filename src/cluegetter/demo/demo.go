@@ -1,6 +1,7 @@
 package moduleDemo
 
 import (
+	"cluegetter/address"
 	"cluegetter/core"
 )
 
@@ -22,20 +23,28 @@ func (m *testModule) Enable() bool {
 	return true
 }
 
-func (m *testModule) Init(cg *core.Cluegetter) {
+func (m *testModule) SetCluegetter(cg *core.Cluegetter) {
 	m.cg = cg
+}
 
-	m.cg.Log.Notice("Initializing module test")
+func (m *testModule) Init() {
+	m.cg.Log.Notice("Initializing module demo")
 }
 
 func (m *testModule) Stop() {
-	m.cg.Log.Notice("Stopping module test")
+	m.cg.Log.Notice("Stopping module demo")
 }
 
-func (m *testModule) MilterCheck(msg *core.Message, done chan bool) *core.MessageCheckResult {
+func (m *testModule) MessageCheck(msg *core.Message, done chan bool) *core.MessageCheckResult {
 	m.cg.Log.Notice("Milter Checking Message %s", msg.QueueId)
 
 	return nil
+}
+
+func (m *testModule) RecipientCheck(rcpt *address.Address) (verdict int, msg string) {
+	m.cg.Log.Debug("Considering if we should accept recipient %s", rcpt.String())
+
+	return core.MessagePermit, ""
 }
 
 func (m *testModule) Ipc() map[string]func(string) {

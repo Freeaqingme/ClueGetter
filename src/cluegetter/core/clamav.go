@@ -47,7 +47,7 @@ func clamavInit() {
 			select {
 			case <-ticker.C:
 				go func() {
-					cluegetterRecover("clamavDumpStats")
+					CluegetterRecover("clamavDumpStats")
 					clamavDumpStats()
 				}()
 			}
@@ -79,11 +79,11 @@ func clamavMilterCheck(msg *Message, abort chan bool) *MessageCheckResult {
 	if err != nil {
 		Log.Error("Problem while talking to Clamd while checking for %s: %s", msg.QueueId, err.Error())
 		return &MessageCheckResult{
-			module:          "clamav",
-			suggestedAction: messageError,
-			message:         "An internal error occurred.",
-			score:           25,
-			determinants:    map[string]interface{}{"error": err.Error()},
+			Module:          "clamav",
+			SuggestedAction: MessageError,
+			Message:         "An internal error occurred.",
+			Score:           25,
+			Determinants:    map[string]interface{}{"error": err.Error()},
 		}
 	}
 
@@ -105,51 +105,51 @@ func clamavMilterCheck(msg *Message, abort chan bool) *MessageCheckResult {
 	switch v.Status {
 	case clamd.RES_OK:
 		return &MessageCheckResult{
-			module:          "clamav",
-			suggestedAction: messageReject,
-			message:         "",
-			score:           0,
-			determinants:    clamavGetDeterminants(v),
+			Module:          "clamav",
+			SuggestedAction: MessageReject,
+			Message:         "",
+			Score:           0,
+			Determinants:    clamavGetDeterminants(v),
 		}
 	case clamd.RES_FOUND:
 		return &MessageCheckResult{
-			module:          "clamav",
-			suggestedAction: messageReject,
-			message: "Our system has detected that this message appears to contain malicious or " +
+			Module:          "clamav",
+			SuggestedAction: MessageReject,
+			Message: "Our system has detected that this message appears to contain malicious or " +
 				"otherwise harmful content. Therefore, this message has been blocked.",
-			score:        msg.session.config.Clamav.Default_Score,
-			determinants: clamavGetDeterminants(v),
+			Score:        msg.session.config.Clamav.Default_Score,
+			Determinants: clamavGetDeterminants(v),
 		}
 	case clamd.RES_PARSE_ERROR:
 		Log.Error("Could not parse output from Clamd while checking for %s. Raw output: %s",
 			msg.QueueId, v.Raw)
 		return &MessageCheckResult{
-			module:          "clamav",
-			suggestedAction: messageError,
-			message:         "An internal error occurred.",
-			score:           25,
-			determinants:    clamavGetDeterminants(v),
+			Module:          "clamav",
+			SuggestedAction: MessageError,
+			Message:         "An internal error occurred.",
+			Score:           25,
+			Determinants:    clamavGetDeterminants(v),
 		}
 	case clamd.RES_ERROR:
 		Log.Error("Clamd returned an error while checking for %s: %s", msg.QueueId, v.Description)
 
 		return &MessageCheckResult{
-			module:          "clamav",
-			suggestedAction: messageError,
-			message:         "An internal error occurred.",
-			score:           25,
-			determinants:    clamavGetDeterminants(v),
+			Module:          "clamav",
+			SuggestedAction: MessageError,
+			Message:         "An internal error occurred.",
+			Score:           25,
+			Determinants:    clamavGetDeterminants(v),
 		}
 	default:
 		Log.Error("Clamd returned an unrecognized status code. This shouldn't happen! "+
 			"While checking for %s: %s", msg.QueueId, v.Status)
 
 		return &MessageCheckResult{
-			module:          "clamav",
-			suggestedAction: messageError,
-			message:         "An internal error occurred.",
-			score:           25,
-			determinants:    clamavGetDeterminants(v),
+			Module:          "clamav",
+			SuggestedAction: MessageError,
+			Message:         "An internal error occurred.",
+			Score:           25,
+			Determinants:    clamavGetDeterminants(v),
 		}
 	}
 

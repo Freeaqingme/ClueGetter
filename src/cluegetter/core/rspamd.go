@@ -56,10 +56,10 @@ func rspamdGetResult(msg *Message, abort chan bool) *MessageCheckResult {
 	rawResult, err := rspamdGetRawResult(msg)
 	if err != nil {
 		return &MessageCheckResult{
-			module:          "rspamd",
-			suggestedAction: messageError,
-			score:           25,
-			determinants: map[string]interface{}{
+			Module:          "rspamd",
+			SuggestedAction: MessageError,
+			Score:           25,
+			Determinants: map[string]interface{}{
 				"error": err.Error(),
 			},
 		}
@@ -69,12 +69,12 @@ func rspamdGetResult(msg *Message, abort chan bool) *MessageCheckResult {
 	score := parsedResponse.Default.Score * msg.session.config.Rspamd.Multiplier
 
 	return &MessageCheckResult{
-		module:          "rspamd",
-		suggestedAction: messageReject,
-		message: "Our system has detected that this message is likely unsolicited mail (SPAM). " +
+		Module:          "rspamd",
+		SuggestedAction: MessageReject,
+		Message: "Our system has detected that this message is likely unsolicited mail (SPAM). " +
 			"To reduce the amount of spam, this message has been blocked.",
-		score: score,
-		determinants: map[string]interface{}{
+		Score: score,
+		Determinants: map[string]interface{}{
 			"response":   parsedResponse,
 			"multiplier": Config.Rspamd.Multiplier,
 		},

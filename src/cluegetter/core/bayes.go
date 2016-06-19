@@ -52,7 +52,7 @@ func bayesHandleLearnQueue(learnMessageQueue chan string) {
 }
 
 func bayesHandleReportMessageIdQueueItem(item string) {
-	cluegetterRecover("bayesHandleReportMessageIdQueueItem")
+	CluegetterRecover("bayesHandleReportMessageIdQueueItem")
 
 	rpc := &Rpc{}
 	err := rpc.Unmarshal([]byte(item))
@@ -113,7 +113,7 @@ func bayesAddToCorpus(spam bool, msg *Proto_Message, messageId, host, reporter, 
 }
 
 func bayesReportMessageId(spam bool, messageId, host, reporter, reason string) {
-	cluegetterRecover("bayesReportMessageId")
+	CluegetterRecover("bayesReportMessageId")
 	if !Config.Bayes.Enabled {
 		return
 	}

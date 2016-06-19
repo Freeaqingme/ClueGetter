@@ -104,10 +104,10 @@ func LuaMilterCheck(luaModuleName string, msg *Message, done chan bool) *Message
 	}
 
 	return &MessageCheckResult{
-		module:          "lua-" + luaModuleName,
-		suggestedAction: int(suggestedAction),
-		message:         resMsg.String(),
-		score:           float64(lua.LVAsNumber(resScore)),
+		Module:          "lua-" + luaModuleName,
+		SuggestedAction: int(suggestedAction),
+		Message:         resMsg.String(),
+		Score:           float64(lua.LVAsNumber(resScore)),
 	}
 }
 

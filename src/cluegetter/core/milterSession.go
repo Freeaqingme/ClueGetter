@@ -248,7 +248,7 @@ func milterSessionProcessQueue() {
 		}
 
 		go func(sess *milterSession) {
-			cluegetterRecover("esSaveSession")
+			CluegetterRecover("esSaveSession")
 			esSaveSession(sess)
 		}(queueItem.(*milterSession))
 	}

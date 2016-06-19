@@ -175,11 +175,11 @@ func greylistGetResult(msg *Message, done chan bool) *MessageCheckResult {
 	if res {
 		Log.Debug("Found %s in %s SPF record", ip, spfDomain)
 		return &MessageCheckResult{
-			module:          "greylisting",
-			suggestedAction: messagePermit,
-			message:         "",
-			score:           1,
-			determinants: map[string]interface{}{
+			Module:          "greylisting",
+			SuggestedAction: MessagePermit,
+			Message:         "",
+			Score:           1,
+			Determinants: map[string]interface{}{
 				"Found in SPF whitelist": "true",
 				"SpfError":               spfWhitelistErr,
 				"SpfDomain":              spfDomain,
@@ -190,11 +190,11 @@ func greylistGetResult(msg *Message, done chan bool) *MessageCheckResult {
 	if greylistIsWhitelisted(&ip) {
 		Log.Debug("Found %s in greylist whitelist", ip)
 		return &MessageCheckResult{
-			module:          "greylisting",
-			suggestedAction: messagePermit,
-			message:         "",
-			score:           1,
-			determinants: map[string]interface{}{
+			Module:          "greylisting",
+			SuggestedAction: MessagePermit,
+			Message:         "",
+			Score:           1,
+			Determinants: map[string]interface{}{
 				"Found in whitelist":     "true",
 				"Found in SPF whitelist": "false",
 				"SpfError":               spfWhitelistErr,
@@ -226,11 +226,11 @@ func greylistGetVerdictRedis(msg *Message, spfWhitelistErr error, spfDomain stri
 		determinants["time_diff"] = time.Now().Unix() - res
 		if (res + (int64(sess.config.Greylisting.Initial_Period) * 60)) < time.Now().Unix() {
 			return &MessageCheckResult{
-				module:          "greylisting",
-				suggestedAction: messagePermit,
-				message:         "",
-				score:           1,
-				determinants:    determinants,
+				Module:          "greylisting",
+				SuggestedAction: MessagePermit,
+				Message:         "",
+				Score:           1,
+				Determinants:    determinants,
 			}
 		}
 	} else {
@@ -238,11 +238,11 @@ func greylistGetVerdictRedis(msg *Message, spfWhitelistErr error, spfDomain stri
 	}
 
 	return &MessageCheckResult{
-		module:          "greylisting",
-		suggestedAction: messageTempFail,
-		message:         "Greylisting in effect, please come back later",
-		score:           sess.config.Greylisting.Initial_Score,
-		determinants:    determinants,
+		Module:          "greylisting",
+		SuggestedAction: MessageTempFail,
+		Message:         "Greylisting in effect, please come back later",
+		Score:           sess.config.Greylisting.Initial_Score,
+		Determinants:    determinants,
 	}
 }
 
@@ -278,20 +278,20 @@ func greylistGetVerdictRdbms(msg *Message, spfWhitelistErr error, spfDomain stri
 
 	if allowCount > 0 || timeDiff > float64(msg.session.config.Greylisting.Initial_Period) {
 		return &MessageCheckResult{
-			module:          "greylisting",
-			suggestedAction: messagePermit,
-			message:         "",
-			score:           1,
-			determinants:    determinants,
+			Module:          "greylisting",
+			SuggestedAction: MessagePermit,
+			Message:         "",
+			Score:           1,
+			Determinants:    determinants,
 		}
 	}
 
 	return &MessageCheckResult{
-		module:          "greylisting",
-		suggestedAction: messageTempFail,
-		message:         "Greylisting in effect, please come back later",
-		score:           msg.session.config.Greylisting.Initial_Score,
-		determinants:    determinants,
+		Module:          "greylisting",
+		SuggestedAction: MessageTempFail,
+		Message:         "Greylisting in effect, please come back later",
+		Score:           msg.session.config.Greylisting.Initial_Score,
+		Determinants:    determinants,
 	}
 }
 

@@ -18,7 +18,8 @@ import (
 )
 
 import (
-	_ "cluegetter/demo"
+	//_ "cluegetter/demo"
+	_ "cluegetter/srs"
 )
 
 var (

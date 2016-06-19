@@ -494,16 +494,16 @@ func esHydrateCheckResultsFromDb(messages map[string]*Message) {
 		var duration float64
 		var determinants []byte
 		res := MessageCheckResult{}
-		if err := rows.Scan(&msgId, &res.module, &verdict, &res.score,
-			&res.weightedScore, &duration, &determinants,
+		if err := rows.Scan(&msgId, &res.Module, &verdict, &res.Score,
+			&res.WeightedScore, &duration, &determinants,
 		); err != nil {
 			Log.Error("Could not scan a check result")
 			continue
 		}
 
-		json.Unmarshal(determinants, &res.determinants)
-		res.duration, _ = time.ParseDuration(fmt.Sprintf("%fs", duration))
-		res.suggestedAction = int(Proto_Message_Verdict_value[verdict])
+		json.Unmarshal(determinants, &res.Determinants)
+		res.Duration, _ = time.ParseDuration(fmt.Sprintf("%fs", duration))
+		res.SuggestedAction = int(Proto_Message_Verdict_value[verdict])
 		messages[msgId].CheckResults = append(messages[msgId].CheckResults, &res)
 	}
 }

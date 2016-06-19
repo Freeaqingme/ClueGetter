@@ -45,11 +45,11 @@ func saGetResult(msg *Message, abort chan bool) *MessageCheckResult {
 	if err != nil || rawReply.Code != spamc.EX_OK {
 		Log.Error("SpamAssassin returned an error: %s", err)
 		return &MessageCheckResult{
-			module:          "spamassassin",
-			suggestedAction: messageError,
-			message:         "An internal error occurred",
-			score:           25,
-			determinants:    map[string]interface{}{"error": err.Error()},
+			Module:          "spamassassin",
+			SuggestedAction: MessageError,
+			Message:         "An internal error occurred",
+			Score:           25,
+			Determinants:    map[string]interface{}{"error": err.Error()},
 		}
 	}
 
@@ -65,12 +65,12 @@ func saGetResult(msg *Message, abort chan bool) *MessageCheckResult {
 
 	Log.Debug("Got SA score of %.2f for %s. Tests: [%s]", report.score, msg.QueueId, strings.Join(factsStr, ","))
 	return &MessageCheckResult{
-		module:          "spamassassin",
-		suggestedAction: messageReject,
-		message: "Our system has detected that this message is likely unsolicited mail (SPAM). " +
+		Module:          "spamassassin",
+		SuggestedAction: MessageReject,
+		Message: "Our system has detected that this message is likely unsolicited mail (SPAM). " +
 			"To reduce the amount of spam, this message has been blocked.",
-		score:        report.score,
-		determinants: map[string]interface{}{"report": report.facts},
+		Score:        report.score,
+		Determinants: map[string]interface{}{"report": report.facts},
 	}
 }
 

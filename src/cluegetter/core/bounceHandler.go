@@ -139,7 +139,7 @@ func bounceHandlerListen() {
 }
 
 func bounceHandlerHandleConn(conn net.Conn) {
-	defer cluegetterRecover("bounceHandlerParseReport")
+	defer CluegetterRecover("bounceHandlerParseReport")
 	defer conn.Close()
 
 	Log.Debug("Handling new connection from %s", conn.RemoteAddr())
@@ -334,7 +334,7 @@ func bounceHandlerSaveBounce(bounce *bounceHandlerBounce) {
 }
 
 func bounceHandlerPersistRawCopy(body []byte) {
-	defer cluegetterRecover("bounceHandlerPersistRawCopy")
+	defer CluegetterRecover("bounceHandlerPersistRawCopy")
 
 	if Config.BounceHandler.Dump_Dir == "" {
 		return
