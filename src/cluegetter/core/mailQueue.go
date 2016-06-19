@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	"bytes"
@@ -35,14 +35,14 @@ func init() {
 		mailQueueStart(deleteQueue)
 	}
 
-	ModuleRegister(&module{
-		name:   "mailQueue",
-		enable: &enable,
-		init:   &init,
-		rpc: map[string]chan string{
+	ModuleRegister(&Module{
+		Name:   "mailQueue",
+		Enable: &enable,
+		Init:   &init,
+		Rpc: map[string]chan string{
 			"mailQueue!delete": deleteQueue,
 		},
-		httpHandlers: map[string]httpCallback{
+		HttpHandlers: map[string]httpCallback{
 			"/mailqueue":        mailQueueHttp,
 			"/mailqueue/delete": mailQueueHttpDelete,
 		},

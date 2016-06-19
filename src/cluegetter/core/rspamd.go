@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	"bytes"
@@ -41,10 +41,10 @@ func init() {
 	enable := func() bool { return Config.Rspamd.Enabled }
 	milterCheck := rspamdGetResult
 
-	ModuleRegister(&module{
-		name:        "rspamd",
-		enable:      &enable,
-		milterCheck: &milterCheck,
+	ModuleRegister(&Module{
+		Name:        "rspamd",
+		Enable:      &enable,
+		MilterCheck: &milterCheck,
 	})
 }
 

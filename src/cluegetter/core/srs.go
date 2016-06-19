@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	"fmt"
@@ -22,10 +22,10 @@ func init() {
 	enable := func() bool { return Config.Srs.Enabled }
 	milterCheck := srsMilterCheck
 
-	ModuleRegister(&module{
-		name:        "srs",
-		enable:      &enable,
-		milterCheck: &milterCheck,
+	ModuleRegister(&Module{
+		Name:        "srs",
+		Enable:      &enable,
+		MilterCheck: &milterCheck,
 	})
 }
 

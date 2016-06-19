@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	"fmt"
@@ -18,11 +18,11 @@ func init() {
 	milterCheck := contactsGetResult
 	init := contactsInit
 
-	ModuleRegister(&module{
-		name:        "contacts",
-		enable:      &enable,
-		init:        &init,
-		milterCheck: &milterCheck,
+	ModuleRegister(&Module{
+		Name:        "contacts",
+		Enable:      &enable,
+		Init:        &init,
+		MilterCheck: &milterCheck,
 	})
 }
 

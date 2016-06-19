@@ -5,12 +5,14 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	"bufio"
 	"flag"
 	"fmt"
+	"github.com/Freeaqingme/GoDaemonSkeleton"
+	"github.com/Freeaqingme/GoDaemonSkeleton/log"
 	"net"
 	"os"
 	"os/signal"
@@ -21,35 +23,35 @@ import (
 
 var (
 	modulesMu      sync.Mutex
-	modules        = make([]*module, 0)
+	modules        = make([]*Module, 0)
 	ipcHandlers    = make(map[string]func(string), 0)
 	instance       uint
 	defaultLogFile = "/var/log/cluegetter.log"
 	logFile        string
 )
 
-type module struct {
-	name         string
-	enable       *func() bool
-	init         *func()
-	stop         *func()
-	milterCheck  *func(*Message, chan bool) *MessageCheckResult
-	ipc          map[string]func(string)
-	rpc          map[string]chan string
-	httpHandlers map[string]httpCallback
+type Module struct {
+	Name         string
+	Enable       *func() bool
+	Init         *func()
+	Stop         *func()
+	MilterCheck  *func(*Message, chan bool) *MessageCheckResult
+	Ipc          map[string]func(string)
+	Rpc          map[string]chan string
+	HttpHandlers map[string]httpCallback
 }
 
 func init() {
 	handover := daemonStart
 
-	subAppRegister(&subApp{
-		name:     "daemon",
-		handover: &handover,
+	GoDaemonSkeleton.AppRegister(&GoDaemonSkeleton.App{
+		Name:     "daemon",
+		Handover: &handover,
 	})
 }
 
 func DaemonReset() {
-	modules = make([]*module, 0)
+	modules = make([]*Module, 0)
 	ipcHandlers = make(map[string]func(string), 0)
 }
 
@@ -60,7 +62,7 @@ func daemonStart() {
 
 	if !*foreground {
 		logFile = *logFileTmp
-		logRedirectStdOutToFile(logFile)
+		log.LogRedirectStdOutToFile(logFile)
 	}
 	Log.Notice("Starting ClueGetter...")
 
@@ -76,14 +78,14 @@ func daemonStart() {
 	httpStart(done)
 	messageStart()
 	for _, module := range modules {
-		if module.enable != nil && !(*module.enable)() {
-			Log.Info("Skipping module '%s' because it was not enabled", module.name)
+		if module.Enable != nil && !(*module.Enable)() {
+			Log.Info("Skipping module '%s' because it was not enabled", module.Name)
 			continue
 		}
-		if module.init != nil {
-			(*module.init)()
-			Log.Info("Module '%s' started successfully", module.name)
+		if module.Init != nil {
+			(*module.Init)()
 		}
+		Log.Info("Module '%s' started successfully", module.Name)
 	}
 	milterStart()
 
@@ -94,8 +96,8 @@ func daemonStart() {
 	close(done)
 	milterStop()
 	for _, module := range modules {
-		if module.stop != nil {
-			(*module.stop)()
+		if module.Stop != nil {
+			(*module.Stop)()
 		}
 	}
 	messageStop()
@@ -119,20 +121,20 @@ func setInstance() {
 	Log.Notice("Instance name: %s. Id: %d", Config.ClueGetter.Instance, instance)
 }
 
-func ModuleRegister(module *module) {
+func ModuleRegister(module *Module) {
 	modulesMu.Lock()
 	defer modulesMu.Unlock()
 	if module == nil {
 		panic("Module: Register module is nil")
 	}
 	for _, dup := range modules {
-		if dup.name == module.name {
-			panic("Module: Register called twice for module " + module.name)
+		if dup.Name == module.Name {
+			panic("Module: Register called twice for module " + module.Name)
 		}
 	}
 
-	if module.ipc != nil {
-		for ipcName, ipcCallback := range module.ipc {
+	if module.Ipc != nil {
+		for ipcName, ipcCallback := range module.Ipc {
 			if _, ok := ipcHandlers[ipcName]; ok {
 				panic("Tried to register ipcHandler twice for " + ipcName)
 			}

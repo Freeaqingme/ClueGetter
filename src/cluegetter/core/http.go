@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	"cluegetter/assets"
@@ -41,11 +41,11 @@ func httpStart(done <-chan struct{}) {
 	http.HandleFunc("/", httpIndexHandler)
 
 	for _, module := range modules {
-		if module.enable != nil && !(*module.enable)() {
+		if module.Enable != nil && !(*module.Enable)() {
 			continue
 		}
 
-		for url, callback := range module.httpHandlers {
+		for url, callback := range module.HttpHandlers {
 			http.HandleFunc(url, callback)
 		}
 	}

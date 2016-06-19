@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	"fmt"
@@ -29,10 +29,10 @@ func init() {
 	enable := func() bool { return Config.SpamAssassin.Enabled }
 	milterCheck := saGetResult
 
-	ModuleRegister(&module{
-		name:        "spamassassin",
-		enable:      &enable,
-		milterCheck: &milterCheck,
+	ModuleRegister(&Module{
+		Name:        "spamassassin",
+		Enable:      &enable,
+		MilterCheck: &milterCheck,
 	})
 }
 

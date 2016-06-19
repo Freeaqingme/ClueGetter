@@ -7,7 +7,7 @@
 //
 // Test using: http://sanesecurity.com/support/signature-testing/
 //
-package main
+package core
 
 import (
 	"bytes"
@@ -25,11 +25,11 @@ func init() {
 	init := clamavInit
 	milterCheck := clamavMilterCheck
 
-	ModuleRegister(&module{
-		name:        "clamav",
-		enable:      &enable,
-		init:        &init,
-		milterCheck: &milterCheck,
+	ModuleRegister(&Module{
+		Name:        "clamav",
+		Enable:      &enable,
+		Init:        &init,
+		MilterCheck: &milterCheck,
 	})
 }
 

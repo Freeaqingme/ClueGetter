@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	"database/sql"
@@ -35,11 +35,11 @@ func init() {
 	init := greylistStart
 	milterCheck := greylistGetResult
 
-	ModuleRegister(&module{
-		name:        "greylisting",
-		enable:      &enable,
-		init:        &init,
-		milterCheck: &milterCheck,
+	ModuleRegister(&Module{
+		Name:        "greylisting",
+		Enable:      &enable,
+		Init:        &init,
+		MilterCheck: &milterCheck,
 	})
 }
 

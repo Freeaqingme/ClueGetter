@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	"cluegetter/address"
@@ -409,7 +409,7 @@ func messageGetResults(msg *Message, done chan bool) chan *MessageCheckResult {
 	out := make(chan *MessageCheckResult)
 
 	for _, module := range modules {
-		if module.milterCheck == nil {
+		if module.MilterCheck == nil {
 			continue
 		}
 		wg.Add(1)
@@ -445,7 +445,7 @@ func messageGetResults(msg *Message, done chan bool) chan *MessageCheckResult {
 				res.duration = time.Now().Sub(t0)
 				out <- res
 			}
-		}(module.name, module.milterCheck)
+		}(module.Name, module.MilterCheck)
 	}
 
 	go func() {

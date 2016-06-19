@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"encoding/hex"
@@ -13,6 +13,8 @@ import (
 	"os"
 	"strings"
 	"sync"
+
+	"github.com/Freeaqingme/GoDaemonSkeleton"
 )
 
 var esClient *elastic.Client
@@ -21,16 +23,16 @@ func init() {
 	enable := func() bool { return Config.Elasticsearch.Enabled }
 	init := esStart
 
-	ModuleRegister(&module{
-		name:   "elasticsearch",
-		enable: &enable,
-		init:   &init,
+	ModuleRegister(&Module{
+		Name:   "elasticsearch",
+		Enable: &enable,
+		Init:   &init,
 	})
 
 	handover := esSubApp
-	subAppRegister(&subApp{
-		name:     "elasticsearch",
-		handover: &handover,
+	GoDaemonSkeleton.AppRegister(&GoDaemonSkeleton.App{
+		Name:     "elasticsearch",
+		Handover: &handover,
 	})
 }
 

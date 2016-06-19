@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	"bufio"
@@ -21,6 +21,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/Freeaqingme/GoDaemonSkeleton"
 )
 
 type bounceHandlerBounce struct {
@@ -51,20 +53,20 @@ func init() {
 	stop := bounceHandlerStop
 	handleIpc := bounceHandlerHandleIpc
 
-	ModuleRegister(&module{
-		name:   "bouncehandler",
-		enable: &enable,
-		init:   &init,
-		stop:   &stop,
-		ipc: map[string]func(string){
+	ModuleRegister(&Module{
+		Name:   "bouncehandler",
+		Enable: &enable,
+		Init:   &init,
+		Stop:   &stop,
+		Ipc: map[string]func(string){
 			"bouncehandler!submit": handleIpc,
 		},
 	})
 
 	submitCli := bounceHandlerSubmitCli
-	subAppRegister(&subApp{
-		name:     "bouncehandler",
-		handover: &submitCli,
+	GoDaemonSkeleton.AppRegister(&GoDaemonSkeleton.App{
+		Name:     "bouncehandler",
+		Handover: &submitCli,
 	})
 }
 

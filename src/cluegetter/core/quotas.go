@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	"database/sql"
@@ -68,13 +68,13 @@ func init() {
 	stop := quotasStop
 	milterCheck := quotasIsAllowed
 
-	ModuleRegister(&module{
-		name:        "quotas",
-		enable:      &enable,
-		init:        &init,
-		stop:        &stop,
-		milterCheck: &milterCheck,
-		httpHandlers: map[string]httpCallback{
+	ModuleRegister(&Module{
+		Name:        "quotas",
+		Enable:      &enable,
+		Init:        &init,
+		Stop:        &stop,
+		MilterCheck: &milterCheck,
+		HttpHandlers: map[string]httpCallback{
 			"/quotas/sasl_username/": quotasSasluserStats,
 		},
 	})

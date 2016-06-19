@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	cg_lua "cluegetter/lua"
@@ -19,9 +19,9 @@ var luaModules = make(map[string]string, 0)
 func init() {
 	init := LuaStart
 
-	ModuleRegister(&module{
-		name: "lua",
-		init: &init,
+	ModuleRegister(&Module{
+		Name: "lua",
+		Init: &init,
 	})
 }
 
@@ -63,10 +63,10 @@ func luaStartModule(name string, conf *ConfigLuaModule) {
 	}
 	luaModules[name] = string(scriptContents)
 
-	ModuleRegister(&module{
-		name:        "lua-" + name,
-		enable:      &enable,
-		milterCheck: &milterCheck,
+	ModuleRegister(&Module{
+		Name:        "lua-" + name,
+		Enable:      &enable,
+		MilterCheck: &milterCheck,
 	})
 }
 

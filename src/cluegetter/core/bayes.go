@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	"fmt"
@@ -22,11 +22,11 @@ func init() {
 		bayesStart(reportMessageId, learnMessage)
 	}
 
-	ModuleRegister(&module{
-		name:   "bayes",
-		enable: &enable,
-		init:   &init,
-		rpc: map[string]chan string{
+	ModuleRegister(&Module{
+		Name:   "bayes",
+		Enable: &enable,
+		Init:   &init,
+		Rpc: map[string]chan string{
 			"bayes!reportMessageId": reportMessageId,
 			"bayes!learn":           learnMessage,
 		},

@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	"encoding/json"
@@ -279,11 +279,11 @@ func redisRpc() {
 
 	listeners := make(map[string][]chan string, 0)
 	for _, module := range modules {
-		if module.rpc == nil || (module.enable != nil && !(*module.enable)()) {
+		if module.Rpc == nil || (module.Enable != nil && !(*module.Enable)()) {
 			continue
 		}
 
-		for pattern, channel := range module.rpc {
+		for pattern, channel := range module.Rpc {
 			if listeners[pattern] == nil {
 				listeners[pattern] = make([]chan string, 0)
 			}
