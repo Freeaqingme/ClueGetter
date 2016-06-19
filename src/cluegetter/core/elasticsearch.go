@@ -23,10 +23,10 @@ func init() {
 	enable := func() bool { return Config.Elasticsearch.Enabled }
 	init := esStart
 
-	ModuleRegister(&Module{
-		Name:   "elasticsearch",
-		Enable: &enable,
-		Init:   &init,
+	ModuleRegister(&ModuleOld{
+		name:   "elasticsearch",
+		enable: &enable,
+		init:   &init,
 	})
 
 	handover := esSubApp

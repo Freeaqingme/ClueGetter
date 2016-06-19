@@ -41,10 +41,10 @@ func init() {
 	enable := func() bool { return Config.Rspamd.Enabled }
 	milterCheck := rspamdGetResult
 
-	ModuleRegister(&Module{
-		Name:        "rspamd",
-		Enable:      &enable,
-		MilterCheck: &milterCheck,
+	ModuleRegister(&ModuleOld{
+		name:        "rspamd",
+		enable:      &enable,
+		milterCheck: &milterCheck,
 	})
 }
 

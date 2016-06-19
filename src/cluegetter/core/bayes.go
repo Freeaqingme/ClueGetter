@@ -22,11 +22,11 @@ func init() {
 		bayesStart(reportMessageId, learnMessage)
 	}
 
-	ModuleRegister(&Module{
-		Name:   "bayes",
-		Enable: &enable,
-		Init:   &init,
-		Rpc: map[string]chan string{
+	ModuleRegister(&ModuleOld{
+		name:   "bayes",
+		enable: &enable,
+		init:   &init,
+		rpc: map[string]chan string{
 			"bayes!reportMessageId": reportMessageId,
 			"bayes!learn":           learnMessage,
 		},

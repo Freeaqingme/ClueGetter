@@ -29,10 +29,10 @@ func init() {
 	enable := func() bool { return Config.SpamAssassin.Enabled }
 	milterCheck := saGetResult
 
-	ModuleRegister(&Module{
-		Name:        "spamassassin",
-		Enable:      &enable,
-		MilterCheck: &milterCheck,
+	ModuleRegister(&ModuleOld{
+		name:        "spamassassin",
+		enable:      &enable,
+		milterCheck: &milterCheck,
 	})
 }
 

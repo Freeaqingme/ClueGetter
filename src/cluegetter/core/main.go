@@ -11,6 +11,11 @@ var (
 	Log         *log.Logger
 )
 
+type Cluegetter struct {
+	Config config
+	Log    *log.Logger
+}
+
 func cluegetterRecover(funcName string) {
 	if Config.ClueGetter.Exit_On_Panic {
 		return

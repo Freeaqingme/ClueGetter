@@ -35,14 +35,14 @@ func init() {
 		mailQueueStart(deleteQueue)
 	}
 
-	ModuleRegister(&Module{
-		Name:   "mailQueue",
-		Enable: &enable,
-		Init:   &init,
-		Rpc: map[string]chan string{
+	ModuleRegister(&ModuleOld{
+		name:   "mailQueue",
+		enable: &enable,
+		init:   &init,
+		rpc: map[string]chan string{
 			"mailQueue!delete": deleteQueue,
 		},
-		HttpHandlers: map[string]httpCallback{
+		httpHandlers: map[string]HttpCallback{
 			"/mailqueue":        mailQueueHttp,
 			"/mailqueue/delete": mailQueueHttpDelete,
 		},

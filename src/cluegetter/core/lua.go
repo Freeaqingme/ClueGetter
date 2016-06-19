@@ -19,9 +19,9 @@ var luaModules = make(map[string]string, 0)
 func init() {
 	init := LuaStart
 
-	ModuleRegister(&Module{
-		Name: "lua",
-		Init: &init,
+	ModuleRegister(&ModuleOld{
+		name: "lua",
+		init: &init,
 	})
 }
 
@@ -63,10 +63,10 @@ func luaStartModule(name string, conf *ConfigLuaModule) {
 	}
 	luaModules[name] = string(scriptContents)
 
-	ModuleRegister(&Module{
-		Name:        "lua-" + name,
-		Enable:      &enable,
-		MilterCheck: &milterCheck,
+	ModuleRegister(&ModuleOld{
+		name:        "lua-" + name,
+		enable:      &enable,
+		milterCheck: &milterCheck,
 	})
 }
 

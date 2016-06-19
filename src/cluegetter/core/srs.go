@@ -22,10 +22,10 @@ func init() {
 	enable := func() bool { return Config.Srs.Enabled }
 	milterCheck := srsMilterCheck
 
-	ModuleRegister(&Module{
-		Name:        "srs",
-		Enable:      &enable,
-		MilterCheck: &milterCheck,
+	ModuleRegister(&ModuleOld{
+		name:        "srs",
+		enable:      &enable,
+		milterCheck: &milterCheck,
 	})
 }
 

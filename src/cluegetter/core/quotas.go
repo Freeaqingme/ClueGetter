@@ -68,13 +68,13 @@ func init() {
 	stop := quotasStop
 	milterCheck := quotasIsAllowed
 
-	ModuleRegister(&Module{
-		Name:        "quotas",
-		Enable:      &enable,
-		Init:        &init,
-		Stop:        &stop,
-		MilterCheck: &milterCheck,
-		HttpHandlers: map[string]httpCallback{
+	ModuleRegister(&ModuleOld{
+		name:        "quotas",
+		enable:      &enable,
+		init:        &init,
+		stop:        &stop,
+		milterCheck: &milterCheck,
+		httpHandlers: map[string]HttpCallback{
 			"/quotas/sasl_username/": quotasSasluserStats,
 		},
 	})

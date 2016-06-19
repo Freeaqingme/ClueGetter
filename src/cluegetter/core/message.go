@@ -409,10 +409,8 @@ func messageGetResults(msg *Message, done chan bool) chan *MessageCheckResult {
 	out := make(chan *MessageCheckResult)
 
 	for _, module := range modules {
-		if module.MilterCheck == nil {
-			continue
-		}
 		wg.Add(1)
+		callback := module.MilterCheck
 		go func(moduleName string, moduleCallback *func(*Message, chan bool) *MessageCheckResult) {
 			defer wg.Done()
 			t0 := time.Now()
@@ -445,7 +443,7 @@ func messageGetResults(msg *Message, done chan bool) chan *MessageCheckResult {
 				res.duration = time.Now().Sub(t0)
 				out <- res
 			}
-		}(module.Name, module.MilterCheck)
+		}(module.Name(), &callback)
 	}
 
 	go func() {

@@ -25,11 +25,11 @@ func init() {
 	init := clamavInit
 	milterCheck := clamavMilterCheck
 
-	ModuleRegister(&Module{
-		Name:        "clamav",
-		Enable:      &enable,
-		Init:        &init,
-		MilterCheck: &milterCheck,
+	ModuleRegister(&ModuleOld{
+		name:        "clamav",
+		enable:      &enable,
+		init:        &init,
+		milterCheck: &milterCheck,
 	})
 }
 

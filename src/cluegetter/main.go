@@ -17,6 +17,10 @@ import (
 	"github.com/Freeaqingme/GoDaemonSkeleton/log"
 )
 
+import (
+	_ "cluegetter/demo"
+)
+
 var (
 	defaultConfigFile = "/etc/cluegetter/cluegetter.conf"
 )

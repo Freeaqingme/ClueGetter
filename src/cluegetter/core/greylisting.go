@@ -35,11 +35,11 @@ func init() {
 	init := greylistStart
 	milterCheck := greylistGetResult
 
-	ModuleRegister(&Module{
-		Name:        "greylisting",
-		Enable:      &enable,
-		Init:        &init,
-		MilterCheck: &milterCheck,
+	ModuleRegister(&ModuleOld{
+		name:        "greylisting",
+		enable:      &enable,
+		init:        &init,
+		milterCheck: &milterCheck,
 	})
 }
 

@@ -25,7 +25,7 @@ import (
 	"time"
 )
 
-type httpCallback func(w http.ResponseWriter, r *http.Request)
+type HttpCallback func(w http.ResponseWriter, r *http.Request)
 
 func httpStart(done <-chan struct{}) {
 	if !Config.Http.Enabled {
@@ -41,11 +41,11 @@ func httpStart(done <-chan struct{}) {
 	http.HandleFunc("/", httpIndexHandler)
 
 	for _, module := range modules {
-		if module.Enable != nil && !(*module.Enable)() {
+		if !module.Enable() {
 			continue
 		}
 
-		for url, callback := range module.HttpHandlers {
+		for url, callback := range module.HttpHandlers() {
 			http.HandleFunc(url, callback)
 		}
 	}

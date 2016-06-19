@@ -18,11 +18,11 @@ func init() {
 	milterCheck := contactsGetResult
 	init := contactsInit
 
-	ModuleRegister(&Module{
-		Name:        "contacts",
-		Enable:      &enable,
-		Init:        &init,
-		MilterCheck: &milterCheck,
+	ModuleRegister(&ModuleOld{
+		name:        "contacts",
+		enable:      &enable,
+		init:        &init,
+		milterCheck: &milterCheck,
 	})
 }
 

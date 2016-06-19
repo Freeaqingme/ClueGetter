@@ -53,12 +53,12 @@ func init() {
 	stop := bounceHandlerStop
 	handleIpc := bounceHandlerHandleIpc
 
-	ModuleRegister(&Module{
-		Name:   "bouncehandler",
-		Enable: &enable,
-		Init:   &init,
-		Stop:   &stop,
-		Ipc: map[string]func(string){
+	ModuleRegister(&ModuleOld{
+		name:   "bouncehandler",
+		enable: &enable,
+		init:   &init,
+		stop:   &stop,
+		ipc: map[string]func(string){
 			"bouncehandler!submit": handleIpc,
 		},
 	})
