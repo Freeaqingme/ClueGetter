@@ -52,6 +52,7 @@ type config struct {
 	ModuleGroup   map[string]*ConfigModuleGroup
 	Elasticsearch struct {
 		Enabled bool
+		Sniff   bool
 		Url     []string
 	}
 	Http struct {
@@ -263,6 +264,7 @@ func DefaultConfig(cfg *config) {
 	cfg.Redis.Method = "standalone"
 	cfg.Redis.Dump_Key = []string{}
 
+	cfg.Elasticsearch.Sniff = true
 	cfg.Elasticsearch.Url = []string{}
 
 	cfg.Http.Enabled = true

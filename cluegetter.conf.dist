@@ -140,6 +140,10 @@ enabled = false
 # It's possible to specify multiple URL's by simply repeating them
 url = "http://127.0.0.1:9200"
 
+# Automatically detect what other elasticsearch nodes are available
+# and use those as well.
+sniff = true
+
 [http]
 # Cluegetter can provide an HTTP interface that displays some runtime
 # statistics and errors, and allows to search for processed messages.

@@ -52,9 +52,12 @@ func esSubApp() {
 
 func esStart() {
 	var err error
-	esClient, err = elastic.NewClient(elastic.SetURL(Config.Elasticsearch.Url...))
+	esClient, err = elastic.NewClient(
+          elastic.SetSniff(Config.Elasticsearch.Sniff),
+          elastic.SetURL(Config.Elasticsearch.Url...),
+        )
 	if err != nil {
-		Log.Fatal("Could not connect to ElasticSearch: %s", err.Error())
+		Log.Fatal("Could not connect to ElasticSearch:", err.Error())
 	}
 
 	template := `{
