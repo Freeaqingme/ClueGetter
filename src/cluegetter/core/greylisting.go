@@ -164,7 +164,7 @@ func greylistUpdateWhitelist() {
 }
 
 func greylistGetResult(msg *Message, done chan bool) *MessageCheckResult {
-	if !Config.Greylisting.Enabled || !msg.session.config.Greylisting.Enabled {
+	if !msg.session.config.Greylisting.Enabled {
 		return nil
 	}
 
