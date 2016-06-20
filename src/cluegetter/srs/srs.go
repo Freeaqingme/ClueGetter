@@ -45,7 +45,7 @@ func (m *srsModule) Stop() {}
 
 func (m *srsModule) MessageCheck(msg *core.Message, done chan bool) *core.MessageCheckResult {
 	from := ""
-	srsIn := m.srsGetInboundSrsAddresses(msg)
+	srsIn := m.getInboundSrsAddresses(msg)
 
 	if len(srsIn) > 0 && len(msg.Rcpt) > 1 {
 		m.cg.Log.Notice("More than 1 recipient including an SRS recipient, that's weird?")
@@ -53,13 +53,13 @@ func (m *srsModule) MessageCheck(msg *core.Message, done chan bool) *core.Messag
 
 	var mapped map[string]string
 	if len(srsIn) > 0 {
-		mapped = m.srsSwapRecipients(msg, srsIn)
+		mapped = m.swapRecipients(msg, srsIn)
 	} else {
-		from = m.srsGetFromAddress(msg)
+		from = m.getFromAddress(msg)
 		core.MilterChangeFrom(msg.Session(), from)
 		go func() {
 			core.CluegetterRecover("srsPersist")
-			m.srsPersist(msg, from)
+			m.persist(msg, from)
 		}()
 	}
 
@@ -69,28 +69,28 @@ func (m *srsModule) MessageCheck(msg *core.Message, done chan bool) *core.Messag
 		Score:           0,
 		Determinants: map[string]interface{}{
 			"from":         from,
-			"is-forwarded": m.srsIsForwarded(msg),
+			"is-forwarded": m.isForwarded(msg),
 			"mapped":       mapped,
 		},
 	}
 }
 
 func (m *srsModule) RecipientCheck(rcpt *address.Address) (verdict int, msg string) {
-	if !m.srsIsSrsAddress(rcpt) {
+	if !m.isSrsAddress(rcpt) {
 		return core.MessagePermit, ""
 	}
 
-	if m.srsLookupAddress(rcpt) == "" {
+	if m.lookupAddress(rcpt) == "" {
 		return core.MessageReject, ""
 	}
 
 	return core.MessagePermit, ""
 }
 
-func (m *srsModule) srsSwapRecipients(msg *core.Message, srsAddresses []address.Address) map[string]string {
+func (m *srsModule) swapRecipients(msg *core.Message, srsAddresses []address.Address) map[string]string {
 	out := make(map[string]string, 0)
 	for _, srsAddress := range srsAddresses {
-		out[srsAddress.String()] = m.srsLookupAddress(&srsAddress)
+		out[srsAddress.String()] = m.lookupAddress(&srsAddress)
 
 		core.MilterDelRcpt(msg.Session(), srsAddress.String())
 		core.MilterAddRcpt(msg.Session(), out[srsAddress.String()])
@@ -99,19 +99,19 @@ func (m *srsModule) srsSwapRecipients(msg *core.Message, srsAddresses []address.
 	return out
 }
 
-func (m *srsModule) srsLookupAddress(address *address.Address) string {
+func (m *srsModule) lookupAddress(address *address.Address) string {
 	key := strings.ToLower(fmt.Sprintf("cluegetter--srs-entry-%s", address.String()))
 	out, _ := m.cg.Redis.Get(key).Result()
 	return out
 }
 
 // Todo: Also persist in DB?
-func (m *srsModule) srsPersist(msg *core.Message, from string) {
+func (m *srsModule) persist(msg *core.Message, from string) {
 	key := strings.ToLower(fmt.Sprintf("cluegetter--srs-entry-%s", from))
 	m.cg.Redis.Set(key, msg.From.String(), 7*24*time.Hour)
 }
 
-func (m *srsModule) srsIsSrsAddress(address *address.Address) bool {
+func (m *srsModule) isSrsAddress(address *address.Address) bool {
 	if !m.Enable() {
 		return false // If SRS is not enabled, nothing is an SRS address
 	}
@@ -119,10 +119,10 @@ func (m *srsModule) srsIsSrsAddress(address *address.Address) bool {
 	return srsMatch.MatchString(address.Local())
 }
 
-func (m *srsModule) srsGetInboundSrsAddresses(msg *core.Message) []address.Address {
+func (m *srsModule) getInboundSrsAddresses(msg *core.Message) []address.Address {
 	out := make([]address.Address, 0)
 	for _, rcpt := range msg.Rcpt {
-		if m.srsIsSrsAddress(rcpt) {
+		if m.isSrsAddress(rcpt) {
 			out = append(out, *rcpt)
 		}
 	}
@@ -130,16 +130,16 @@ func (m *srsModule) srsGetInboundSrsAddresses(msg *core.Message) []address.Addre
 	return out
 }
 
-func (m *srsModule) srsGetFromAddress(msg *core.Message) string {
+func (m *srsModule) getFromAddress(msg *core.Message) string {
 	if !m.Enable() {
 		return ""
 	}
 
-	if !m.srsIsForwarded(msg) {
+	if !m.isForwarded(msg) {
 		return ""
 	}
 
-	domain := m.srsGetRewriteDomain(msg)
+	domain := m.getRewriteDomain(msg)
 	if domain == "" {
 		m.cg.Log.Debug("Could not determine SRS domain for %s", msg.QueueId)
 		return ""
@@ -149,7 +149,7 @@ func (m *srsModule) srsGetFromAddress(msg *core.Message) string {
 		msg.QueueId, msg.From.Domain(), msg.From.Local(), domain)
 }
 
-func (m *srsModule) srsGetRewriteDomain(msg *core.Message) string {
+func (m *srsModule) getRewriteDomain(msg *core.Message) string {
 	domains := make([]string, 0)
 	for _, hdr := range msg.Headers {
 		if strings.EqualFold(hdr.Key, m.cg.Config.Srs.Recipient_Header) {
@@ -183,7 +183,7 @@ func (m *srsModule) srsGetRewriteDomain(msg *core.Message) string {
 // Checks if the message was forwarded by comparing the recipient list
 // to the Config.Srs.Recipient_Header headers. If a recipient does not show in the
 // headers, it's safe to say the message was forwarded
-func (m *srsModule) srsIsForwarded(msg *core.Message) bool {
+func (m *srsModule) isForwarded(msg *core.Message) bool {
 	for _, rcpt := range msg.Rcpt {
 
 		match := false
