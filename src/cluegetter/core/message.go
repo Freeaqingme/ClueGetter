@@ -397,6 +397,10 @@ func messageGetResults(msg *Message, done chan bool) chan *MessageCheckResult {
 	out := make(chan *MessageCheckResult)
 
 	for _, module := range modules {
+		if !module.Enable() {
+			continue
+		}
+
 		wg.Add(1)
 		callback := module.MessageCheck
 		go func(moduleName string, moduleCallback *func(*Message, chan bool) *MessageCheckResult) {

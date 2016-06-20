@@ -65,7 +65,7 @@ func clamavDumpStats() {
 }
 
 func clamavMilterCheck(msg *Message, abort chan bool) *MessageCheckResult {
-	if !Config.Clamav.Enabled || !msg.session.config.Clamav.Enabled {
+	if !msg.session.config.Clamav.Enabled {
 		return nil
 	}
 

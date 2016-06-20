@@ -272,7 +272,7 @@ func quotasStop() {
 }
 
 func quotasIsAllowed(msg *Message, _ chan bool) *MessageCheckResult {
-	if !Config.Quotas.Enabled || !msg.session.config.Quotas.Enabled {
+	if !msg.session.config.Quotas.Enabled {
 		return nil
 	}
 

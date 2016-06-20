@@ -53,9 +53,9 @@ func esSubApp() {
 func esStart() {
 	var err error
 	esClient, err = elastic.NewClient(
-          elastic.SetSniff(Config.Elasticsearch.Sniff),
-          elastic.SetURL(Config.Elasticsearch.Url...),
-        )
+		elastic.SetSniff(Config.Elasticsearch.Sniff),
+		elastic.SetURL(Config.Elasticsearch.Url...),
+	)
 	if err != nil {
 		Log.Fatal("Could not connect to ElasticSearch:", err.Error())
 	}

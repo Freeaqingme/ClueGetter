@@ -34,7 +34,7 @@ func contactsInit() {
 
 func contactsGetResult(msg *Message, abort chan bool) *MessageCheckResult {
 	conf := Config.Contacts
-	if !conf.Enabled || !msg.session.config.Contacts.Enabled {
+	if !msg.session.config.Contacts.Enabled {
 		return nil
 	}
 

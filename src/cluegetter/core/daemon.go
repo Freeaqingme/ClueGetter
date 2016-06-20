@@ -84,11 +84,11 @@ func daemonStart() {
 	messageStart()
 	for _, module := range modules {
 		if !module.Enable() {
-			Log.Info("Skipping module '%s' because it was not enabled", module.Name())
+			Log.Info("Skipping module '" + module.Name() + "' because it was not enabled")
 			continue
 		}
 		module.Init()
-		Log.Info("Module '%s' started successfully", module.Name())
+		Log.Info("Module '" + module.Name() + "' started successfully")
 	}
 	milterStart()
 

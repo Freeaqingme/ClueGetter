@@ -37,7 +37,7 @@ func init() {
 }
 
 func saGetResult(msg *Message, abort chan bool) *MessageCheckResult {
-	if !Config.SpamAssassin.Enabled || !msg.session.config.SpamAssassin.Enabled {
+	if !msg.session.config.SpamAssassin.Enabled {
 		return nil
 	}
 

@@ -49,7 +49,7 @@ func init() {
 }
 
 func rspamdGetResult(msg *Message, abort chan bool) *MessageCheckResult {
-	if !Config.Rspamd.Enabled || !msg.session.config.Rspamd.Enabled {
+	if !msg.session.config.Rspamd.Enabled {
 		return nil
 	}
 
