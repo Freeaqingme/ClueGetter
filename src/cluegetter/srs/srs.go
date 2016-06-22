@@ -192,7 +192,6 @@ func (m *srsModule) isForwarded(msg *core.Message) bool {
 			if strings.EqualFold(hdr.Key, m.cg.Config.Srs.Recipient_Header) {
 				count++
 				if strings.EqualFold(hdr.Value, rcpt.String()) {
-
 					match = true
 					break
 				}
