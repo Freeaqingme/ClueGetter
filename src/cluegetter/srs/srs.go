@@ -56,11 +56,14 @@ func (m *srsModule) MessageCheck(msg *core.Message, done chan bool) *core.Messag
 		mapped = m.swapRecipients(msg, srsIn)
 	} else {
 		from = m.getFromAddress(msg)
-		core.MilterChangeFrom(msg.Session(), from)
-		go func() {
-			core.CluegetterRecover("srsPersist")
-			m.persist(msg, from)
-		}()
+
+		if from != "" {
+			core.MilterChangeFrom(msg.Session(), from)
+			go func() {
+				core.CluegetterRecover("srsPersist")
+				m.persist(msg, from)
+			}()
+		}
 	}
 
 	return &core.MessageCheckResult{
