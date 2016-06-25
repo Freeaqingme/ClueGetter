@@ -8,6 +8,8 @@ import (
 const ModuleName = "demo"
 
 type testModule struct {
+	*core.BaseModule
+
 	cg *core.Cluegetter
 }
 

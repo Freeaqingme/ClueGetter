@@ -22,6 +22,8 @@ const ModuleName = "srs"
 var srsMatch = regexp.MustCompile(`^(?i)SRS[0-9]+=`)
 
 type srsModule struct {
+	*core.BaseModule
+
 	cg *core.Cluegetter
 }
 
@@ -40,8 +42,6 @@ func (m *srsModule) SetCluegetter(cg *core.Cluegetter) {
 func (m *srsModule) Enable() bool {
 	return m.cg.Config.Srs.Enabled
 }
-
-func (m *srsModule) Stop() {}
 
 func (m *srsModule) MessageCheck(msg *core.Message, done chan bool) *core.MessageCheckResult {
 	from := ""
@@ -211,20 +211,4 @@ func (m *srsModule) isForwarded(msg *core.Message) bool {
 	}
 
 	return false
-}
-
-// Satisfy Interface
-func (m *srsModule) Init() {
-}
-
-func (m *srsModule) Ipc() map[string]func(string) {
-	return make(map[string]func(string), 0)
-}
-
-func (m *srsModule) Rpc() map[string]chan string {
-	return make(map[string]chan string, 0)
-}
-
-func (m *srsModule) HttpHandlers() map[string]core.HttpCallback {
-	return make(map[string]core.HttpCallback, 0)
 }

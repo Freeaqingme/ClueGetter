@@ -9,7 +9,6 @@ package core
 
 import (
 	"bufio"
-	"cluegetter/address"
 	"flag"
 	"fmt"
 	"github.com/Freeaqingme/GoDaemonSkeleton"
@@ -18,31 +17,15 @@ import (
 	"os"
 	"os/signal"
 	"strings"
-	"sync"
 	"syscall"
 )
 
 var (
-	modulesMu      sync.Mutex
-	modules        = make([]Module, 0)
 	ipcHandlers    = make(map[string]func(string), 0)
 	instance       uint
 	defaultLogFile = "/var/log/cluegetter.log"
 	logFile        string
 )
-
-type Module interface {
-	SetCluegetter(*Cluegetter)
-	Name() string
-	Enable() bool
-	Init()
-	Stop()
-	MessageCheck(msg *Message, done chan bool) *MessageCheckResult
-	RecipientCheck(rcpt *address.Address) (verdict int, msg string)
-	Ipc() map[string]func(string)
-	Rpc() map[string]chan string
-	HttpHandlers() map[string]HttpCallback
-}
 
 func init() {
 	handover := daemonStart
@@ -120,30 +103,6 @@ func setInstance() {
 	}
 
 	Log.Notice("Instance name: %s. Id: %d", Config.ClueGetter.Instance, instance)
-}
-
-func ModuleRegister(module Module) {
-	modulesMu.Lock()
-	defer modulesMu.Unlock()
-	if module == nil {
-		panic("Module: Register module is nil")
-	}
-	for _, dup := range modules {
-		if dup.Name() == module.Name() {
-			panic("Module: Register called twice for module " + module.Name())
-		}
-	}
-
-	if ipc := module.Ipc(); ipc != nil {
-		for ipcName, ipcCallback := range ipc {
-			if _, ok := ipcHandlers[ipcName]; ok {
-				panic("Tried to register ipcHandler twice for " + ipcName)
-			}
-			ipcHandlers[ipcName] = ipcCallback
-		}
-	}
-
-	modules = append(modules, module)
 }
 
 func daemonIpc(done <-chan struct{}) {
@@ -224,82 +183,4 @@ func daemonIpcSend(handle string, message string) {
 	if err != nil {
 		Log.Fatal("write error:", err)
 	}
-}
-
-////////////////////////////////////////
-
-type ModuleOld struct {
-	name         string
-	enable       *func() bool
-	init         *func()
-	stop         *func()
-	milterCheck  *func(*Message, chan bool) *MessageCheckResult
-	ipc          map[string]func(string)
-	rpc          map[string]chan string
-	httpHandlers map[string]HttpCallback
-}
-
-func (m *ModuleOld) Name() string {
-	return m.name
-}
-
-func (m *ModuleOld) SetCluegetter(cg *Cluegetter) {
-}
-
-func (m *ModuleOld) Enable() bool {
-	if m.enable == nil {
-		return false
-	}
-
-	return (*m.enable)()
-}
-
-func (m *ModuleOld) Init() {
-	if m.init == nil {
-		return
-	}
-
-	(*m.init)()
-}
-
-func (m *ModuleOld) Stop() {
-	if m.stop == nil {
-		return
-	}
-
-	(*m.stop)()
-}
-
-func (m *ModuleOld) MessageCheck(msg *Message, done chan bool) *MessageCheckResult {
-	if m.milterCheck == nil {
-		return nil
-	}
-
-	return (*m.milterCheck)(msg, done)
-}
-
-func (m *ModuleOld) RecipientCheck(rcpt *address.Address) (verdict int, msg string) {
-	return MessagePermit, ""
-}
-
-func (m *ModuleOld) Ipc() map[string]func(string) {
-	if m.ipc == nil {
-		return make(map[string]func(string), 0)
-	}
-
-	return m.ipc
-}
-
-func (m *ModuleOld) Rpc() map[string]chan string {
-	if m.rpc == nil {
-		return make(map[string]chan string, 0)
-	}
-	return m.rpc
-}
-
-func (m *ModuleOld) HttpHandlers() map[string]HttpCallback {
-	if m.httpHandlers == nil {
-		return make(map[string]HttpCallback, 0)
-	}
-	return m.httpHandlers
 }
