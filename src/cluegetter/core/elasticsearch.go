@@ -57,7 +57,7 @@ func esStart() {
 		elastic.SetURL(Config.Elasticsearch.Url...),
 	)
 	if err != nil {
-		Log.Fatal("Could not connect to ElasticSearch:", err.Error())
+		Log.Fatal("Could not connect to ElasticSearch: ", err.Error())
 	}
 
 	template := `{
