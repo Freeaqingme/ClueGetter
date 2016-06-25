@@ -1,3 +1,10 @@
+// ClueGetter - Does things with mail
+//
+// Copyright 2016 Dolf Schimmel, Freeaqingme.
+//
+// This Source Code Form is subject to the terms of the two-clause BSD license.
+// For its contents, please refer to the LICENSE file.
+//
 package moduleDemo
 
 import (
@@ -7,56 +14,56 @@ import (
 
 const ModuleName = "demo"
 
-type testModule struct {
+type module struct {
 	*core.BaseModule
 
 	cg *core.Cluegetter
 }
 
 func init() {
-	core.ModuleRegister(&testModule{})
+	core.ModuleRegister(&module{})
 }
 
-func (m *testModule) Name() string {
+func (m *module) Name() string {
 	return ModuleName
 }
 
-func (m *testModule) Enable() bool {
+func (m *module) Enable() bool {
 	return true
 }
 
-func (m *testModule) SetCluegetter(cg *core.Cluegetter) {
+func (m *module) SetCluegetter(cg *core.Cluegetter) {
 	m.cg = cg
 }
 
-func (m *testModule) Init() {
+func (m *module) Init() {
 	m.cg.Log.Notice("Initializing module demo")
 }
 
-func (m *testModule) Stop() {
+func (m *module) Stop() {
 	m.cg.Log.Notice("Stopping module demo")
 }
 
-func (m *testModule) MessageCheck(msg *core.Message, done chan bool) *core.MessageCheckResult {
+func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCheckResult {
 	m.cg.Log.Notice("Milter Checking Message %s", msg.QueueId)
 
 	return nil
 }
 
-func (m *testModule) RecipientCheck(rcpt *address.Address) (verdict int, msg string) {
+func (m *module) RecipientCheck(rcpt *address.Address) (verdict int, msg string) {
 	m.cg.Log.Debug("Considering if we should accept recipient %s", rcpt.String())
 
 	return core.MessagePermit, ""
 }
 
-func (m *testModule) Ipc() map[string]func(string) {
+func (m *module) Ipc() map[string]func(string) {
 	return make(map[string]func(string), 0)
 }
 
-func (m *testModule) Rpc() map[string]chan string {
+func (m *module) Rpc() map[string]chan string {
 	return make(map[string]chan string, 0)
 }
 
-func (m *testModule) HttpHandlers() map[string]core.HttpCallback {
+func (m *module) HttpHandlers() map[string]core.HttpCallback {
 	return make(map[string]core.HttpCallback, 0)
 }

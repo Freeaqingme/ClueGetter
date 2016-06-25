@@ -171,9 +171,9 @@ var luaSessionMethods = map[string]lua.LGFunction{
 	"getMtaDaemonName": luaSessionFuncMtaDaemonName,
 }
 
-func luaSessionGetFromVM(L *lua.LState) *milterSession {
+func luaSessionGetFromVM(L *lua.LState) *MilterSession {
 	ud := L.CheckUserData(1)
-	if v, ok := ud.Value.(*milterSession); ok {
+	if v, ok := ud.Value.(*MilterSession); ok {
 		return v
 	}
 	L.ArgError(1, "Session expected")

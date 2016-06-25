@@ -21,7 +21,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-type milterSession struct {
+type MilterSession struct {
 	id             [16]byte
 	DateConnect    time.Time
 	DateDisconnect time.Time
@@ -97,79 +97,99 @@ func milterSessionPrepStmt() {
 	milterCluegetterClientInsertStmt = stmt
 }
 
-func (s *milterSession) getNewMessage() *Message {
-	msg := &Message{}
-	msg.session = s
+func (s *MilterSession) getNewMessage() *Message {
+	msg := &Message{
+		session: s,
+	}
 
 	s.Messages = append(s.Messages, msg)
 	return msg
 }
 
-func (s *milterSession) getLastMessage() *Message {
+func (s *MilterSession) getLastMessage() *Message {
 	return s.Messages[len(s.Messages)-1]
 }
 
-func (s *milterSession) getId() [16]byte {
+func (s *MilterSession) Id() []byte {
+	return s.id[:]
+}
+
+func (s *MilterSession) IdArray() [16]byte {
 	return s.id
 }
 
-func (s *milterSession) getSaslUsername() string {
+func (s *MilterSession) getId() [16]byte {
+	return s.id
+}
+
+func (s *MilterSession) SetId(id [16]byte) {
+	if s.IdArray() != [16]byte{} {
+		panic("Cannot set a session id once set")
+	}
+
+	if id == [16]byte{} {
+		panic("Cannot set zero-valued id")
+	}
+	s.id = id
+}
+
+func (s *MilterSession) getSaslUsername() string {
 	return s.SaslUsername
 }
 
-func (s *milterSession) getSaslSender() string {
+func (s *MilterSession) getSaslSender() string {
 	return s.SaslSender
 }
 
-func (s *milterSession) getSaslMethod() string {
+func (s *MilterSession) getSaslMethod() string {
 	return s.SaslMethod
 }
 
-func (s *milterSession) getCertIssuer() string {
+func (s *MilterSession) getCertIssuer() string {
 	return s.CertIssuer
 }
 
-func (s *milterSession) getCertSubject() string {
+func (s *MilterSession) getCertSubject() string {
 	return s.CertSubject
 }
 
-func (s *milterSession) getCipherBits() uint32 {
+func (s *MilterSession) getCipherBits() uint32 {
 	return s.CipherBits
 }
 
-func (s *milterSession) getCipher() string {
+func (s *MilterSession) getCipher() string {
 	return s.Cipher
 }
 
-func (s *milterSession) getTlsVersion() string {
+func (s *MilterSession) getTlsVersion() string {
 	return s.TlsVersion
 }
 
-func (s *milterSession) getIp() string {
+func (s *MilterSession) getIp() string {
 	return s.Ip
 }
 
-func (s *milterSession) getReverseDns() string {
+func (s *MilterSession) getReverseDns() string {
 	return s.ReverseDns
 }
 
-func (s *milterSession) getHostname() string {
+func (s *MilterSession) getHostname() string {
 	return s.Hostname
 }
 
-func (s *milterSession) getHelo() string {
+func (s *MilterSession) getHelo() string {
 	return s.Helo
 }
 
-func (s *milterSession) getMtaHostName() string {
+func (s *MilterSession) getMtaHostName() string {
 	return s.MtaHostName
 }
 
-func (s *milterSession) getMtaDaemonName() string {
+func (s *MilterSession) getMtaDaemonName() string {
 	return s.MtaDaemonName
 }
 
-func (s *milterSession) isWhitelisted() bool {
+func (s *MilterSession) isWhitelisted() bool {
 	testIP := net.ParseIP(s.getIp()).To16()
 	for _, whitelistRange := range milterSessionWhitelist {
 		if bytes.Compare(testIP, whitelistRange.ipStart) >= 0 &&
@@ -247,12 +267,22 @@ func milterSessionProcessQueue() {
 			break
 		}
 
-		go func(sess *milterSession) {
-			CluegetterRecover("esSaveSession")
-			esSaveSession(sess)
-		}(queueItem.(*milterSession))
+		milterSessionPostDisconnectModule(queueItem.(*MilterSession))
 	}
 
+}
+
+func milterSessionPostDisconnectModule(s *MilterSession) {
+	for _, module := range modules {
+		if !module.Enable() {
+			continue
+		}
+
+		go func(m Module, s *MilterSession) {
+			CluegetterRecover(m.Name() + ".SessionDisconnect")
+			m.SessionDisconnect(s)
+		}(module, s)
+	}
 }
 
 func milterSessionPersistHandleQueue(queue chan []byte) {
@@ -305,7 +335,7 @@ func milterSessionPersist(sess *Proto_Session) {
 	}
 }
 
-func (s *milterSession) persist() {
+func (s *MilterSession) persist() {
 
 	protoMsg, err := proto.Marshal(s.getProtoBufStruct())
 	if err != nil {
@@ -316,7 +346,7 @@ func (s *milterSession) persist() {
 	milterSessionPersistQueue.Enqueue(s) // TODO: Log if ring buffer is (near) full
 }
 
-func (sess *milterSession) getProtoBufStruct() *Proto_Session {
+func (sess *MilterSession) getProtoBufStruct() *Proto_Session {
 	timeStart := sess.DateConnect.Unix()
 	var timeEnd int64
 	if &sess.DateDisconnect != nil {

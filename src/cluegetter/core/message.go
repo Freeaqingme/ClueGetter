@@ -26,7 +26,7 @@ const (
 )
 
 type Message struct {
-	session *milterSession
+	session *MilterSession
 
 	QueueId  string
 	From     *address.Address
@@ -49,8 +49,15 @@ type Message struct {
 	injectMessageId string
 }
 
-func (msg *Message) Session() *milterSession {
+func (msg *Message) Session() *MilterSession {
 	return msg.session
+}
+
+func (msg *Message) SetSession(s *MilterSession) {
+	if msg.session != nil {
+		panic("Cannot set session because session is already set")
+	}
+	msg.session = s
 }
 
 type MessageHeader struct {
@@ -81,7 +88,7 @@ type MessageCheckResult struct {
 }
 
 func (cr *MessageCheckResult) MarshalJSON() ([]byte, error) {
-	type Alias milterSession
+	type Alias MilterSession
 
 	determinants, _ := json.Marshal(cr.Determinants)
 	out := &struct {

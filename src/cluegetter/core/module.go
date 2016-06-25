@@ -25,6 +25,7 @@ type Module interface {
 	Stop()
 	MessageCheck(msg *Message, done chan bool) *MessageCheckResult
 	RecipientCheck(rcpt *address.Address) (verdict int, msg string)
+	SessionDisconnect(s *MilterSession)
 	Ipc() map[string]func(string)
 	Rpc() map[string]chan string
 	HttpHandlers() map[string]HttpCallback
@@ -81,6 +82,8 @@ func (m *BaseModule) MessageCheck(msg *Message, done chan bool) *MessageCheckRes
 func (m *BaseModule) RecipientCheck(rcpt *address.Address) (verdict int, msg string) {
 	return MessagePermit, ""
 }
+
+func (m *BaseModule) SessionDisconnect(s *MilterSession) {}
 
 func (m *BaseModule) Ipc() map[string]func(string) {
 	return make(map[string]func(string), 0)

@@ -26,11 +26,11 @@ type milter struct {
 }
 
 type milterDataIndex struct {
-	sessions map[[16]byte]*milterSession
+	sessions map[[16]byte]*MilterSession
 	mu       sync.RWMutex
 }
 
-func (di *milterDataIndex) addNewSession(sess *milterSession) *milterSession {
+func (di *milterDataIndex) addNewSession(sess *MilterSession) *MilterSession {
 	di.mu.Lock()
 	defer di.mu.Unlock()
 
@@ -38,7 +38,7 @@ func (di *milterDataIndex) addNewSession(sess *milterSession) *milterSession {
 	return sess
 }
 
-func (di *milterDataIndex) delete(s *milterSession, lock bool) {
+func (di *milterDataIndex) delete(s *MilterSession, lock bool) {
 	s.DateDisconnect = time.Now()
 	s.persist()
 
@@ -65,7 +65,7 @@ func (di *milterDataIndex) prune() {
 var MilterDataIndex milterDataIndex
 
 func milterStart() {
-	MilterDataIndex = milterDataIndex{sessions: make(map[[16]byte]*milterSession)}
+	MilterDataIndex = milterDataIndex{sessions: make(map[[16]byte]*MilterSession)}
 
 	statsInitCounter("MilterCallbackConnect")
 	statsInitCounter("MilterCallbackHelo")
@@ -129,7 +129,7 @@ func milterGetNewSessionId() [16]byte {
 func (milter *milter) Connect(ctx uintptr, hostname string, ip net.IP) (sfsistat int8) {
 	defer milterHandleError(ctx, &sfsistat)
 
-	sess := &milterSession{
+	sess := &MilterSession{
 		id:          milterGetNewSessionId(),
 		DateConnect: time.Now(),
 		Instance:    instance,
@@ -373,19 +373,19 @@ func milterHandleError(ctx uintptr, sfsistat *int8) {
 	return
 }
 
-func MilterChangeFrom(sess *milterSession, from string) {
+func MilterChangeFrom(sess *MilterSession, from string) {
 	m.ChgFrom(sess.milterCtx, from, "")
 }
 
-func MilterAddRcpt(sess *milterSession, rcpt string) int {
+func MilterAddRcpt(sess *MilterSession, rcpt string) int {
 	return m.AddRcpt(sess.milterCtx, rcpt)
 }
 
-func MilterDelRcpt(sess *milterSession, rcpt string) int {
+func MilterDelRcpt(sess *MilterSession, rcpt string) int {
 	return m.DelRcpt(sess.milterCtx, rcpt)
 }
 
-func milterGetSession(ctx uintptr, keep bool, returnNil bool) *milterSession {
+func milterGetSession(ctx uintptr, keep bool, returnNil bool) *MilterSession {
 	var u [16]byte
 	res := m.GetPriv(ctx, &u)
 	if res != 0 {
@@ -414,7 +414,7 @@ func milterGetSession(ctx uintptr, keep bool, returnNil bool) *milterSession {
 	return out
 }
 
-func (sess *milterSession) milterGetDisplayId() string {
+func (sess *MilterSession) milterGetDisplayId() string {
 	id := sess.getId()
 	return hex.EncodeToString(id[:])
 }

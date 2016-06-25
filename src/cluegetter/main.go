@@ -18,8 +18,9 @@ import (
 )
 
 import (
-	//_ "cluegetter/demo"
+	_ "cluegetter/elasticsearch"
 	_ "cluegetter/srs"
+	//_ "cluegetter/demo"
 )
 
 var (
@@ -52,6 +53,7 @@ func main() {
 	if *configFile != "" {
 		core.LoadConfig(*configFile, &core.Config)
 	}
+	core.InitCg()
 
 	os.Args = append([]string{os.Args[0]}, args...)
 	(*app.Handover)()

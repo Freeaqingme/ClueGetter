@@ -42,8 +42,6 @@ func DaemonReset() {
 }
 
 func daemonStart() {
-	initCg()
-
 	logFileTmp := flag.String("logfile", defaultLogFile, "Log file to use.")
 	foreground := flag.Bool("foreground", false, "Run in Foreground")
 	flag.Parse()
@@ -59,7 +57,7 @@ func daemonStart() {
 
 	done := make(chan struct{})
 	rdbmsStart()
-	setInstance()
+	instance = cg.Instance()
 	redisStart()
 
 	milterSessionStart()
@@ -89,20 +87,6 @@ func daemonStart() {
 
 	Log.Notice("Successfully ceased all operations.")
 	os.Exit(0)
-}
-
-func setInstance() {
-	if Config.ClueGetter.Instance == "" {
-		Log.Fatal("No instance was set")
-	}
-
-	err := Rdbms.QueryRow("SELECT id from instance WHERE name = ?", Config.ClueGetter.Instance).Scan(&instance)
-	if err != nil {
-		Log.Fatal(fmt.Sprintf("Could not retrieve instance '%s' from database: %s",
-			Config.ClueGetter.Instance, err))
-	}
-
-	Log.Notice("Instance name: %s. Id: %d", Config.ClueGetter.Instance, instance)
 }
 
 func daemonIpc(done <-chan struct{}) {
