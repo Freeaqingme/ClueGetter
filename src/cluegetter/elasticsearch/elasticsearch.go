@@ -130,7 +130,7 @@ func (m *module) Init() {
                 "Message":        { "type": "string" },
                 "Score":          { "type": "float" },
                 "WeightedScore":  { "type": "float" },
-                "Duration":       { "type": "float" },
+                "Duration":       { "type": "long" },
                 "Determinants":   { "type": "string" }
               }
             }

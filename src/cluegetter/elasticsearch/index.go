@@ -314,7 +314,7 @@ func indexHydrateCheckResultsFromDb(m *module, messages map[string]*core.Message
 	}
 
 	sql := `SELECT mr.message, mr.module, mr.verdict, mr.score,
-			mr.weighted_score, mr.duration, mr.determinants
+			mr.weighted_score, mr.duration*1000000000, mr.determinants
 		FROM message_result mr
 		WHERE mr.message IN (?` + strings.Repeat(",?", len(msgIds)-1) + `)`
 
