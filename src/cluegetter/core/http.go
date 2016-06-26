@@ -187,6 +187,11 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 		domain = address
 	}
 
+	if local == "" {
+		http.Error(w, "Only full addresses supported when searching through RDBMS :(", http.StatusBadRequest)
+		return
+	}
+
 	instances, err := httpParseFilterInstance(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
