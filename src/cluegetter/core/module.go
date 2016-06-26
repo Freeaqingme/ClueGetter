@@ -9,12 +9,6 @@ package core
 
 import (
 	"cluegetter/address"
-	"sync"
-)
-
-var (
-	modulesMu sync.Mutex
-	modules   = make([]Module, 0)
 )
 
 type Module interface {
@@ -32,8 +26,8 @@ type Module interface {
 }
 
 func ModuleRegister(module Module) {
-	modulesMu.Lock()
-	defer modulesMu.Unlock()
+	cg.modulesMu.Lock()
+	defer cg.modulesMu.Unlock()
 	if module == nil {
 		panic("Module: Register module is nil")
 	}
@@ -42,7 +36,7 @@ func ModuleRegister(module Module) {
 		panic("Module: No name was set")
 	}
 
-	for _, dup := range modules {
+	for _, dup := range cg.modules {
 		if dup.Name() == module.Name() {
 			panic("Module: Register called twice for module " + module.Name())
 		}
@@ -57,7 +51,40 @@ func ModuleRegister(module Module) {
 		}
 	}
 
-	modules = append(modules, module)
+	cg.modules = append(cg.modules, module)
+}
+
+func (cg *Cluegetter) Modules() []Module {
+	out := make([]Module, 0)
+	for _, module := range cg.modules {
+		if module.Enable() {
+			out = append(out, module)
+		}
+	}
+	return out
+}
+
+func (cg *Cluegetter) Module(name, caller string) *Module {
+	cg.modulesMu.RLock()
+	defer cg.modulesMu.RUnlock()
+
+	for _, module := range cg.modules {
+		if module.Name() != name {
+			continue
+		}
+
+		if module.Enable() {
+			return &module
+		} else {
+			break
+		}
+	}
+
+	if caller != "" {
+		panic("Module " + caller + " requires module " + name + " but it was not found (or enabled)")
+	}
+
+	return nil
 }
 
 //

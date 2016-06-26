@@ -8,10 +8,6 @@
 package core
 
 import (
-	"cluegetter/assets"
-	proxyproto "github.com/Freeaqingme/go-proxyproto"
-	humanize "github.com/dustin/go-humanize"
-
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -23,7 +19,16 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"cluegetter/address"
+	"cluegetter/assets"
+
+	proxyproto "github.com/Freeaqingme/go-proxyproto"
+	humanize "github.com/dustin/go-humanize"
 )
+
+const datasource_mysql = "mysql"
+const datasource_es = "elasticsearch"
 
 type HttpCallback func(w http.ResponseWriter, r *http.Request)
 
@@ -40,11 +45,7 @@ func httpStart(done <-chan struct{}) {
 	http.HandleFunc("/message/searchSaslUser/", httpHandleMessageSearchSaslUser)
 	http.HandleFunc("/", httpIndexHandler)
 
-	for _, module := range modules {
-		if !module.Enable() {
-			continue
-		}
-
+	for _, module := range cg.Modules() {
 		for url, callback := range module.HttpHandlers() {
 			http.HandleFunc(url, callback)
 		}
@@ -178,21 +179,25 @@ func httpLogRequest(frontend string, handler http.Handler) http.Handler {
 }
 
 func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
-	address := r.URL.Path[len("/message/searchEmail/"):]
-	var local, domain string
-	if strings.Index(address, "@") != -1 {
-		local = strings.Split(address, "@")[0]
-		domain = strings.Split(address, "@")[1]
-	} else {
-		domain = address
-	}
+	source := httpParseDataSource(r)
+	if source == datasource_es {
+		if cg.Module("elasticsearch", "") == nil {
+			http.Error(w, "Elasticsearch not enabled", http.StatusBadRequest)
+			return
+		}
 
-	if local == "" {
-		http.Error(w, "Only full addresses supported when searching through RDBMS :(", http.StatusBadRequest)
+		http.Redirect(w, r, "/es/"+r.URL.Path, http.StatusFound)
 		return
 	}
 
-	instances, err := httpParseFilterInstance(r)
+	address := address.FromAddressOrDomain(r.URL.Path[len("/message/searchEmail/"):])
+
+	if address.Local() == "" {
+		http.Error(w, "Only full addresses supported when searching through Mysql :(", http.StatusBadRequest)
+		return
+	}
+
+	instances, err := HttpParseFilterInstance(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -206,9 +211,9 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 				INNER JOIN session s ON s.id = m.session
 				INNER JOIN message_recipient mr on mr.message = m.id
 				INNER JOIN recipient r ON r.id = mr.recipient
-			WHERE (m.sender_domain = ? AND (m.sender_local = ? OR ? = '')) AND
-					s.cluegetter_instance IN (`+strings.Join(instances, ",")+`)
-				AND m.date >= CURDATE()-INTERVAL 1 WEEK
+			WHERE m.sender_domain = ?
+				AND s.cluegetter_instance IN (`+strings.Join(instances, ",")+`)
+				AND m.date >= CURDATE()-INTERVAL 2 WEEK
 			GROUP BY m.id
 			ORDER BY date DESC
 			LIMIT 0,250
@@ -219,16 +224,16 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 				INNER JOIN session s ON s.id = m.session
 				INNER JOIN message_recipient mr on mr.message = m.id
 				INNER JOIN recipient r ON r.id = mr.recipient
-			WHERE (r.domain = ? AND (r.local = ? OR ? = ''))
+			WHERE r.domain = ?
 				AND s.cluegetter_instance IN (`+strings.Join(instances, ",")+`)
-				AND m.date >= CURDATE()-INTERVAL 1 WEEK
+				AND m.date >= CURDATE()-INTERVAL 2 WEEK
 			GROUP BY m.id
 			ORDER BY date DESC
 			LIMIT 0,250
 		)
 		ORDER BY date DESC
 		LIMIT 0,250
-	`, domain, local, local, domain, local, local)
+	`, address.Domain(), address.Domain())
 	if err != nil {
 		panic(err)
 	}
@@ -239,7 +244,7 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 func httpHandlerMessageSearchClientAddress(w http.ResponseWriter, r *http.Request) {
 	address := r.URL.Path[len("/message/searchClientAddress/"):]
 
-	instances, err := httpParseFilterInstance(r)
+	instances, err := HttpParseFilterInstance(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -265,7 +270,7 @@ func httpHandlerMessageSearchClientAddress(w http.ResponseWriter, r *http.Reques
 func httpHandleMessageSearchSaslUser(w http.ResponseWriter, r *http.Request) {
 	saslUser := r.URL.Path[len("/message/searchSaslUser/"):]
 
-	instances, err := httpParseFilterInstance(r)
+	instances, err := HttpParseFilterInstance(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -319,7 +324,7 @@ func httpReturnJson(w http.ResponseWriter, obj interface{}) {
 
 func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 	queueId := r.URL.Path[len("/message/"):]
-	instances, err := httpParseFilterInstance(r)
+	instances, err := HttpParseFilterInstance(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -405,7 +410,12 @@ func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page Not Found", http.StatusNotFound)
 		return
 	}
-	filter := "instance=" + strings.Join(r.Form["instance"], ",")
+	fmt.Println(r.Form["datasource"])
+	datasourceFilter := ""
+	if len(r.Form["datasource"]) > 0 {
+		datasourceFilter = "&datasource=" + r.Form["datasource"][0]
+	}
+	filter := "instance=" + strings.Join(r.Form["instance"], ",") + datasourceFilter
 
 	if r.FormValue("queueId") != "" {
 		http.Redirect(w, r, "/message/"+r.FormValue("queueId")+"?"+filter, http.StatusFound)
@@ -483,7 +493,7 @@ func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
 
 	data.Selectors = selectors
 
-	selectedInstances, err := httpParseFilterInstance(r)
+	selectedInstances, err := HttpParseFilterInstance(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -580,7 +590,7 @@ func httpGetInstances() []*httpInstance {
 	return instances
 }
 
-func httpParseFilterInstance(r *http.Request) (out []string, err error) {
+func HttpParseFilterInstance(r *http.Request) (out []string, err error) {
 	r.ParseForm()
 	instanceIds := r.Form["instance"]
 
@@ -602,6 +612,17 @@ func httpParseFilterInstance(r *http.Request) (out []string, err error) {
 		out = append(out, strconv.Itoa(int(i)))
 	}
 	return
+}
+
+func httpParseDataSource(r *http.Request) string {
+	r.ParseForm()
+	sources := r.Form["datasource"]
+
+	if len(sources) > 0 && sources[0] == datasource_es {
+		return datasource_es
+	}
+
+	return datasource_mysql
 }
 
 func httpSetSelectedInstances(instances []*httpInstance, selectedInstances []string) {

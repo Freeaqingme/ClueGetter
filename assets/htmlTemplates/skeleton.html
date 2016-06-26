@@ -41,16 +41,20 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" target="_blank"
-               href="https://github.com/Freeaqingme/ClueGetter">ClueGetter</a>
         </div>
         <div id="navbar" class="collapse navbar-collapse">
             <ul class="nav navbar-nav">
-                <li><a href="/">Home</a></li>
+                <li><a href="/">Search</a></li>
                 <li><a href="/stats/abusers/">Abusers</a></li>
                 {{ if eq .Config.MailQueue.Enabled true }}
                     <li><a href="/mailqueue">Mail Queue</a></li>
                 {{ end }}
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                <li>
+                    <a class="navbar-brand" target="_blank"
+                       href="https://github.com/Freeaqingme/ClueGetter">ClueGetter</a>
+                </li>
             </ul>
         </div>
         <!--/.nav-collapse -->

@@ -279,11 +279,7 @@ func redisRpc() {
 	defer pubsub.Close()
 
 	listeners := make(map[string][]chan string, 0)
-	for _, module := range modules {
-		if !module.Enable() {
-			continue
-		}
-
+	for _, module := range cg.Modules() {
 		for pattern, channel := range module.Rpc() {
 			if listeners[pattern] == nil {
 				listeners[pattern] = make([]chan string, 0)

@@ -18,12 +18,11 @@ import (
 
 const ModuleName = "elasticsearch"
 
-var esClient *elastic.Client
-
 type module struct {
 	*core.BaseModule
 
-	cg *core.Cluegetter
+	cg       *core.Cluegetter
+	esClient *elastic.Client
 }
 
 type session struct {
@@ -48,7 +47,7 @@ func (m *module) Enable() bool {
 
 func (m *module) Init() {
 	var err error
-	esClient, err = elastic.NewClient(
+	m.esClient, err = elastic.NewClient(
 		elastic.SetSniff(m.cg.Config.Elasticsearch.Sniff),
 		elastic.SetURL(m.cg.Config.Elasticsearch.Url...),
 	)
@@ -143,7 +142,7 @@ func (m *module) Init() {
 }
 	`
 
-	_, err = esClient.IndexPutTemplate("cluegetter").BodyString(template).Do()
+	_, err = m.esClient.IndexPutTemplate("cluegetter").BodyString(template).Do()
 	if err != nil {
 		m.cg.Log.Fatal("Could not create ES template: %s", err.Error())
 	}
@@ -159,7 +158,7 @@ func (m *module) persistSession(coreSess *core.MilterSession) {
 	str, _ := sess.esMarshalJSON(m)
 	id := hex.EncodeToString(sess.Id())
 
-	_, err := esClient.Index().
+	_, err := m.esClient.Index().
 		Index("cluegetter-" + sess.DateConnect.Format("20060102")).
 		Type("session").
 		Id(id).

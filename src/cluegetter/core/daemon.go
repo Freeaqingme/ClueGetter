@@ -37,7 +37,7 @@ func init() {
 }
 
 func DaemonReset() {
-	modules = make([]Module, 0)
+	cg.modules = make([]Module, 0) // Todo: This is probably abundant
 	ipcHandlers = make(map[string]func(string), 0)
 }
 
@@ -63,11 +63,7 @@ func daemonStart() {
 	milterSessionStart()
 	httpStart(done)
 	messageStart()
-	for _, module := range modules {
-		if !module.Enable() {
-			Log.Info("Skipping module '" + module.Name() + "' because it was not enabled")
-			continue
-		}
+	for _, module := range cg.Modules() {
 		module.Init()
 		Log.Info("Module '" + module.Name() + "' started successfully")
 	}
@@ -79,7 +75,7 @@ func daemonStart() {
 
 	close(done)
 	milterStop()
-	for _, module := range modules {
+	for _, module := range cg.Modules() {
 		module.Stop()
 	}
 	messageStop()

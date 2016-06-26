@@ -12,7 +12,7 @@ var (
 	Config      = *new(config)
 	hostname, _ = os.Hostname()
 	Log         *log.Logger
-	cg          *Cluegetter
+	cg          = &Cluegetter{modules: make([]Module, 0)}
 )
 
 type Cluegetter struct {
@@ -20,13 +20,16 @@ type Cluegetter struct {
 	Log    *log.Logger
 	Redis  RedisClient
 
-	instance uint
-	indexMu  sync.Mutex
+	instance   uint
+	instanceMu sync.Mutex
+
+	modulesMu sync.RWMutex
+	modules   []Module
 }
 
 func (cg *Cluegetter) Instance() uint {
-	cg.indexMu.Lock()
-	defer cg.indexMu.Unlock()
+	cg.instanceMu.Lock()
+	defer cg.instanceMu.Unlock()
 	if cg.instance == 0 {
 		if cg.Config.ClueGetter.Instance == "" {
 			cg.Log.Fatal("No instance was set")
@@ -66,13 +69,11 @@ func CluegetterRecover(funcName string) {
 }
 
 func InitCg() *Cluegetter {
-	cg = &Cluegetter{
-		Config:   Config,
-		Log:      Log,
-		instance: instance,
-	}
+	cg.Config = Config
+	cg.Log = Log
+	cg.instance = instance
 
-	for _, module := range modules {
+	for _, module := range cg.modules {
 		module.SetCluegetter(cg)
 	}
 

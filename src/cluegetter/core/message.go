@@ -403,11 +403,7 @@ func messageGetResults(msg *Message, done chan bool) chan *MessageCheckResult {
 	var wg sync.WaitGroup
 	out := make(chan *MessageCheckResult)
 
-	for _, module := range modules {
-		if !module.Enable() {
-			continue
-		}
-
+	for _, module := range cg.Modules() {
 		wg.Add(1)
 		callback := module.MessageCheck
 		go func(moduleName string, moduleCallback *func(*Message, chan bool) *MessageCheckResult) {
@@ -647,11 +643,7 @@ func messageAcceptRecipient(rcpt *address.Address) (finalVerdict int, finalMsg s
 	finalVerdict = MessagePermit
 	finalMsg = ""
 
-	for _, module := range modules {
-		if !module.Enable() {
-			continue
-		}
-
+	for _, module := range cg.Modules() {
 		verdict, msg := module.RecipientCheck(rcpt)
 		if verdict == MessageError {
 			return verdict, msg

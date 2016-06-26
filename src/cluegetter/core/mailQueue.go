@@ -382,7 +382,7 @@ func mailQueueHttp(w http.ResponseWriter, r *http.Request) {
 		Instances:    httpGetInstances(),
 	}
 
-	selectedInstances, err := httpParseFilterInstance(r)
+	selectedInstances, err := HttpParseFilterInstance(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

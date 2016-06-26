@@ -273,11 +273,7 @@ func milterSessionProcessQueue() {
 }
 
 func milterSessionPostDisconnectModule(s *MilterSession) {
-	for _, module := range modules {
-		if !module.Enable() {
-			continue
-		}
-
+	for _, module := range cg.Modules() {
 		go func(m Module, s *MilterSession) {
 			CluegetterRecover(m.Name() + ".SessionDisconnect")
 			m.SessionDisconnect(s)
