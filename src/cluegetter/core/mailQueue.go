@@ -378,7 +378,7 @@ func mailQueueHttp(w http.ResponseWriter, r *http.Request) {
 		Sender     string
 		Recipient  string
 	}{
-		HttpViewData: httpGetViewData(),
+		HttpViewData: HttpGetViewData(),
 		Instances:    httpGetInstances(),
 	}
 
@@ -398,7 +398,7 @@ func mailQueueHttp(w http.ResponseWriter, r *http.Request) {
 		Instances: selectedInstances,
 	})
 
-	httpRenderOutput(w, r, "mailQueue.html", &data, &data.QueueItems)
+	HttpRenderOutput(w, r, "mailQueue.html", &data, &data.QueueItems)
 }
 
 func mailQueueHttpDelete(w http.ResponseWriter, r *http.Request) {

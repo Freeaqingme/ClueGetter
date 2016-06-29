@@ -10,7 +10,9 @@ package elasticsearch
 import (
 	"encoding/hex"
 	"encoding/json"
+	"time"
 
+	"cluegetter/address"
 	"cluegetter/core"
 
 	"gopkg.in/olivere/elastic.v3"
@@ -208,4 +210,86 @@ func (m *esMessage) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.Marshal(out)
+}
+
+func (s *session) UnmarshalJSON(data []byte) error {
+	type Alias session
+
+	aux := &struct {
+		*Alias
+		InstanceId uint
+		Messages   []esMessage
+	}{
+		Alias:    (*Alias)(s),
+		Messages: make([]esMessage, 0),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	aux.Alias.Messages = make([]*core.Message, 0)
+	for _, msg := range aux.Messages {
+		aux.Alias.Messages = append(aux.Alias.Messages, (*core.Message)(msg.Message))
+	}
+
+	s.Instance = aux.InstanceId
+	return nil
+}
+
+func (m *esMessage) UnmarshalJSON(data []byte) error {
+	type Alias esMessage
+
+	aux := &struct {
+		*Alias
+		From struct {
+			Local  string
+			Domain string
+		}
+		Rcpt []struct {
+			Local  string
+			Domain string
+		}
+		CheckResults []struct {
+			Module          string
+			SuggestedAction int
+			Message         string
+			Score           float64
+			Determinants    string
+			Duration        time.Duration
+			WeightedScore   float64
+		}
+	}{
+		Alias: (*Alias)(m),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	aux.Alias.From = address.FromString(aux.From.Local + "@" + aux.From.Domain)
+	for _, v := range aux.Rcpt {
+		aux.Alias.Rcpt = append(aux.Alias.Rcpt, address.FromString(v.Local+"@"+v.Domain))
+	}
+	for _, v := range aux.CheckResults {
+		var determinants interface{}
+		determinantsMap := make(map[string]interface{}, 0)
+		var err error
+		if err = json.Unmarshal([]byte(v.Determinants), &determinants); err != nil {
+			determinantsMap["error"] = "Could not unmarshal determinants from Elasticsearch Database: " + err.Error()
+		} else {
+			determinantsMap = determinants.(map[string]interface{})
+		}
+
+		aux.Alias.CheckResults = append(aux.Alias.CheckResults, &core.MessageCheckResult{
+			Module:          v.Module,
+			SuggestedAction: v.SuggestedAction,
+			Score:           v.Score,
+			Duration:        v.Duration,
+			WeightedScore:   v.WeightedScore,
+			Determinants:    determinantsMap,
+		})
+	}
+
+	return nil
 }

@@ -536,5 +536,5 @@ func quotasSasluserStats(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	httpRenderOutput(w, r, "", nil, &jsonData)
+	HttpRenderOutput(w, r, "", nil, &jsonData)
 }

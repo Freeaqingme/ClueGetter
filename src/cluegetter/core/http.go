@@ -76,10 +76,10 @@ type httpInstance struct {
 	Selected    bool
 }
 
-type httpMessage struct {
-	Recipients   []*httpMessageRecipient
-	Headers      []*httpMessageHeader
-	CheckResults []*httpMessageCheckResult
+type HttpMessage struct {
+	Recipients   []*HttpMessageRecipient
+	Headers      []*HttpMessageHeader
+	CheckResults []*HttpMessageCheckResult
 
 	Ip           string
 	ReverseDns   string
@@ -111,19 +111,19 @@ type httpMessage struct {
 	ScoreCombined          float64
 }
 
-type httpMessageRecipient struct {
+type HttpMessageRecipient struct {
 	Id     int
 	Local  string
 	Domain string
 	Email  string
 }
 
-type httpMessageHeader struct {
+type HttpMessageHeader struct {
 	Name string
 	Body string
 }
 
-type httpMessageCheckResult struct {
+type HttpMessageCheckResult struct {
 	Module        string
 	Verdict       string
 	Score         float64
@@ -294,27 +294,27 @@ func httpHandleMessageSearchSaslUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func httpProcessSearchResultRows(w http.ResponseWriter, r *http.Request, rows *sql.Rows) {
-	messages := make([]*httpMessage, 0)
+	messages := make([]*HttpMessage, 0)
 	for rows.Next() {
-		message := &httpMessage{Recipients: make([]*httpMessageRecipient, 0)}
+		message := &HttpMessage{Recipients: make([]*HttpMessageRecipient, 0)}
 		var rcptsStr string
 		rows.Scan(&message.Id, &message.Date, &message.Sender, &message.RcptCount,
 			&message.Verdict, &rcptsStr)
 		for _, rcpt := range strings.Split(rcptsStr, ",") {
-			message.Recipients = append(message.Recipients, &httpMessageRecipient{Email: rcpt})
+			message.Recipients = append(message.Recipients, &HttpMessageRecipient{Email: rcpt})
 		}
 		messages = append(messages, message)
 	}
 
 	data := struct {
 		*HttpViewData
-		Messages []*httpMessage
+		Messages []*HttpMessage
 	}{
-		HttpViewData: httpGetViewData(),
+		HttpViewData: HttpGetViewData(),
 		Messages:     messages,
 	}
 
-	httpRenderOutput(w, r, "messageSearchEmail.html", data, data.Messages)
+	HttpRenderOutput(w, r, "messageSearchEmail.html", data, data.Messages)
 }
 
 func httpReturnJson(w http.ResponseWriter, obj interface{}) {
@@ -342,7 +342,7 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 				LEFT JOIN cluegetter_client cc on s.cluegetter_client = cc.id
 			WHERE s.cluegetter_instance IN (`+strings.Join(instances, ",")+`)
 				AND m.id = ?`, queueId)
-	msg := &httpMessage{Recipients: make([]*httpMessageRecipient, 0)}
+	msg := &HttpMessage{Recipients: make([]*HttpMessageRecipient, 0)}
 	err = row.Scan(&msg.SessionId, &msg.Date, &msg.BodySize, &msg.Sender, &msg.RcptCount,
 		&msg.Verdict, &msg.VerdictMsg, &msg.RejectScore, &msg.RejectScoreThreshold,
 		&msg.TempfailScore, &msg.ScoreCombined, &msg.TempfailScoreThreshold,
@@ -361,7 +361,7 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 			"LEFT JOIN message m ON m.id = mr.message WHERE message = ?", queueId)
 	defer recipientRows.Close()
 	for recipientRows.Next() {
-		recipient := &httpMessageRecipient{}
+		recipient := &HttpMessageRecipient{}
 		recipientRows.Scan(&recipient.Id, &recipient.Local, &recipient.Domain)
 		if recipient.Domain == "" {
 			recipient.Email = recipient.Local
@@ -374,7 +374,7 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 	headerRows, _ := Rdbms.Query("SELECT name, body FROM message_header WHERE message = ?", queueId)
 	defer headerRows.Close()
 	for headerRows.Next() {
-		header := &httpMessageHeader{}
+		header := &HttpMessageHeader{}
 		headerRows.Scan(&header.Name, &header.Body)
 		msg.Headers = append(msg.Headers, header)
 	}
@@ -387,7 +387,7 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	defer checkResultRows.Close()
 	for checkResultRows.Next() {
-		checkResult := &httpMessageCheckResult{}
+		checkResult := &HttpMessageCheckResult{}
 		checkResultRows.Scan(&checkResult.Module, &checkResult.Verdict, &checkResult.Score,
 			&checkResult.WeightedScore, &checkResult.Duration, &checkResult.Determinants)
 		msg.CheckResults = append(msg.CheckResults, checkResult)
@@ -395,13 +395,13 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		*HttpViewData
-		Message *httpMessage
+		Message *HttpMessage
 	}{
-		HttpViewData: httpGetViewData(),
+		HttpViewData: HttpGetViewData(),
 		Message:      msg,
 	}
 
-	httpRenderOutput(w, r, "message.html", data, msg)
+	HttpRenderOutput(w, r, "message.html", data, msg)
 }
 
 func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -441,11 +441,11 @@ func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 		*HttpViewData
 		Instances []*httpInstance
 	}{
-		HttpViewData: httpGetViewData(),
+		HttpViewData: HttpGetViewData(),
 		Instances:    httpGetInstances(),
 	}
 
-	httpRenderOutput(w, r, "index.html", data, nil)
+	HttpRenderOutput(w, r, "index.html", data, nil)
 }
 
 type httpAbuserSelector struct {
@@ -460,7 +460,7 @@ type httpAbuserTop struct {
 	Count        int
 }
 
-func httpGetViewData() *HttpViewData {
+func HttpGetViewData() *HttpViewData {
 	return &HttpViewData{
 		Config: &Config,
 	}
@@ -477,7 +477,7 @@ func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
 		SenderDomainTop []*httpAbuserTop
 		Selectors       []*httpAbuserSelector
 	}{
-		httpGetViewData(),
+		HttpGetViewData(),
 		httpGetInstances(),
 		"4",
 		"5",
@@ -540,7 +540,7 @@ func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
 		data.SenderDomainTop = append(data.SenderDomainTop, result)
 	}
 
-	httpRenderOutput(w, r, "abusers.html", data, data.SenderDomainTop)
+	HttpRenderOutput(w, r, "abusers.html", data, data.SenderDomainTop)
 }
 
 func httpGetSelectors(r *http.Request) (out []*httpAbuserSelector, err error) {
@@ -641,7 +641,7 @@ func httpSetSelectedInstances(instances []*httpInstance, selectedInstances []str
 	}
 }
 
-func httpRenderOutput(w http.ResponseWriter, r *http.Request, templateFile string, data, jsonData interface{}) {
+func HttpRenderOutput(w http.ResponseWriter, r *http.Request, templateFile string, data, jsonData interface{}) {
 	if r.FormValue("json") == "1" {
 		if jsonData == nil {
 			http.Error(w, "No parameter 'json' supported", http.StatusBadRequest)
