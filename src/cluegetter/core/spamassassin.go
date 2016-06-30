@@ -43,7 +43,7 @@ func saGetResult(msg *Message, abort chan bool) *MessageCheckResult {
 
 	rawReply, err := saGetRawReply(msg, abort)
 	if err != nil || rawReply.Code != spamc.EX_OK {
-		Log.Error("SpamAssassin returned an error: %s", err)
+		Log.Errorf("SpamAssassin returned an error: %s", err)
 		return &MessageCheckResult{
 			Module:          "spamassassin",
 			SuggestedAction: MessageError,
@@ -53,7 +53,7 @@ func saGetResult(msg *Message, abort chan bool) *MessageCheckResult {
 		}
 	}
 
-	Log.Debug("Getting SA report for %s", msg.QueueId)
+	Log.Debugf("Getting SA report for %s", msg.QueueId)
 	report := saParseReply(rawReply)
 	factsStr := func() []string {
 		out := make([]string, 0)
@@ -63,7 +63,7 @@ func saGetResult(msg *Message, abort chan bool) *MessageCheckResult {
 		return out
 	}()
 
-	Log.Debug("Got SA score of %.2f for %s. Tests: [%s]", report.score, msg.QueueId, strings.Join(factsStr, ","))
+	Log.Debugf("Got SA score of %.2f for %s. Tests: [%s]", report.score, msg.QueueId, strings.Join(factsStr, ","))
 	return &MessageCheckResult{
 		Module:          "spamassassin",
 		SuggestedAction: MessageReject,

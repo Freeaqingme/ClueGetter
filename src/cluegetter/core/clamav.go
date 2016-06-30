@@ -38,7 +38,7 @@ func clamavInit() {
 
 	err := clamdClient.Ping()
 	if err != nil {
-		Log.Fatal("Could not connect to Clamav: %s", err.Error())
+		Log.Fatalf("Could not connect to Clamav: %s", err.Error())
 	}
 
 	go func() {
@@ -58,10 +58,10 @@ func clamavInit() {
 func clamavDumpStats() {
 	stats, err := clamdClient.Stats()
 	if err != nil {
-		Log.Error("Error while dumping stats from ClamAV: %s", err.Error())
+		Log.Errorf("Error while dumping stats from ClamAV: %s", err.Error())
 	}
 
-	Log.Info("ClamAV stats: %v", stats)
+	Log.Infof("ClamAV stats: %v", stats)
 }
 
 func clamavMilterCheck(msg *Message, abort chan bool) *MessageCheckResult {
@@ -77,7 +77,7 @@ func clamavMilterCheck(msg *Message, abort chan bool) *MessageCheckResult {
 
 	res, err := clamdClient.ScanStream(bytes.NewReader(msgStr), abort)
 	if err != nil {
-		Log.Error("Problem while talking to Clamd while checking for %s: %s", msg.QueueId, err.Error())
+		Log.Errorf("Problem while talking to Clamd while checking for %s: %s", msg.QueueId, err.Error())
 		return &MessageCheckResult{
 			Module:          "clamav",
 			SuggestedAction: MessageError,
@@ -91,14 +91,14 @@ func clamavMilterCheck(msg *Message, abort chan bool) *MessageCheckResult {
 	// more, we do want to close everything.
 	defer func() {
 		for v := range res {
-			Log.Notice("Got an additional ClamAV result, but it was discarded while scanning %s: %s",
+			Log.Noticef("Got an additional ClamAV result, but it was discarded while scanning %s: %s",
 				msg.QueueId, v.Raw)
 		}
 	}()
 
 	v := <-res
 	if v == nil {
-		Log.Info("clamavMilterCheck(): No result received over result cannel. Channel closed?")
+		Log.Infof("clamavMilterCheck(): No result received over result cannel. Channel closed?")
 		return nil
 	}
 
@@ -121,7 +121,7 @@ func clamavMilterCheck(msg *Message, abort chan bool) *MessageCheckResult {
 			Determinants: clamavGetDeterminants(v),
 		}
 	case clamd.RES_PARSE_ERROR:
-		Log.Error("Could not parse output from Clamd while checking for %s. Raw output: %s",
+		Log.Errorf("Could not parse output from Clamd while checking for %s. Raw output: %s",
 			msg.QueueId, v.Raw)
 		return &MessageCheckResult{
 			Module:          "clamav",
@@ -131,7 +131,7 @@ func clamavMilterCheck(msg *Message, abort chan bool) *MessageCheckResult {
 			Determinants:    clamavGetDeterminants(v),
 		}
 	case clamd.RES_ERROR:
-		Log.Error("Clamd returned an error while checking for %s: %s", msg.QueueId, v.Description)
+		Log.Errorf("Clamd returned an error while checking for %s: %s", msg.QueueId, v.Description)
 
 		return &MessageCheckResult{
 			Module:          "clamav",
@@ -141,7 +141,7 @@ func clamavMilterCheck(msg *Message, abort chan bool) *MessageCheckResult {
 			Determinants:    clamavGetDeterminants(v),
 		}
 	default:
-		Log.Error("Clamd returned an unrecognized status code. This shouldn't happen! "+
+		Log.Errorf("Clamd returned an unrecognized status code. This shouldn't happen! "+
 			"While checking for %s: %s", msg.QueueId, v.Status)
 
 		return &MessageCheckResult{

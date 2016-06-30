@@ -50,7 +50,7 @@ func daemonStart() {
 		logFile = *logFileTmp
 		log.LogRedirectStdOutToFile(logFile)
 	}
-	Log.Notice("Starting ClueGetter...")
+	Log.Noticef("Starting ClueGetter...")
 
 	ch := make(chan os.Signal)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
@@ -65,13 +65,13 @@ func daemonStart() {
 	messageStart()
 	for _, module := range cg.Modules() {
 		module.Init()
-		Log.Info("Module '" + module.Name() + "' started successfully")
+		Log.Infof("Module '" + module.Name() + "' started successfully")
 	}
 	milterStart()
 
 	go daemonIpc(done)
 	s := <-ch
-	Log.Notice(fmt.Sprintf("Received '%s', exiting...", s.String()))
+	Log.Noticef(fmt.Sprintf("Received '%s', exiting...", s.String()))
 
 	close(done)
 	milterStop()
@@ -81,7 +81,7 @@ func daemonStart() {
 	messageStop()
 	rdbmsStop()
 
-	Log.Notice("Successfully ceased all operations.")
+	Log.Noticef("Successfully ceased all operations.")
 	os.Exit(0)
 }
 
@@ -89,14 +89,14 @@ func daemonIpc(done <-chan struct{}) {
 	if _, err := os.Stat(Config.ClueGetter.IPC_Socket); !os.IsNotExist(err) {
 		err = os.Remove(Config.ClueGetter.IPC_Socket)
 		if err != nil {
-			Log.Fatal(fmt.Sprintf("IPC Socket %s already exists and could not be removed: %s",
+			Log.Fatalf(fmt.Sprintf("IPC Socket %s already exists and could not be removed: %s",
 				Config.ClueGetter.IPC_Socket, err.Error()))
 		}
 	}
 
 	l, err := net.ListenUnix("unix", &net.UnixAddr{Config.ClueGetter.IPC_Socket, "unix"})
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 
 	go func() {
@@ -109,10 +109,10 @@ func daemonIpc(done <-chan struct{}) {
 		if err != nil {
 			_, open := <-done
 			if !open {
-				Log.Info("IPC Socket shutting down")
+				Log.Infof("IPC Socket shutting down")
 				break
 			}
-			Log.Fatal("Critical error on IPC Socket: %s", err)
+			Log.Fatalf("Critical error on IPC Socket: %s", err)
 		}
 
 		go daemonIpcHandleConn(conn)
@@ -127,7 +127,7 @@ func daemonIpcHandleConn(conn *net.UnixConn) {
 		message, err := bufio.NewReader(conn).ReadString('\x00')
 		if err != nil {
 			if message != "" {
-				Log.Info("Got %s on IPC Socket. Ignoring.", err.Error())
+				Log.Infof("Got %s on IPC Socket. Ignoring.", err.Error())
 			}
 			return
 		}
@@ -140,7 +140,7 @@ func daemonIpcHandleConn(conn *net.UnixConn) {
 			v = strings.TrimRightFunc(kv[1], func(v rune) bool { return v == '\x00' })
 		}
 		if callback == nil {
-			Log.Debug("Received IPC message but no such pattern was registered, ignoring: <%s>%s", handle, v)
+			Log.Debugf("Received IPC message but no such pattern was registered, ignoring: <%s>%s", handle, v)
 			return
 		}
 
@@ -161,6 +161,6 @@ func daemonIpcSend(handle string, message string) {
 	msg = append(msg, '\x00')
 	_, err = c.Write(msg)
 	if err != nil {
-		Log.Fatal("write error:", err)
+		Log.Fatalf("write error:", err)
 	}
 }

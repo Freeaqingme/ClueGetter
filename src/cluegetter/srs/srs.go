@@ -48,7 +48,7 @@ func (m *srsModule) MessageCheck(msg *core.Message, done chan bool) *core.Messag
 	srsIn := m.getInboundSrsAddresses(msg)
 
 	if len(srsIn) > 0 && len(msg.Rcpt) > 1 {
-		m.cg.Log.Notice("More than 1 recipient including an SRS recipient, that's weird?")
+		m.cg.Log.Noticef("More than 1 recipient including an SRS recipient, that's weird?")
 	}
 
 	var mapped map[string]string
@@ -144,7 +144,7 @@ func (m *srsModule) getFromAddress(msg *core.Message) string {
 
 	domain := m.getRewriteDomain(msg)
 	if domain == "" {
-		m.cg.Log.Debug("Could not determine SRS domain for %s", msg.QueueId)
+		m.cg.Log.Debugf("Could not determine SRS domain for %s", msg.QueueId)
 		return ""
 	}
 
@@ -171,7 +171,7 @@ func (m *srsModule) getRewriteDomain(msg *core.Message) string {
 	}
 
 	if len(domains) > 1 {
-		m.cg.Log.Debug("Multiple SRS domains to choose from for message '%s': %s",
+		m.cg.Log.Debugf("Multiple SRS domains to choose from for message '%s': %s",
 			msg.QueueId, domains,
 		)
 	}

@@ -25,13 +25,13 @@ func rdbmsStart() {
 	err_msg := "Could not connect to %s. Got error: %s"
 	rdbms, err := sql.Open(Config.ClueGetter.Rdbms_Driver, dsn)
 	if err != nil {
-		Log.Fatal(fmt.Sprintf(err_msg, display_dsn, err))
+		Log.Fatalf(fmt.Sprintf(err_msg, display_dsn, err))
 	}
 	Rdbms = rdbms
 
 	err = Rdbms.Ping()
 	if err != nil {
-		Log.Fatal(fmt.Sprintf(err_msg, display_dsn, err))
+		Log.Fatalf(fmt.Sprintf(err_msg, display_dsn, err))
 	}
 
 	statsInitCounter("RdbmsQueries")
@@ -39,12 +39,12 @@ func rdbmsStart() {
 
 	var version string
 	Rdbms.QueryRow("SELECT VERSION()").Scan(&version)
-	Log.Info(fmt.Sprintf("Successfully connected to %s: %s", display_dsn, version))
+	Log.Infof(fmt.Sprintf("Successfully connected to %s: %s", display_dsn, version))
 }
 
 func rdbmsStop() {
 	Rdbms.Close()
-	Log.Info("Disconnected from RDBMS %s", rdbmsGetDsn(true))
+	Log.Infof("Disconnected from RDBMS %s", rdbmsGetDsn(true))
 }
 
 func rdbmsGetDsn(display bool) string {
@@ -68,7 +68,7 @@ func RdbmsRowsInTable(table string) (count int) {
 			WHERE TABLE_SCHEMA = database() AND TABLE_NAME = ?
 	`, table).Scan(&count)
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 
 	return count

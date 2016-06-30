@@ -83,7 +83,7 @@ func init() {
 func quotasStart() {
 	quotasPrepStmt()
 	if !Config.Redis.Enabled {
-		Log.Fatal("Cannot use quotas module without Redis")
+		Log.Fatalf("Cannot use quotas module without Redis")
 	}
 
 	quotasRedisStart()
@@ -115,10 +115,10 @@ func quotasRegexesLoad() {
 		if r == nil {
 			return
 		}
-		Log.Error("Panic caught in quotasRegexesLoad(). Recovering. Error: %s", r)
+		Log.Errorf("Panic caught in quotasRegexesLoad(). Recovering. Error: %s", r)
 	}()
 
-	Log.Info("Importing regexes from RDBMS")
+	Log.Infof("Importing regexes from RDBMS")
 	t0 := time.Now()
 
 	regexes, err := QuotaGetAllRegexesStmt.Query()
@@ -140,7 +140,7 @@ func quotasRegexesLoad() {
 
 		regex, err := pcre.Compile(regexStr, 0)
 		if err != nil {
-			Log.Error("Could not compile regex: /%s/. Ignoring. Error: %s", regexStr, err.String())
+			Log.Errorf("Could not compile regex: /%s/. Ignoring. Error: %s", regexStr, err.String())
 			continue
 		}
 
@@ -157,7 +157,7 @@ func quotasRegexesLoad() {
 	defer quotasRegexesLock.Unlock()
 
 	quotasRegexes = regexCollection
-	Log.Info("Imported %d regexes in %.2f seconds", i, time.Now().Sub(t0).Seconds())
+	Log.Infof("Imported %d regexes in %.2f seconds", i, time.Now().Sub(t0).Seconds())
 }
 
 func quotasRedisStart() {
@@ -183,19 +183,19 @@ func quotasRedisUpdateFromRdbms() {
 		if r == nil {
 			return
 		}
-		Log.Error("Panic caught in quotasRedisUpdateFromRdbms(). Recovering. Error: %s", r)
+		Log.Errorf("Panic caught in quotasRedisUpdateFromRdbms(). Recovering. Error: %s", r)
 	}()
 
 	key := fmt.Sprintf("cluegetter-%d-quotas-schedule-quotasRedisUpdateFromRdbms", instance)
 	set, err := redisClient.SetNX(key, hostname, 5*time.Minute).Result()
 	if err != nil {
-		Log.Error("Could not update quotasRedisUpdateFromRdbms schedule: %s", err.Error())
+		Log.Errorf("Could not update quotasRedisUpdateFromRdbms schedule: %s", err.Error())
 	} else if !set {
-		Log.Debug("Update Quotas From Rdbms was run recently. Sipping")
+		Log.Debugf("Update Quotas From Rdbms was run recently. Sipping")
 		return
 	}
 
-	Log.Info("Importing quotas into Redis")
+	Log.Infof("Importing quotas into Redis")
 	t0 := time.Now()
 
 	quotas, err := QuotaGetAllQuotasStmt.Query()
@@ -232,7 +232,7 @@ func quotasRedisUpdateFromRdbms() {
 		redisClient.Expire(key, time.Duration(24)*time.Hour)
 	}
 
-	Log.Info("Imported %d quota tuples into Redis in %.2f seconds", i, time.Now().Sub(t0).Seconds())
+	Log.Infof("Imported %d quota tuples into Redis in %.2f seconds", i, time.Now().Sub(t0).Seconds())
 }
 
 func quotasPrepStmt() {
@@ -245,7 +245,7 @@ func quotasPrepStmt() {
 			WHERE q.is_regex = 0 AND c.cluegetter_instance = %d
 			GROUP BY pp.id, q.id`, instance))
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 	QuotaGetAllQuotasStmt = stmt
 
@@ -258,7 +258,7 @@ func quotasPrepStmt() {
 			WHERE q.is_regex = 1 AND c.cluegetter_instance = %d
 			GROUP BY pp.id, q.id`, instance))
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 	QuotaGetAllRegexesStmt = stmt
 }
@@ -268,7 +268,7 @@ func quotasStop() {
 		return
 	}
 
-	Log.Info("Quotas module ended")
+	Log.Infof("Quotas module ended")
 }
 
 func quotasIsAllowed(msg *Message, _ chan bool) *MessageCheckResult {
@@ -324,12 +324,12 @@ func quotasRedisIsAllowed(msg *Message) *MessageCheckResult {
 	rejectMsg := ""
 	for _, result := range results {
 		if result.FutureTotalCount > result.Curb {
-			Log.Notice("Quota Exceeding, max of %d messages per %d seconds for %s '%s'",
+			Log.Noticef("Quota Exceeding, max of %d messages per %d seconds for %s '%s'",
 				result.Curb, result.Period, *result.Selector, *result.FactorValue)
 			rejectMsg = fmt.Sprintf("REJECT Policy reject; Exceeding quota, max of %d messages per %d seconds for %s '%s'",
 				result.Curb, result.Period, *result.Selector, *result.FactorValue)
 		} else {
-			Log.Info("Quota Updated, Adding %d message(s) to total of %d (max %d) for last %d seconds for %s '%s'",
+			Log.Infof("Quota Updated, Adding %d message(s) to total of %d (max %d) for last %d seconds for %s '%s'",
 				result.ExtraCount, result.FutureTotalCount, result.Curb, result.Period, *result.Selector, *result.FactorValue)
 		}
 	}

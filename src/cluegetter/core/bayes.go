@@ -57,26 +57,26 @@ func bayesHandleReportMessageIdQueueItem(item string) {
 	rpc := &Rpc{}
 	err := rpc.Unmarshal([]byte(item))
 	if err != nil {
-		Log.Error("Could not unmarshal RPC Message Bayes_Learn_Message_Id:", err.Error())
+		Log.Errorf("Could not unmarshal RPC Message Bayes_Learn_Message_Id:", err.Error())
 		return
 	}
 
 	if rpc.Name != "Bayes_Learn_Message_Id" || rpc.Bayes_Learn_Message_Id == nil {
-		Log.Error("Invalid RPC Message Bayes_Learn_Message_Id")
+		Log.Errorf("Invalid RPC Message Bayes_Learn_Message_Id")
 		return
 	}
 	rpcMsg := rpc.Bayes_Learn_Message_Id
 
 	msgBytes := messagePersistCache.getByMessageId(rpcMsg.MessageId)
 	if len(msgBytes) == 0 {
-		Log.Error("Could not retrieve message from cache with message-id %s",
+		Log.Errorf("Could not retrieve message from cache with message-id %s",
 			rpcMsg.MessageId)
 		return
 	}
 
 	msg, err := messagePersistUnmarshalProto(msgBytes)
 	if err != nil {
-		Log.Error("Could not unmarshal message from cache: %s", err.Error())
+		Log.Errorf("Could not unmarshal message from cache: %s", err.Error())
 		return
 	}
 	rpcName := "Bayes_Learn_Message"
@@ -99,12 +99,12 @@ func bayesHandleReportMessageIdQueueItem(item string) {
 
 	payload, err := rpcOut.Marshal()
 	if err != nil {
-		Log.Error("Could not marshal data-object to json: %s", err.Error())
+		Log.Errorf("Could not marshal data-object to json: %s", err.Error())
 		return
 	}
 	err = redisPublish(fmt.Sprintf("cluegetter!!bayes!learn"), payload)
 	if err != nil {
-		Log.Error("Error while reporting bayes message id: %s", err.Error())
+		Log.Errorf("Error while reporting bayes message id: %s", err.Error())
 	}
 }
 
@@ -135,7 +135,7 @@ func bayesReportMessageId(spam bool, messageId, host, reporter, reason string) {
 	err := redisPublish(key, payloadBytes)
 
 	if err != nil {
-		Log.Error("Error while reporting bayes message id: %s", err.Error())
+		Log.Errorf("Error while reporting bayes message id: %s", err.Error())
 	}
 }
 
@@ -143,12 +143,12 @@ func bayesLearn(item string) {
 	rpc := &Rpc{}
 	err := rpc.Unmarshal([]byte(item))
 	if err != nil {
-		Log.Error("Could not unmarshal RPC Message Bayes_Learn_Message:", err.Error())
+		Log.Errorf("Could not unmarshal RPC Message Bayes_Learn_Message:", err.Error())
 		return
 	}
 
 	if rpc.Name != "Bayes_Learn_Message" || rpc.Bayes_Learn_Message == nil {
-		Log.Error("Invalid RPC Message Bayes_Learn_Message")
+		Log.Errorf("Invalid RPC Message Bayes_Learn_Message")
 		return
 	}
 

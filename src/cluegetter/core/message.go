@@ -129,7 +129,7 @@ var MessageModuleGroups = make([]*MessageModuleGroup, 0)
 func messageStart() {
 	for _, hdrString := range Config.ClueGetter.Add_Header {
 		if strings.Index(hdrString, ":") < 1 {
-			Log.Fatal("Invalid header specified: ", hdrString)
+			Log.Fatalf("Invalid header specified: ", hdrString)
 		}
 
 		header := MessageHeader{
@@ -145,7 +145,7 @@ func messageStart() {
 				case "U":
 					header.flagUnique = true
 				default:
-					Log.Fatal("Unrecognized flag: " + flag)
+					Log.Fatalf("Unrecognized flag: " + flag)
 				}
 			}
 			header.Key = strings.Trim(header.Key[flagsPosEnd+1:len(header.Key)], " ")
@@ -157,7 +157,7 @@ func messageStart() {
 	if Config.ClueGetter.Archive_Retention_Message < Config.ClueGetter.Archive_Retention_Body ||
 		Config.ClueGetter.Archive_Retention_Message < Config.ClueGetter.Archive_Retention_Header ||
 		Config.ClueGetter.Archive_Retention_Message < Config.ClueGetter.Archive_Retention_Message_Result {
-		Log.Fatal("Config Error: Message retention time should be at least as long as body and header retention time")
+		Log.Fatalf("Config Error: Message retention time should be at least as long as body and header retention time")
 	}
 
 	statsInitCounter("MessagePanics")
@@ -174,12 +174,12 @@ func messageStart() {
 	messageStartModuleGroups()
 	messagePersistStart()
 
-	Log.Info("Message handler started successfully")
+	Log.Infof("Message handler started successfully")
 }
 
 func messageStop() {
 	MessageStmtInsertMsg.Close()
-	Log.Info("Message handler stopped successfully")
+	Log.Infof("Message handler stopped successfully")
 }
 
 func messageStartModuleGroups() {
@@ -194,27 +194,27 @@ func messageStartModuleGroups() {
 		}
 		MessageModuleGroups = append(MessageModuleGroups, group)
 		if len((*groupConfig).Module) == 0 {
-			Log.Fatal(fmt.Sprintf("Config Error: Module Group %s does not have any modules", groupName))
+			Log.Fatalf(fmt.Sprintf("Config Error: Module Group %s does not have any modules", groupName))
 		}
 
 		for k, v := range (*groupConfig).Module {
 			split := strings.SplitN(v, " ", 2)
 			if len(split) < 2 {
-				Log.Fatal(fmt.Sprintf("Config Error: Incorrectly formatted module group %s/%s", groupName, v))
+				Log.Fatalf(fmt.Sprintf("Config Error: Incorrectly formatted module group %s/%s", groupName, v))
 			}
 			if !modules[split[1]] {
-				Log.Fatal(fmt.Sprintf("Unknown module specified for module group %s: %s", groupName, split[1]))
+				Log.Fatalf(fmt.Sprintf("Unknown module specified for module group %s: %s", groupName, split[1]))
 			}
 
 			weight, err := strconv.ParseFloat(split[0], 64)
 			if err != nil {
-				Log.Fatal(fmt.Sprintf("Invalid weight specified in module group %s/%s", groupName, split[1]))
+				Log.Fatalf(fmt.Sprintf("Invalid weight specified in module group %s/%s", groupName, split[1]))
 			}
 
 			for _, existingGroup := range MessageModuleGroups {
 				for _, existingModuleGroupModule := range existingGroup.modules {
 					if existingModuleGroupModule != nil && split[1] == existingModuleGroupModule.module {
-						Log.Fatal(fmt.Sprintf("Module %s is already part of module group '%s', cannot add to '%s'",
+						Log.Fatalf(fmt.Sprintf("Module %s is already part of module group '%s', cannot add to '%s'",
 							split[1], existingGroup.name, groupName,
 						))
 					}
@@ -239,7 +239,7 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 		if r == nil {
 			return
 		}
-		Log.Error("Panic caught in messageGetVerdict(). Recovering. Error: %s", r)
+		Log.Errorf("Panic caught in messageGetVerdict(). Recovering. Error: %s", r)
 		StatsCounters["MessagePanics"].increase(1)
 		verdict = MessageTempFail
 		msgStr = "An internal error occurred."
@@ -269,7 +269,7 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 		if result.SuggestedAction == MessageError {
 			errorCount = errorCount + 1
 		} else if breakerScore[result.SuggestedAction] >= msg.session.config.ClueGetter.Breaker_Score {
-			Log.Debug(
+			Log.Debugf(
 				"Breaker score %.2f/%.2f reached. Aborting all running modules",
 				breakerScore[result.SuggestedAction],
 				msg.session.config.ClueGetter.Breaker_Score,
@@ -339,7 +339,7 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 					if r == nil {
 						return
 					}
-					Log.Error("Panic caught in callback in messageGetVerdict(). Recovering. Error: %s", r)
+					Log.Errorf("Panic caught in callback in messageGetVerdict(). Recovering. Error: %s", r)
 				}()
 				(*callback)(msg, verdict)
 			}(callback, msg, verdict)
@@ -417,7 +417,7 @@ func messageGetResults(msg *Message, done chan bool) chan *MessageCheckResult {
 				if r == nil {
 					return
 				}
-				Log.Error("Panic caught in %s. Recovering. Error: %s", moduleName, r)
+				Log.Errorf("Panic caught in %s. Recovering. Error: %s", moduleName, r)
 				StatsCounters["MessagePanics"].increase(1)
 
 				determinants := make(map[string]interface{})

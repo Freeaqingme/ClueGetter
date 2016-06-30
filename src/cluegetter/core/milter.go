@@ -56,7 +56,7 @@ func (di *milterDataIndex) prune() {
 
 	for k, v := range di.sessions {
 		if now.Sub(v.DateConnect).Minutes() > 15 {
-			Log.Debug("Pruning session %d", k)
+			Log.Debugf("Pruning session %d", k)
 			di.delete(v, false)
 		}
 	}
@@ -87,15 +87,15 @@ func milterStart() {
 
 	go func() {
 		out := m.Run(milter)
-		Log.Info(fmt.Sprintf("Milter stopped. Exit code: %d", out))
+		Log.Infof(fmt.Sprintf("Milter stopped. Exit code: %d", out))
 		if out == -1 {
-			Log.Fatal("libmilter returned an error.")
+			Log.Fatalf("libmilter returned an error.")
 		}
 	}()
 
 	go milterPrune()
 
-	Log.Info("Milter module started. Now listening on " + Config.ClueGetter.Milter_Socket)
+	Log.Infof("Milter module started. Now listening on " + Config.ClueGetter.Milter_Socket)
 }
 
 func milterStop() {
@@ -152,7 +152,7 @@ func (milter *milter) Connect(ctx uintptr, hostname string, ip net.IP) (sfsistat
 	}
 
 	StatsCounters["MilterCallbackConnect"].increase(1)
-	Log.Debug("%s Milter.Connect() called: ip = %s, hostname = %s", sess.milterGetDisplayId(), ip, sess.ReverseDns)
+	Log.Debugf("%s Milter.Connect() called: ip = %s, hostname = %s", sess.milterGetDisplayId(), ip, sess.ReverseDns)
 
 	return m.Continue
 }
@@ -162,7 +162,7 @@ func (milter *milter) Helo(ctx uintptr, helo string) (sfsistat int8) {
 
 	sess := milterGetSession(ctx, true, true)
 	StatsCounters["MilterCallbackHelo"].increase(1)
-	Log.Debug("%s Milter.Helo() called: helo = %s", sess.milterGetDisplayId(), helo)
+	Log.Debugf("%s Milter.Helo() called: helo = %s", sess.milterGetDisplayId(), helo)
 
 	sess.Helo = helo
 	sess.CertIssuer = m.GetSymVal(ctx, "{cert_issuer}")
@@ -183,7 +183,7 @@ func (milter *milter) EnvFrom(ctx uintptr, from []string) (sfsistat int8) {
 	msg := d.getNewMessage()
 
 	StatsCounters["MilterCallbackEnvFrom"].increase(1)
-	Log.Debug("%s Milter.EnvFrom() called: from = %s", d.milterGetDisplayId(), from[0])
+	Log.Debugf("%s Milter.EnvFrom() called: from = %s", d.milterGetDisplayId(), from[0])
 
 	if len(from) == 0 {
 		StatsCounters["MilterProtocolErrors"].increase(1)
@@ -199,20 +199,20 @@ func (milter *milter) EnvRcpt(ctx uintptr, rcpt []string) (sfsistat int8) {
 
 	d := milterGetSession(ctx, true, false)
 	msg := d.getLastMessage()
-	Log.Debug("%s Milter.EnvRcpt() called: rcpt = %s", d.milterGetDisplayId(), fmt.Sprint(rcpt))
+	Log.Debugf("%s Milter.EnvRcpt() called: rcpt = %s", d.milterGetDisplayId(), fmt.Sprint(rcpt))
 
 	address := address.FromString(strings.ToLower(strings.Trim(rcpt[0], "<>")))
 	verdict, msgOut := messageAcceptRecipient(address)
 
 	switch {
 	case verdict == MessageTempFail:
-		Log.Debug("%s Milter.EnvRcpt() status=TempFail rcpt=%s msg=%s", d.milterGetDisplayId(), address.String(), msgOut)
+		Log.Debugf("%s Milter.EnvRcpt() status=TempFail rcpt=%s msg=%s", d.milterGetDisplayId(), address.String(), msgOut)
 		return m.Tempfail
 	case verdict == MessageReject:
-		Log.Debug("%s Milter.EnvRcpt() status=Reject rcpt=%s msg=%s", d.milterGetDisplayId(), address.String(), msgOut)
+		Log.Debugf("%s Milter.EnvRcpt() status=Reject rcpt=%s msg=%s", d.milterGetDisplayId(), address.String(), msgOut)
 		return m.Reject
 	case verdict == MessageError:
-		Log.Error("%s Milter.EnvRcpt() status=Error rcpt=%s msg=%s", d.milterGetDisplayId(), address.String(), msgOut)
+		Log.Errorf("%s Milter.EnvRcpt() status=Error rcpt=%s msg=%s", d.milterGetDisplayId(), address.String(), msgOut)
 		return m.Tempfail
 	}
 
@@ -234,7 +234,7 @@ func (milter *milter) Header(ctx uintptr, headerf, headerv string) (sfsistat int
 	)
 
 	StatsCounters["MilterCallbackHeader"].increase(1)
-	Log.Debug("%s Milter.Header() called: header %s = %s", sess.milterGetDisplayId(), headerf, headerv)
+	Log.Debugf("%s Milter.Header() called: header %s = %s", sess.milterGetDisplayId(), headerf, headerv)
 	return
 }
 
@@ -249,7 +249,7 @@ func (milter *milter) Eoh(ctx uintptr) (sfsistat int8) {
 	msg.QueueId = m.GetSymVal(ctx, "i")
 
 	StatsCounters["MilterCallbackEoh"].increase(1)
-	Log.Debug("%s milter.Eoh() was called", sess.milterGetDisplayId())
+	Log.Debugf("%s milter.Eoh() was called", sess.milterGetDisplayId())
 	return
 }
 
@@ -261,7 +261,7 @@ func (milter *milter) Body(ctx uintptr, body []byte) (sfsistat int8) {
 	msg.Body = append(msg.Body, body...)
 
 	StatsCounters["MilterCallbackBody"].increase(1)
-	Log.Debug("%s milter.Body() was called. Length of body: %d", s.milterGetDisplayId(), len(body))
+	Log.Debugf("%s milter.Body() was called. Length of body: %d", s.milterGetDisplayId(), len(body))
 	return
 }
 
@@ -270,7 +270,7 @@ func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
 
 	s := milterGetSession(ctx, true, false)
 	StatsCounters["MilterCallbackEom"].increase(1)
-	Log.Debug("%s milter.Eom() was called", s.milterGetDisplayId())
+	Log.Debugf("%s milter.Eom() was called", s.milterGetDisplayId())
 
 	msg := s.getLastMessage()
 	msg.Date = time.Now()
@@ -302,18 +302,18 @@ func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
 
 	switch {
 	case verdict == MessagePermit:
-		Log.Info("Message Permit: sess=%s message=%s %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msgOut)
+		Log.Infof("Message Permit: sess=%s message=%s %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msgOut)
 		return
 	case verdict == MessageTempFail:
 		m.SetReply(ctx, "421", "4.7.0", fmt.Sprintf("%s (%s)", msgOut, s.getLastMessage().QueueId))
-		Log.Info("Message TempFail: sess=%s message=%s msg: %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msgOut)
+		Log.Infof("Message TempFail: sess=%s message=%s msg: %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msgOut)
 		if Config.ClueGetter.Noop {
 			return
 		}
 		return m.Tempfail
 	case verdict == MessageReject:
 		m.SetReply(ctx, "550", "5.7.1", fmt.Sprintf("%s (%s)", msgOut, s.getLastMessage().QueueId))
-		Log.Info("Message Reject: sess=%s message=%s msg: %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msgOut)
+		Log.Infof("Message Reject: sess=%s message=%s msg: %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msgOut)
 		if Config.ClueGetter.Noop {
 			return
 		}
@@ -327,7 +327,7 @@ func (milter *milter) Abort(ctx uintptr) (sfsistat int8) {
 	defer milterHandleError(ctx, &sfsistat)
 
 	StatsCounters["MilterCallbackAbort"].increase(1)
-	Log.Debug("milter.Abort() was called")
+	Log.Debugf("milter.Abort() was called")
 	milterGetSession(ctx, true, true)
 
 	return
@@ -339,10 +339,10 @@ func (milter *milter) Close(ctx uintptr) (sfsistat int8) {
 	StatsCounters["MilterCallbackClose"].increase(1)
 	s := milterGetSession(ctx, false, true)
 	if s == nil {
-		Log.Debug("%d milter.Close() was called. No context supplied")
+		Log.Debugf("%d milter.Close() was called. No context supplied")
 		return
 	}
-	Log.Debug("%s milter.Close() was called", s.milterGetDisplayId())
+	Log.Debugf("%s milter.Close() was called", s.milterGetDisplayId())
 
 	MilterDataIndex.delete(s, true)
 	return
@@ -357,7 +357,7 @@ func milterHandleError(ctx uintptr, sfsistat *int8) {
 		return
 	}
 
-	Log.Error("Panic ocurred while handling milter communication. Recovering. Error: %s", r)
+	Log.Errorf("Panic ocurred while handling milter communication. Recovering. Error: %s", r)
 	StatsCounters["MessagePanics"].increase(1)
 	if Config.ClueGetter.Noop {
 		return

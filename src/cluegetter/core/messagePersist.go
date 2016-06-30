@@ -42,7 +42,7 @@ func messagePersistStart() {
 	if Config.ClueGetter.Archive_Prune_Interval != 0 {
 		go messagePersistPrune()
 	} else {
-		Log.Info("archive-prune-interval set to 0. Not pruning anything.")
+		Log.Infof("archive-prune-interval set to 0. Not pruning anything.")
 	}
 
 	ticker := time.NewTicker(time.Second * 30)
@@ -69,7 +69,7 @@ func messagePersistProtoBuf(protoBuf []byte) {
 		if r == nil {
 			return
 		}
-		Log.Error("Panic caught in messagePersistProtoBuf(). Recovering. Error: %s", r)
+		Log.Errorf("Panic caught in messagePersistProtoBuf(). Recovering. Error: %s", r)
 		StatsCounters["MessagePanics"].increase(1)
 		return
 	}()
@@ -99,37 +99,37 @@ func messagePersistStmtPrepare() {
 			rejectScore, rejectScoreThreshold, tempfailScore, tempfailScoreThreshold
 			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 
 	MessageStmtInsertMsg = stmt
 
 	MessageStmtInsertMsgBody, err = Rdbms.Prepare(`INSERT INTO message_body(message, sequence, body) VALUES(?, ?, ?)`)
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 
 	MessageStmtInsertRcpt, err = Rdbms.Prepare(`INSERT INTO recipient(local, domain) VALUES(?, ?)
 								ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)`)
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 
 	MessageStmtInsertMsgRcpt, err = Rdbms.Prepare(`INSERT IGNORE INTO message_recipient(message, recipient, count) VALUES(?, ?,1)
 								ON DUPLICATE KEY UPDATE count=count+1`)
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 
 	MessageStmtInsertMsgHdr, err = Rdbms.Prepare(`INSERT INTO message_header(message, name, body) VALUES(?, ?, ?)`)
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 
 	MessageStmtInsertModuleResult, err = Rdbms.Prepare(`INSERT INTO message_result (message, module, verdict,
 								score, weighted_score, duration, determinants) VALUES(?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 
 	MessageStmtPruneBody, err = Rdbms.Prepare(`
@@ -140,7 +140,7 @@ func messagePersistStmtPrepare() {
 				AND s.cluegetter_instance = ?;
 		`)
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 
 	MessageStmtPruneHeader, err = Rdbms.Prepare(`
@@ -151,7 +151,7 @@ func messagePersistStmtPrepare() {
 				s.cluegetter_instance = ?)
 		`)
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 
 	MessageStmtPruneMessageResult, err = Rdbms.Prepare(`
@@ -162,7 +162,7 @@ func messagePersistStmtPrepare() {
 				s.cluegetter_instance = ?)
 		`)
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 
 	MessageStmtPruneMessageQuota, err = Rdbms.Prepare(`
@@ -173,7 +173,7 @@ func messagePersistStmtPrepare() {
 				s.cluegetter_instance = ?)
 		`)
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 
 	MessageStmtPruneMessage, err = Rdbms.Prepare(`
@@ -183,7 +183,7 @@ func messagePersistStmtPrepare() {
 				AND s.cluegetter_instance = ?
 		`)
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 
 	MessageStmtPruneMessageRecipient, err = Rdbms.Prepare(`
@@ -194,7 +194,7 @@ func messagePersistStmtPrepare() {
 				s.cluegetter_instance = ?)
 		`)
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 
 	MessageStmtPruneRecipient, err = Rdbms.Prepare(`
@@ -203,7 +203,7 @@ func messagePersistStmtPrepare() {
 			WHERE mr.recipient IS NULL AND (1 OR ? OR ? OR ?)
 		`)
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 
 	MessageStmtPruneSession, err = Rdbms.Prepare(`
@@ -214,7 +214,7 @@ func messagePersistStmtPrepare() {
 				AND m.id IS NULL
 		`)
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 
 }
@@ -242,11 +242,11 @@ WaitForNext:
 		select {
 		case <-ticker.C:
 			t0 := time.Now()
-			Log.Info("Pruning some old data now")
+			Log.Infof("Pruning some old data now")
 
 			for _, prunable := range prunables {
 				if prunable.retention < Config.ClueGetter.Archive_Retention_Safeguard {
-					Log.Info("Not pruning %s because its retention (%.2f weeks) is lower than the safeguard (%.2f)",
+					Log.Infof("Not pruning %s because its retention (%.2f weeks) is lower than the safeguard (%.2f)",
 						prunable.descr, prunable.retention, Config.ClueGetter.Archive_Retention_Safeguard)
 					continue
 				}
@@ -254,17 +254,17 @@ WaitForNext:
 				tStart := time.Now()
 				res, err := prunable.stmt.Exec(t0, prunable.retention, instance)
 				if err != nil {
-					Log.Error("Could not prune %s: %s", prunable.descr, err.Error())
+					Log.Errorf("Could not prune %s: %s", prunable.descr, err.Error())
 					continue WaitForNext
 				}
 
 				rowCnt, err := res.RowsAffected()
 				if err != nil {
-					Log.Error("Error while fetching number of affected rows: ", err)
+					Log.Errorf("Error while fetching number of affected rows: ", err)
 					continue WaitForNext
 				}
 
-				Log.Info("Pruned %d %s in %s", rowCnt, prunable.descr, time.Now().Sub(tStart).String())
+				Log.Infof("Pruned %d %s in %s", rowCnt, prunable.descr, time.Now().Sub(tStart).String())
 			}
 		}
 	}
@@ -312,7 +312,7 @@ func messagePersist(msg *Proto_Message) {
 
 	if err != nil {
 		StatsCounters["RdbmsErrors"].increase(1)
-		Log.Error(err.Error())
+		Log.Errorf(err.Error())
 	}
 
 	if Config.ClueGetter.Archive_Retention_Message_Result > 0 {
@@ -338,7 +338,7 @@ func messageSaveCheckResults(msg *Proto_Message) {
 			result.Score, result.WeightedScore, result.Duration, result.Determinants)
 		if err != nil {
 			StatsCounters["RdbmsErrors"].increase(1)
-			Log.Error(err.Error())
+			Log.Errorf(err.Error())
 		}
 	}
 }
@@ -351,7 +351,7 @@ func messageSaveHeaders(msg *Proto_Message) {
 
 		if err != nil {
 			StatsCounters["RdbmsErrors"].increase(1)
-			Log.Error(err.Error())
+			Log.Errorf(err.Error())
 		}
 	}
 }
@@ -375,7 +375,7 @@ func messageSaveBody(msg *Proto_Message) {
 
 		if err != nil {
 			StatsCounters["RdbmsErrors"].increase(1)
-			Log.Error(err.Error())
+			Log.Errorf(err.Error())
 		}
 	}
 }
@@ -417,7 +417,7 @@ func messageSaveRecipients(recipients []string, msgId string) {
 
 func messagePersistInCache(queueId string, msgId string, msg []byte) {
 	if ok, err := messagePersistCache.Set(queueId, msgId, msg); !ok {
-		Log.Notice("Could not add message %s to message cache: %s",
+		Log.Noticef("Could not add message %s to message cache: %s",
 			queueId, err.Error())
 	}
 }
@@ -517,7 +517,7 @@ func (c *messageCache) _del(id string) {
 
 func (c *messageCache) prune() {
 	if c.size < c.maxSize/2 {
-		Log.Debug("Skipping pruning of messageCache it's below 50%% (%d/%d) capacity.", c.size, c.maxSize)
+		Log.Debugf("Skipping pruning of messageCache it's below 50%% (%d/%d) capacity.", c.size, c.maxSize)
 		return
 	}
 
@@ -531,7 +531,7 @@ func (c *messageCache) prune() {
 		}
 	}
 	c.RUnlock()
-	Log.Debug("Scanned for prunable message cache items in %s", time.Now().Sub(t0).String())
+	Log.Debugf("Scanned for prunable message cache items in %s", time.Now().Sub(t0).String())
 	t0 = time.Now()
 	if len(prune) == 0 {
 		goto end
@@ -544,6 +544,6 @@ func (c *messageCache) prune() {
 		c._del(key)
 	}
 end:
-	Log.Debug("Pruned %d message cache items in %s. It now contains %d items, %d bytes",
+	Log.Debugf("Pruned %d message cache items in %s. It now contains %d items, %d bytes",
 		len(prune), time.Now().Sub(t0).String(), len(c.cache), c.size)
 }

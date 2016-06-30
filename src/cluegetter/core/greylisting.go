@@ -75,7 +75,7 @@ func greylistPrepStmt() {
 		ORDER BY m.date ASC
 	`, instance, tzOffset)) // sender_local, sender_domain, rcpt_local, rcpt_domain, ip
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 
 	greylistGetRecentVerdictsStmt = stmt
@@ -103,7 +103,7 @@ func greylistPrepStmt() {
 		LIMIT 0,1
 	`, instance))
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 
 	greylistSelectFromWhitelist = stmt
@@ -114,7 +114,7 @@ func greylistPrepStmt() {
 			AND last_seen > (DATE_SUB(CURDATE(), INTERVAL %d DAY))
 	`, instance, greylist_validity))
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 
 	greylistGetWhitelist = stmt
@@ -129,16 +129,16 @@ func greylistUpdateWhitelist() {
 		if r == nil {
 			return
 		}
-		Log.Error("Panic caught in greylistUpdateWhitelist(). Recovering. Error: %s", r)
+		Log.Errorf("Panic caught in greylistUpdateWhitelist(). Recovering. Error: %s", r)
 	}()
 
 	if Config.Redis.Enabled {
 		key := fmt.Sprintf("cluegetter-%d-greylisting-schedule-greylistUpdateWhitelist", instance)
 		set, err := redisClient.SetNX(key, hostname, 5*time.Minute).Result()
 		if err != nil {
-			Log.Error("Could not update greylist whitelist schedule: %s", err.Error())
+			Log.Errorf("Could not update greylist whitelist schedule: %s", err.Error())
 		} else if !set {
-			Log.Debug("Greylist whitelist update was run recently. Sipping")
+			Log.Debugf("Greylist whitelist update was run recently. Sipping")
 			return
 		}
 	}
@@ -146,16 +146,16 @@ func greylistUpdateWhitelist() {
 	t0 := time.Now()
 	res, err := greylistUpdateWhitelistStmt.Exec()
 	if err != nil {
-		Log.Error("Could not update greylist whitelist: %s", err.Error())
+		Log.Errorf("Could not update greylist whitelist: %s", err.Error())
 	}
 
 	rowCnt, err := res.RowsAffected()
 	if err != nil {
-		Log.Error("Error while fetching number of affected rows: ", err)
+		Log.Errorf("Error while fetching number of affected rows: ", err)
 		return
 	}
 
-	Log.Info("Updated RDBMS greylist whitelist with %d to %d entries in %s",
+	Log.Infof("Updated RDBMS greylist whitelist with %d to %d entries in %s",
 		int(rowCnt/2), rowCnt, time.Now().Sub(t0).String())
 
 	if Config.Redis.Enabled {
@@ -173,7 +173,7 @@ func greylistGetResult(msg *Message, done chan bool) *MessageCheckResult {
 	whitelist := msg.session.config.Greylisting.Whitelist_Spf
 	res, spfDomain, spfWhitelistErr := greylistIsSpfWhitelisted(net.ParseIP(ip), done, whitelist)
 	if res {
-		Log.Debug("Found %s in %s SPF record", ip, spfDomain)
+		Log.Debugf("Found %s in %s SPF record", ip, spfDomain)
 		return &MessageCheckResult{
 			Module:          "greylisting",
 			SuggestedAction: MessagePermit,
@@ -188,7 +188,7 @@ func greylistGetResult(msg *Message, done chan bool) *MessageCheckResult {
 	}
 
 	if greylistIsWhitelisted(&ip) {
-		Log.Debug("Found %s in greylist whitelist", ip)
+		Log.Debugf("Found %s in greylist whitelist", ip)
 		return &MessageCheckResult{
 			Module:          "greylisting",
 			SuggestedAction: MessagePermit,
@@ -273,7 +273,7 @@ func greylistGetVerdictRdbms(msg *Message, spfWhitelistErr error, spfDomain stri
 		"SpfDomain":              spfDomain,
 	}
 
-	Log.Debug("%s Got %d allow verdicts, %d disallow verdicts in greylist module. First verdict was %.2f minutes ago",
+	Log.Debugf("%s Got %d allow verdicts, %d disallow verdicts in greylist module. First verdict was %.2f minutes ago",
 		(*msg.session).milterGetDisplayId(), allowCount, disallowCount, timeDiff)
 
 	if allowCount > 0 || timeDiff > float64(msg.session.config.Greylisting.Initial_Period) {
@@ -313,7 +313,7 @@ func greylistIsWhitelistedRdbms(ip *string) bool {
 
 	if err != nil {
 		StatsCounters["RdbmsErrors"].increase(1)
-		Log.Error("Error occurred while retrieving from whitelist: %s", err.Error())
+		Log.Errorf("Error occurred while retrieving from whitelist: %s", err.Error())
 	} else {
 		defer whitelistRows.Close()
 		for whitelistRows.Next() {
@@ -330,11 +330,11 @@ func greylistIsSpfWhitelisted(ip net.IP, done chan bool, whitelist []string) (bo
 		res, err := greylistSpf2.Query(whitelistDomain, ip)
 		if err != nil {
 			error = err
-			Log.Error("Error while retrieving SPF for %s from %s: %s", ip, whitelistDomain, err)
+			Log.Errorf("Error while retrieving SPF for %s from %s: %s", ip, whitelistDomain, err)
 			continue
 		}
 
-		Log.Debug("Got SPF result for %s from %s: %s", ip, whitelistDomain, res)
+		Log.Debugf("Got SPF result for %s from %s: %s", ip, whitelistDomain, res)
 		if res == libspf2.SPFResultPASS {
 			return true, whitelistDomain, error
 		}
@@ -378,10 +378,10 @@ func greylistPopulateRedis() {
 		if r == nil {
 			return
 		}
-		Log.Error("Panic caught in greylistPopulateRedis(). Recovering. Error: %s", r)
+		Log.Errorf("Panic caught in greylistPopulateRedis(). Recovering. Error: %s", r)
 	}()
 
-	Log.Info("Importing greylist whitelist into Redis")
+	Log.Infof("Importing greylist whitelist into Redis")
 
 	t0 := time.Now()
 	startDate := time.Now().Unix() - (greylist_validity * 86400)
@@ -404,5 +404,5 @@ func greylistPopulateRedis() {
 		i++
 	}
 
-	Log.Info("Imported %d greylist whitelist items into Redis in %.2f seconds", i, time.Now().Sub(t0).Seconds())
+	Log.Infof("Imported %d greylist whitelist items into Redis in %.2f seconds", i, time.Now().Sub(t0).Seconds())
 }

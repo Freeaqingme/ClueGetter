@@ -76,13 +76,13 @@ func bounceHandlerStart() {
 }
 
 func bounceHandlerStop() {
-	Log.Info("BounceHandler module stopped successfully")
+	Log.Infof("BounceHandler module stopped successfully")
 }
 
 // Submit a new report to the bounce handler through the CLI.
 func bounceHandlerSubmitCli() {
 	if len(os.Args) < 2 || os.Args[1] != "submit" {
-		Log.Fatal("Missing argument for 'bouncehandler'. Must be one of: submit")
+		Log.Fatalf("Missing argument for 'bouncehandler'. Must be one of: submit")
 	}
 
 	reader := bufio.NewReader(os.Stdin)
@@ -104,7 +104,7 @@ func bounceHandlerPrepStmt() {
 	stmt, err := Rdbms.Prepare(
 		"INSERT INTO bounce (cluegetter_instance, date, mta, queueId, messageId, sender) VALUES (?, ?, ?, ?, ?, ?)")
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 	BounceHandlerSaveBounceStmt = stmt
 
@@ -113,7 +113,7 @@ func bounceHandlerPrepStmt() {
 			VALUES (?, ?, ?, ?, ?, ?)
 	`)
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 	BounceHandlerSaveBounceReportStmt = stmt
 }
@@ -122,16 +122,16 @@ func bounceHandlerListen() {
 	listenStr := Config.BounceHandler.Listen_Host + ":" + Config.BounceHandler.Listen_Port
 	l, err := net.Listen("tcp", listenStr)
 	if err != nil {
-		Log.Fatal(fmt.Sprintf("Cannot bind on tcp/%s: %s", listenStr, err.Error()))
+		Log.Fatalf(fmt.Sprintf("Cannot bind on tcp/%s: %s", listenStr, err.Error()))
 	}
 
 	defer l.Close()
-	Log.Info("Now listening on tcp/%s", listenStr)
+	Log.Infof("Now listening on tcp/%s", listenStr)
 
 	for {
 		conn, err := l.Accept()
 		if err != nil {
-			Log.Error("Could not accept new connection: ", err.Error())
+			Log.Errorf("Could not accept new connection: ", err.Error())
 			continue
 		}
 		go bounceHandlerHandleConn(conn)
@@ -142,7 +142,7 @@ func bounceHandlerHandleConn(conn net.Conn) {
 	defer CluegetterRecover("bounceHandlerParseReport")
 	defer conn.Close()
 
-	Log.Debug("Handling new connection from %s", conn.RemoteAddr())
+	Log.Debugf("Handling new connection from %s", conn.RemoteAddr())
 	body := make([]byte, 0)
 	for {
 		buf := make([]byte, 512)
@@ -158,11 +158,11 @@ func bounceHandlerHandleConn(conn net.Conn) {
 }
 
 func bounceHandlerHandleIpc(bodyB64 string) {
-	Log.Debug("Received new report through IPC")
+	Log.Debugf("Received new report through IPC")
 
 	body, err := base64.StdEncoding.DecodeString(bodyB64)
 	if err != nil {
-		Log.Error("Could not base64 decode report received over IPC: %s", err.Error())
+		Log.Errorf("Could not base64 decode report received over IPC: %s", err.Error())
 		return
 	}
 
@@ -209,7 +209,7 @@ func bounceHandlerParseReport(body []byte, remoteAddr string) {
 		queueId := bounceHandlerGetHeaderFromBytes(deliveryReports, "X-Postfix-Queue-ID")
 		mailQueueDeleteItems([]string{queueId})
 	}
-	Log.Info("Successfully saved %d reports from %s", len(rcptReports), remoteAddr)
+	Log.Infof("Successfully saved %d reports from %s", len(rcptReports), remoteAddr)
 }
 
 func bounceHandlerGetMessageId(msg []byte, queueId string) string {
@@ -342,18 +342,18 @@ func bounceHandlerPersistRawCopy(body []byte) {
 
 	f, err := ioutil.TempFile(Config.BounceHandler.Dump_Dir, "cluegetter-deliveryreport-")
 	if err != nil {
-		Log.Error("Could not open file for delivery report: %s", err.Error())
+		Log.Errorf("Could not open file for delivery report: %s", err.Error())
 		return
 	}
 
 	defer f.Close()
 	count, err := f.Write(body)
 	if err != nil {
-		Log.Error("Wrote %d bytes to %s, then got error: %s", count, f.Name(), err.Error())
+		Log.Errorf("Wrote %d bytes to %s, then got error: %s", count, f.Name(), err.Error())
 		return
 	}
 
-	Log.Debug("Wrote %d bytes to %s", count, f.Name())
+	Log.Debugf("Wrote %d bytes to %s", count, f.Name())
 }
 
 // We only want to add emails to our bayes corpus if the remote

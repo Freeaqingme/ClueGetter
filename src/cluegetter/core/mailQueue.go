@@ -62,15 +62,15 @@ type mailQueueGetOptions struct {
 
 func mailQueueStart(deleteQueue chan string) {
 	if !Config.Redis.Enabled {
-		Log.Fatal("The mailQueue module requires the redis module to be enabled")
+		Log.Fatalf("The mailQueue module requires the redis module to be enabled")
 	}
 
 	file, err := os.Open(Config.MailQueue.Spool_Dir)
 	if err != nil {
-		Log.Fatal("%s could not be opened", Config.MailQueue.Spool_Dir)
+		Log.Fatalf("%s could not be opened", Config.MailQueue.Spool_Dir)
 	}
 	if fi, err := file.Stat(); err != nil || !fi.IsDir() {
-		Log.Fatal("%s could not be opened (or is not a directory)", Config.MailQueue.Spool_Dir)
+		Log.Fatalf("%s could not be opened (or is not a directory)", Config.MailQueue.Spool_Dir)
 	}
 
 	for _, queueName := range mailQueueNames {
@@ -107,7 +107,7 @@ func mailQueueDeleteItems(queueIds []string) {
 			continue
 		}
 		if queueId == "ALL" || len(queueId) > 20 {
-			Log.Notice("Received invalid queue id '%s'. Ignoring", queueId)
+			Log.Noticef("Received invalid queue id '%s'. Ignoring", queueId)
 			continue
 		}
 		args = append(args, "-d", queueId)
@@ -130,7 +130,7 @@ func mailQueueDeleteItems(queueIds []string) {
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if err != nil {
-		Log.Error("Error ocurred while running postsuper (args: '%s'): %s", logArgs, err)
+		Log.Errorf("Error ocurred while running postsuper (args: '%s'): %s", logArgs, err)
 		return
 	}
 
@@ -142,7 +142,7 @@ func mailQueueDeleteItems(queueIds []string) {
 		amountDeleted = 0
 	}
 
-	Log.Notice("Deleted queue items. %d requested, %d were present and deleted",
+	Log.Noticef("Deleted queue items. %d requested, %d were present and deleted",
 		len(queueIds), amountDeleted)
 }
 
@@ -176,7 +176,7 @@ func mailQueueGetFromDataStore(options *mailQueueGetOptions) map[string][]*mailQ
 				item := &mailQueueItem{}
 				err := json.Unmarshal([]byte(jsonStr), &item)
 				if err != nil {
-					Log.Error("Could not parse json string: %s", err.Error())
+					Log.Errorf("Could not parse json string: %s", err.Error())
 					continue
 				}
 
@@ -216,18 +216,18 @@ func mailQueueUpdate(queueName string) {
 	go func() {
 		defer CluegetterRecover("mailQueueUpdate")
 		count := mailQueueAddToRedis(envelopes, queueName)
-		Log.Info("Imported %d items from the '%s' mailqueue into Redis in %.2f seconds",
+		Log.Infof("Imported %d items from the '%s' mailqueue into Redis in %.2f seconds",
 			count, queueName, time.Now().Sub(t0).Seconds())
 	}()
 
 	pathLen := len(path)
 	err := filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
 		if f == nil {
-			Log.Debug("File %s has gone. Skipping...", path)
+			Log.Debugf("File %s has gone. Skipping...", path)
 			return nil
 		}
 		if err != nil {
-			Log.Debug("Got error: %s", err)
+			Log.Debugf("Got error: %s", err)
 			return nil
 		}
 
@@ -243,7 +243,7 @@ func mailQueueUpdate(queueName string) {
 	close(envelopes)
 
 	if err != nil {
-		Log.Error("Could not walk %s, got error: %s", path, err.Error())
+		Log.Errorf("Could not walk %s, got error: %s", path, err.Error())
 	}
 }
 
@@ -265,7 +265,7 @@ func mailQueueAddToRedis(envelopes chan *mailQueueItem, queueName string) int {
 	})
 
 	if err != nil {
-		Log.Error("Could not update mailqueue %s, got error updating Redis: %s", queueName, err.Error())
+		Log.Errorf("Could not update mailqueue %s, got error updating Redis: %s", queueName, err.Error())
 	}
 
 	return count
@@ -308,14 +308,14 @@ func mailQueueProcessFiles(filesBatch []string, path string, envelopes chan *mai
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if err != nil {
-		Log.Error("Error ocurred while running postcat: %s. Stderr: %s", err, stderr.String())
+		Log.Errorf("Error ocurred while running postcat: %s. Stderr: %s", err, stderr.String())
 		return
 	}
 
 	for _, envelope := range strings.Split(out.String(), "*** ENVELOPE RECORDS ")[1:] {
 		item, err := mailQueueParseEnvelopeString(envelope)
 		if err != nil {
-			Log.Error("Could not parse envelope string: %s", err.Error())
+			Log.Errorf("Could not parse envelope string: %s", err.Error())
 			continue
 		}
 		envelopes <- item
@@ -341,7 +341,7 @@ func mailQueueParseEnvelopeString(envelopeStr string) (*mailQueueItem, error) {
 		if kv[0] == "named_attribute" {
 			kv = strings.SplitN(kv[1], "=", 2)
 			if len(kv) != 2 {
-				Log.Notice("Got named_attribute with no value: %s", kv[0])
+				Log.Noticef("Got named_attribute with no value: %s", kv[0])
 				continue
 			}
 		}
@@ -355,13 +355,13 @@ func mailQueueParseEnvelopeString(envelopeStr string) (*mailQueueItem, error) {
 	}
 
 	if _, ok := item.Kv["create_time"]; !ok {
-		Log.Notice("Item %s has no field 'create_time'", queueId)
+		Log.Noticef("Item %s has no field 'create_time'", queueId)
 		return item, nil
 	}
 	tz, _ := time.Now().Local().Zone()
 	parsedTime, err := time.Parse("Mon Jan _2 15:04:05 2006 MST", item.Kv["create_time"]+" "+tz)
 	if err != nil {
-		Log.Notice("Could not parse time ('%s') for item %s, error: %s", item.Kv["create_time"], queueId, err)
+		Log.Noticef("Could not parse time ('%s') for item %s, error: %s", item.Kv["create_time"], queueId, err)
 		return item, nil
 	}
 	item.Time = parsedTime

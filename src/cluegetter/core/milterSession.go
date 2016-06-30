@@ -82,7 +82,7 @@ func milterSessionPrepStmt() {
 		ON DUPLICATE KEY UPDATE date_disconnect=?
 	`)
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 
 	milterSessionInsertStmt = stmt
@@ -91,7 +91,7 @@ func milterSessionPrepStmt() {
 		INSERT INTO cluegetter_client (hostname, daemon_name) VALUES(?,?)
 			ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)`)
 	if err != nil {
-		Log.Fatal(err)
+		Log.Fatalf("%s", err)
 	}
 
 	milterCluegetterClientInsertStmt = stmt
@@ -240,7 +240,7 @@ func milterSessionStart() {
 		for {
 			select {
 			case <-ticker.C:
-				Log.Info("milterSessionPersistQueue has %d items",
+				Log.Infof("milterSessionPersistQueue has %d items",
 					milterSessionPersistQueue.ContentSize(),
 				)
 			}
@@ -257,7 +257,7 @@ func milterSessionStart() {
 		}
 	}()
 
-	Log.Info("Milter Session module started successfully")
+	Log.Infof("Milter Session module started successfully")
 }
 
 func milterSessionProcessQueue() {
@@ -297,7 +297,7 @@ func milterSessionPersistProtoBuf(protoBuf []byte) {
 		if r == nil {
 			return
 		}
-		Log.Error("Panic caught in milterSessionPersistProtoBuf(). Recovering. Error: %s", r)
+		Log.Errorf("Panic caught in milterSessionPersistProtoBuf(). Recovering. Error: %s", r)
 		return
 	}()
 

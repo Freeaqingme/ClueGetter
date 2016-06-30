@@ -76,7 +76,7 @@ func redisStart() {
 	}
 
 	if len(Config.Redis.Host) == 0 {
-		Log.Fatal("No Redis.Host specified")
+		Log.Fatalf("No Redis.Host specified")
 	}
 
 	if Config.Redis.Dump_Dir != "" {
@@ -86,7 +86,7 @@ func redisStart() {
 		for _, regexStr := range Config.Redis.Dump_Key {
 			regex, err := pcre.Compile(regexStr, 0)
 			if err != nil {
-				Log.Fatal("Could not compile redis key regex: /%s/. Error: %s", regexStr, err.String())
+				Log.Fatalf("Could not compile redis key regex: /%s/. Error: %s", regexStr, err.String())
 			}
 			redisDumpKeys = append(redisDumpKeys, &regex)
 		}
@@ -109,7 +109,7 @@ func redisStart() {
 	}()
 	go redisUpdateRunningList()
 	go redisRpc()
-	Log.Info("Redis module started successfully")
+	Log.Infof("Redis module started successfully")
 
 }
 
@@ -129,7 +129,7 @@ func redisNewClient() RedisClient {
 			SentinelAddrs: Config.Redis.Host,
 		})
 	default:
-		Log.Fatal("Unknown redis connection method specified")
+		Log.Fatalf("Unknown redis connection method specified")
 	}
 
 	return client
@@ -153,7 +153,7 @@ func redisChannelListener() {
 
 func redisLPush(cmd *RedisKeyValue) {
 	res := redisClient.LPush(cmd.key, string(cmd.value))
-	Log.Debug("Added 1 item to Redis Queue %s. New size: %d", cmd.key, res.Val())
+	Log.Debugf("Added 1 item to Redis Queue %s. New size: %d", cmd.key, res.Val())
 }
 
 func redisListSubscribe(list string, input chan []byte, output chan []byte) {
@@ -184,7 +184,7 @@ func redisListSubscriptionPoller(list string, output chan []byte) {
 					break
 				}
 				if err != nil {
-					Log.Error("Error while polling from Redis: %s", err.Error())
+					Log.Errorf("Error while polling from Redis: %s", err.Error())
 					time.Sleep(5 * time.Second)
 					break
 				}
@@ -193,7 +193,7 @@ func redisListSubscriptionPoller(list string, output chan []byte) {
 					if rdbmsErr == nil {
 						break
 					}
-					Log.Error("Mysql seems down: %s", rdbmsErr.Error())
+					Log.Errorf("Mysql seems down: %s", rdbmsErr.Error())
 					time.Sleep(2500 * time.Millisecond)
 				}
 
@@ -216,7 +216,7 @@ type service struct {
 }
 
 func redisUpdateRunningList() {
-	Log.Debug("Running redisUpdateRunningList()")
+	Log.Debugf("Running redisUpdateRunningList()")
 
 	now := time.Now().Unix()
 	start := int(float64(now) - math.Mod(float64(now), 60.0))
@@ -249,7 +249,7 @@ func redisGetServices() []*service {
 		value := &service{}
 		err := json.Unmarshal([]byte(jsonStr), &value)
 		if err != nil {
-			Log.Error("Could not parse json service string: %s", err.Error())
+			Log.Errorf("Could not parse json service string: %s", err.Error())
 			continue
 		}
 		out = append(out, value)
@@ -267,14 +267,14 @@ func redisPublish(key string, msg []byte) error {
 	}
 
 	redisDumpPublish("out", key, msg)
-	Log.Info("Publising on Redis channel '%s': %s", key, logMsg)
+	Log.Infof("Publising on Redis channel '%s': %s", key, logMsg)
 	return redisClient.Publish(key, string(msg)).Err()
 }
 
 func redisRpc() {
 	pubsub, err := redisClient.PSubscribe("cluegetter!*")
 	if err != nil {
-		Log.Fatal("Could not connect to Redis or subscribe to the RPC channels: ", err.Error())
+		Log.Fatalf("Could not connect to Redis or subscribe to the RPC channels: ", err.Error())
 	}
 	defer pubsub.Close()
 
@@ -291,7 +291,7 @@ func redisRpc() {
 	for {
 		msg, err := pubsub.ReceiveMessage()
 		if err != nil {
-			Log.Error("Error from redis/pubsub.ReceiveMessage(): %s", err.Error())
+			Log.Errorf("Error from redis/pubsub.ReceiveMessage(): %s", err.Error())
 			time.Sleep(1 * time.Second)
 			continue
 		}
@@ -304,26 +304,26 @@ func redisRpc() {
 
 		elements := strings.SplitN(msg.Channel, "!", 3)
 		if len(elements) < 3 || elements[0] != "cluegetter" {
-			Log.Notice("Received invalid RPC channel <%s>%s", msg.Channel, logMsg)
+			Log.Noticef("Received invalid RPC channel <%s>%s", msg.Channel, logMsg)
 			continue
 		}
 
 		if msgInstance, err := strconv.Atoi(elements[1]); err == nil && len(elements[1]) > 0 {
 			if msgInstance != int(instance) {
-				Log.Debug("Received RPC message for other instance (%d). Ignoring: <%s>%s", instance, msg.Channel, logMsg)
+				Log.Debugf("Received RPC message for other instance (%d). Ignoring: <%s>%s", instance, msg.Channel, logMsg)
 				continue
 			}
 		} else if len(elements[1]) > 0 && elements[1] != hostname {
-			Log.Debug("Received RPC message for other service (%s). Ignoring: <%s>%s", elements[1], msg.Channel, logMsg)
+			Log.Debugf("Received RPC message for other service (%s). Ignoring: <%s>%s", elements[1], msg.Channel, logMsg)
 			continue
 		}
 
 		if listeners[elements[2]] == nil {
-			Log.Debug("Received RPC message but no such pattern was registered, ignoring: <%s>%s", msg.Channel, logMsg)
+			Log.Debugf("Received RPC message but no such pattern was registered, ignoring: <%s>%s", msg.Channel, logMsg)
 			continue
 		}
 
-		Log.Info("Received RPC Message: <%s>%s", msg.Channel, logMsg)
+		Log.Infof("Received RPC Message: <%s>%s", msg.Channel, logMsg)
 		redisDumpPublish("in", msg.Channel, []byte(msg.Payload))
 		for _, channel := range listeners[elements[2]] {
 			go func(payload string) {
@@ -352,16 +352,16 @@ func redisDumpPublish(direction, key string, msg []byte) {
 	filename := fmt.Sprintf("cluegetter-redisPublish-%s-%s-", key, direction)
 	f, err := ioutil.TempFile(Config.Redis.Dump_Dir, filename)
 	if err != nil {
-		Log.Error("Could not open file for dump file: %s", err.Error())
+		Log.Errorf("Could not open file for dump file: %s", err.Error())
 		return
 	}
 
 	defer f.Close()
 	count, err := f.Write(msg)
 	if err != nil {
-		Log.Error("Wrote %d bytes to '%s', then got error: %s", count, f.Name(), err.Error())
+		Log.Errorf("Wrote %d bytes to '%s', then got error: %s", count, f.Name(), err.Error())
 		return
 	}
 
-	Log.Debug("Wrote %d bytes to '%s'", count, f.Name())
+	Log.Debugf("Wrote %d bytes to '%s'", count, f.Name())
 }

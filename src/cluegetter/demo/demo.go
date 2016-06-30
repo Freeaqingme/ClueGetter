@@ -37,21 +37,21 @@ func (m *module) SetCluegetter(cg *core.Cluegetter) {
 }
 
 func (m *module) Init() {
-	m.cg.Log.Notice("Initializing module demo")
+	m.cg.Log.Noticef("Initializing module demo")
 }
 
 func (m *module) Stop() {
-	m.cg.Log.Notice("Stopping module demo")
+	m.cg.Log.Noticef("Stopping module demo")
 }
 
 func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCheckResult {
-	m.cg.Log.Notice("Milter Checking Message %s", msg.QueueId)
+	m.cg.Log.Noticef("Milter Checking Message %s", msg.QueueId)
 
 	return nil
 }
 
 func (m *module) RecipientCheck(rcpt *address.Address) (verdict int, msg string) {
-	m.cg.Log.Debug("Considering if we should accept recipient %s", rcpt.String())
+	m.cg.Log.Debugf("Considering if we should accept recipient %s", rcpt.String())
 
 	return core.MessagePermit, ""
 }

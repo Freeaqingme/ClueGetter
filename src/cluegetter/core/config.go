@@ -227,7 +227,7 @@ func LoadConfig(cfgFile string, cfg *config) {
 	err := gcfg.ReadFileInto(cfg, cfgFile)
 
 	if err != nil {
-		Log.Fatal("Couldnt read config file: " + err.Error())
+		Log.Fatalf("Couldnt read config file: " + err.Error())
 	}
 }
 

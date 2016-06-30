@@ -34,7 +34,7 @@ type HttpCallback func(w http.ResponseWriter, r *http.Request)
 
 func httpStart(done <-chan struct{}) {
 	if !Config.Http.Enabled {
-		Log.Info("HTTP module has not been enabled. Skipping...")
+		Log.Infof("HTTP module has not been enabled. Skipping...")
 		return
 	}
 
@@ -134,7 +134,7 @@ type HttpMessageCheckResult struct {
 
 func httpStartFrontend(done <-chan struct{}, name string, httpConfig *ConfigHttpFrontend) {
 	if !httpConfig.Enabled {
-		Log.Info("HTTP frontend '%s' has not been enabled. Skipping...", name)
+		Log.Infof("HTTP frontend '%s' has not been enabled. Skipping...", name)
 		return
 	}
 
@@ -149,7 +149,7 @@ func httpStartFrontend(done <-chan struct{}, name string, httpConfig *ConfigHttp
 	go func() {
 		<-done
 		listener.Close()
-		Log.Info("HTTP frontend '%s' closed", name)
+		Log.Infof("HTTP frontend '%s' closed", name)
 	}()
 }
 
@@ -159,20 +159,20 @@ func httpListen(name string, httpConfig *ConfigHttpFrontend) *net.TCPListener {
 
 	laddr, err := net.ResolveTCPAddr("tcp", listen_host+":"+listen_port)
 	if nil != err {
-		Log.Fatal(fmt.Sprintf("HTTP Frontend '%s': %s", name, err.Error()))
+		Log.Fatalf(fmt.Sprintf("HTTP Frontend '%s': %s", name, err.Error()))
 	}
 	listener, err := net.ListenTCP("tcp", laddr)
 	if nil != err {
-		Log.Fatal(fmt.Sprintf("HTTP Frontend '%s': %s", name, err.Error()))
+		Log.Fatalf(fmt.Sprintf("HTTP Frontend '%s': %s", name, err.Error()))
 	}
-	Log.Info("HTTP frontend '%s' now listening on %s", name, listener.Addr())
+	Log.Infof("HTTP frontend '%s' now listening on %s", name, listener.Addr())
 
 	return listener
 }
 
 func httpLogRequest(frontend string, handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		Log.Info("HTTP Request '%s': %s %s %s \"%s\"",
+		Log.Infof("HTTP Request '%s': %s %s %s \"%s\"",
 			frontend, r.RemoteAddr, r.Method, r.URL, r.Header.Get("User-Agent"))
 		handler.ServeHTTP(w, r)
 	})

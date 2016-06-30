@@ -61,9 +61,9 @@ func (m *module) index(notBefore, notAfter time.Time) {
 			SELECT SQL_NO_CACHE id FROM session ORDER BY id DESC LIMIT 1`,
 	).Scan(&id)
 	if err != nil {
-		m.cg.Log.Fatal(err)
+		m.cg.Log.Fatalf("%s", err)
 	}
-	m.cg.Log.Debug("First upper boundary id: '%s'", hex.EncodeToString(id))
+	m.cg.Log.Debugf("First upper boundary id: '%s'", hex.EncodeToString(id))
 
 	rawSessions := make(chan map[[16]byte]*core.MilterSession, 10)
 	rawMessages := make(chan map[string]*core.Message, 10)
@@ -150,7 +150,7 @@ func indexFetchSessionsFromDb(m *module, rawSessions chan map[[16]byte]*core.Mil
 			WHERE s.id ` + compare + ` ? AND s.date_connect < ? ORDER BY s.id DESC LIMIT 0,512`
 	rows, err := m.cg.Rdbms().Query(sql, startAtId, before)
 	if err != nil {
-		m.cg.Log.Fatal(err)
+		m.cg.Log.Fatalf("%s", err)
 	}
 	defer rows.Close()
 
@@ -167,7 +167,7 @@ func indexFetchSessionsFromDb(m *module, rawSessions chan map[[16]byte]*core.Mil
 			&sess.CipherBits, &sess.Cipher, &sess.TlsVersion, &sess.MtaHostName,
 			&sess.MtaDaemonName,
 		); err != nil {
-			m.cg.Log.Error("Could not scan a session")
+			m.cg.Log.Errorf("Could not scan a session")
 			continue
 		}
 		if dateDisconnect.Valid {
@@ -209,7 +209,7 @@ func indexHydrateMessagesFromDb(m *module, sessions map[[16]byte]*core.MilterSes
 		 WHERE m.session IN (?` + strings.Repeat(",?", len(sessionIds)-1) + `)`
 	rows, err := m.cg.Rdbms().Query(sql, sessionIds...)
 	if err != nil {
-		m.cg.Log.Fatal(err)
+		m.cg.Log.Fatalf("%s", err)
 	}
 
 	messages := make(map[string]*core.Message)
@@ -226,7 +226,7 @@ func indexHydrateMessagesFromDb(m *module, sessions map[[16]byte]*core.MilterSes
 			&msg.RejectScoreThreshold, &msg.TempfailScore,
 			&msg.TempfailScoreThreshold,
 		); err != nil {
-			m.cg.Log.Error("Could not scan a message")
+			m.cg.Log.Errorf("Could not scan a message")
 			continue
 		}
 
@@ -257,7 +257,7 @@ func indexHydrateRecipientsFromDb(m *module, messages map[string]*core.Message) 
 
 	rows, err := m.cg.Rdbms().Query(sql, msgIds...)
 	if err != nil {
-		m.cg.Log.Fatal(err)
+		m.cg.Log.Fatalf("%s", err)
 	}
 	defer rows.Close()
 
@@ -267,7 +267,7 @@ func indexHydrateRecipientsFromDb(m *module, messages map[string]*core.Message) 
 		var local string
 		var domain string
 		if err := rows.Scan(&msgId, &count, &local, &domain); err != nil {
-			m.cg.Log.Error("Could not scan a recipient")
+			m.cg.Log.Errorf("Could not scan a recipient")
 			continue
 		}
 
@@ -290,7 +290,7 @@ func indexHydrateHeadersFromDb(m *module, messages map[string]*core.Message) {
 
 	rows, err := m.cg.Rdbms().Query(sql, msgIds...)
 	if err != nil {
-		m.cg.Log.Fatal(err)
+		m.cg.Log.Fatalf("%s", err)
 	}
 	defer rows.Close()
 
@@ -298,7 +298,7 @@ func indexHydrateHeadersFromDb(m *module, messages map[string]*core.Message) {
 		var msgId string
 		hdr := core.MessageHeader{}
 		if err := rows.Scan(&msgId, &hdr.Key, &hdr.Value); err != nil {
-			m.cg.Log.Error("Could not scan a header")
+			m.cg.Log.Errorf("Could not scan a header")
 			continue
 		}
 
@@ -319,7 +319,7 @@ func indexHydrateCheckResultsFromDb(m *module, messages map[string]*core.Message
 
 	rows, err := m.cg.Rdbms().Query(sql, msgIds...)
 	if err != nil {
-		m.cg.Log.Fatal(err)
+		m.cg.Log.Fatalf("%s", err)
 	}
 	defer rows.Close()
 
@@ -332,7 +332,7 @@ func indexHydrateCheckResultsFromDb(m *module, messages map[string]*core.Message
 		if err := rows.Scan(&msgId, &res.Module, &verdict, &res.Score,
 			&res.WeightedScore, &duration, &determinants,
 		); err != nil {
-			m.cg.Log.Error("Could not scan a check result")
+			m.cg.Log.Errorf("Could not scan a check result")
 			continue
 		}
 

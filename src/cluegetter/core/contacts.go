@@ -28,7 +28,7 @@ func init() {
 
 func contactsInit() {
 	if !Config.Redis.Enabled {
-		Log.Fatal("The contacts module requires the Redis module to be enabled")
+		Log.Fatalf("The contacts module requires the Redis module to be enabled")
 	}
 }
 
@@ -138,11 +138,11 @@ func contactsAppearsOnList(keys []string, entry string, retry bool) bool {
 	n, err := script.EvalSha(redisClient, keys, []string{strings.ToLower(entry)}).Result()
 	if err != nil {
 		if retry {
-			Log.Notice("Redis error in contactsAppearsOnList(). Retrying..: %s", err.Error())
+			Log.Noticef("Redis error in contactsAppearsOnList(). Retrying..: %s", err.Error())
 			script.Load(redisClient)
 			return contactsAppearsOnList(keys, entry, false)
 		}
-		Log.Error("Redis error in contactsAppearsOnList(): %s", err.Error())
+		Log.Errorf("Redis error in contactsAppearsOnList(): %s", err.Error())
 		return false
 	}
 

@@ -106,7 +106,7 @@ func rspamdParseRawResult(rawResult interface{}) *rspamdResponse {
 					res.Default.Action = vv.(string)
 				default:
 					if strings.ToUpper(kk) != kk {
-						Log.Notice("Received unknown key in 'default' from Rspamd: ", kk)
+						Log.Noticef("Received unknown key in 'default' from Rspamd: ", kk)
 						continue
 					}
 

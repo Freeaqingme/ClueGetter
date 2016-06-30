@@ -54,7 +54,7 @@ func (m *module) Init() {
 		elastic.SetURL(m.cg.Config.Elasticsearch.Url...),
 	)
 	if err != nil {
-		m.cg.Log.Fatal("Could not connect to ElasticSearch: ", err.Error())
+		m.cg.Log.Fatalf("Could not connect to ElasticSearch: ", err.Error())
 	}
 
 	template := `{
@@ -146,7 +146,7 @@ func (m *module) Init() {
 
 	_, err = m.esClient.IndexPutTemplate("cluegetter").BodyString(template).Do()
 	if err != nil {
-		m.cg.Log.Fatal("Could not create ES template: %s", err.Error())
+		m.cg.Log.Fatalf("Could not create ES template: %s", err.Error())
 	}
 }
 
@@ -169,7 +169,7 @@ func (m *module) persistSession(coreSess *core.MilterSession) {
 		Do()
 
 	if err != nil {
-		m.cg.Log.Error("Could not index session '%s', error: %s", id, err.Error())
+		m.cg.Log.Errorf("Could not index session '%s', error: %s", id, err.Error())
 		return
 	}
 	//fmt.Printf("Indexed tweet %s to index %s, type %s\n", put1.Id, put1.Index, put1.Type)

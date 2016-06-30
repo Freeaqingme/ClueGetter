@@ -11,10 +11,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"cluegetter/address"
 	"cluegetter/core"
-	"strings"
 )
 
 func (m *module) HttpHandlers() map[string]core.HttpCallback {
@@ -116,11 +116,10 @@ func httpHydrateLegacyViewObject(messages []*core.Message) []*core.HttpMessage {
 			MtaHostname:   sess.MtaHostName,
 			MtaDaemonName: sess.MtaDaemonName,
 
-			Id:        msg.QueueId,
-			SessionId: string(sess.Id()), // TODO Encode?
-			Date:      &msg.Date,
-			BodySize:  uint32(msg.BodySize),
-			//			BodyHash: msg.BodyHash,
+			Id:         msg.QueueId,
+			SessionId:  string(sess.Id()), // TODO Encode?
+			Date:       &msg.Date,
+			BodySize:   uint32(msg.BodySize),
 			Sender:     msg.From.String(),
 			RcptCount:  len(msg.Rcpt),
 			Verdict:    verdict,
