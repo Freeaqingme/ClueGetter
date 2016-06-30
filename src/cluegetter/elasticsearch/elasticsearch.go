@@ -154,6 +154,7 @@ func (m *module) SessionDisconnect(sess *core.MilterSession) {
 	m.persistSession(sess)
 }
 
+// TODO: Check what happens if we added a message-id header ourselves
 func (m *module) persistSession(coreSess *core.MilterSession) {
 	sess := &session{coreSess}
 

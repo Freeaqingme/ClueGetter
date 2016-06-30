@@ -8,7 +8,7 @@
 {{ range $key, $msg := .Messages }}
     <tr>
         <td><a href="/message/{{ $msg.Id }}">{{ $msg.Id }}</a></td>
-        <td>{{ $msg.Date }}</td>
+        <td>{{ $msg.Date.Format "2006-01-02 15:04:05 -0700 MST" }}</td>
         <td>{{ $msg.Verdict }}</td>
         <td>{{ $msg.Sender }}</td>
         <td>{{ $msg.RcptCount }}</td>

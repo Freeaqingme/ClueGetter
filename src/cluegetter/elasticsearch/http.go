@@ -14,6 +14,7 @@ import (
 
 	"cluegetter/address"
 	"cluegetter/core"
+	"strings"
 )
 
 func (m *module) HttpHandlers() map[string]core.HttpCallback {
@@ -85,9 +86,10 @@ func httpHydrateLegacyViewObject(messages []*core.Message) []*core.HttpMessage {
 		checkResults := make([]*core.HttpMessageCheckResult, 0)
 		for _, res := range msg.CheckResults {
 			determinantStr, _ := json.Marshal(res.Determinants)
+			verdict := strings.ToLower(core.Proto_Message_Verdict_name[int32(res.SuggestedAction)])
 			checkResults = append(checkResults, &core.HttpMessageCheckResult{
 				Module:        res.Module,
-				Verdict:       core.Proto_Message_Verdict_name[int32(res.SuggestedAction)],
+				Verdict:       verdict,
 				Score:         res.Score,
 				WeightedScore: res.WeightedScore,
 				Duration:      res.Duration.Seconds(),
@@ -95,6 +97,7 @@ func httpHydrateLegacyViewObject(messages []*core.Message) []*core.HttpMessage {
 			})
 		}
 
+		verdict := strings.ToLower(core.Proto_Message_Verdict_name[int32(msg.Verdict)])
 		out = append(out, &core.HttpMessage{
 			Recipients:   recipients,
 			Headers:      headers,
@@ -120,7 +123,7 @@ func httpHydrateLegacyViewObject(messages []*core.Message) []*core.HttpMessage {
 			//			BodyHash: msg.BodyHash,
 			Sender:     msg.From.String(),
 			RcptCount:  len(msg.Rcpt),
-			Verdict:    core.Proto_Message_Verdict_name[int32(msg.Verdict)],
+			Verdict:    verdict,
 			VerdictMsg: msg.VerdictMsg,
 
 			RejectScore:            msg.RejectScore,

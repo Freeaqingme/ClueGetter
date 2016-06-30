@@ -195,7 +195,6 @@ func indexFetchSessionsFromDb(m *module, rawSessions chan map[[16]byte]*core.Mil
 	return lastId[:], count
 }
 
-// TODO: MessageId header
 func indexHydrateMessagesFromDb(m *module, sessions map[[16]byte]*core.MilterSession, msgChan chan map[string]*core.Message) {
 	sessionIds := make([]interface{}, 0)
 	for sessId := range sessions {

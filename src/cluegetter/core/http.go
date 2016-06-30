@@ -410,7 +410,6 @@ func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page Not Found", http.StatusNotFound)
 		return
 	}
-	fmt.Println(r.Form["datasource"])
 	datasourceFilter := ""
 	if len(r.Form["datasource"]) > 0 {
 		datasourceFilter = "&datasource=" + r.Form["datasource"][0]
