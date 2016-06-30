@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	"cluegetter/address"
@@ -19,14 +19,14 @@ import (
 )
 
 const (
-	messagePermit = iota
-	messageTempFail
-	messageReject
-	messageError
+	MessagePermit = iota
+	MessageTempFail
+	MessageReject
+	MessageError
 )
 
 type Message struct {
-	session *milterSession
+	session *MilterSession
 
 	QueueId  string
 	From     *address.Address
@@ -49,6 +49,17 @@ type Message struct {
 	injectMessageId string
 }
 
+func (msg *Message) Session() *MilterSession {
+	return msg.session
+}
+
+func (msg *Message) SetSession(s *MilterSession) {
+	if msg.session != nil {
+		panic("Cannot set session because session is already set")
+	}
+	msg.session = s
+}
+
 type MessageHeader struct {
 	Key        string
 	Value      string
@@ -66,20 +77,20 @@ func (h *MessageHeader) getValue() string {
 }
 
 type MessageCheckResult struct {
-	module          string
-	suggestedAction int
-	message         string
-	score           float64
-	determinants    map[string]interface{}
-	duration        time.Duration
-	weightedScore   float64
-	callbacks       []*func(*Message, int)
+	Module          string
+	SuggestedAction int
+	Message         string
+	Score           float64
+	Determinants    map[string]interface{}
+	Duration        time.Duration
+	WeightedScore   float64
+	Callbacks       []*func(*Message, int)
 }
 
 func (cr *MessageCheckResult) MarshalJSON() ([]byte, error) {
-	type Alias milterSession
+	type Alias MilterSession
 
-	determinants, _ := json.Marshal(cr.determinants)
+	determinants, _ := json.Marshal(cr.Determinants)
 	out := &struct {
 		Module        string
 		Verdict       int
@@ -89,32 +100,16 @@ func (cr *MessageCheckResult) MarshalJSON() ([]byte, error) {
 		Duration      time.Duration
 		WeightedScore float64
 	}{
-		Module:        cr.module,
-		Verdict:       cr.suggestedAction,
-		Message:       cr.message,
-		Score:         cr.score,
+		Module:        cr.Module,
+		Verdict:       cr.SuggestedAction,
+		Message:       cr.Message,
+		Score:         cr.Score,
 		Determinants:  string(determinants),
-		Duration:      cr.duration,
-		WeightedScore: cr.weightedScore,
+		Duration:      cr.Duration,
+		WeightedScore: cr.WeightedScore,
 	}
 
 	return json.Marshal(out)
-}
-
-func (r *MessageCheckResult) Module() string {
-	return r.module
-}
-
-func (r *MessageCheckResult) SuggestedAction() int {
-	return r.suggestedAction
-}
-
-func (r *MessageCheckResult) Message() string {
-	return r.message
-}
-
-func (r *MessageCheckResult) Score() float64 {
-	return r.score
 }
 
 type MessageModuleGroup struct {
@@ -246,37 +241,37 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 		}
 		Log.Error("Panic caught in messageGetVerdict(). Recovering. Error: %s", r)
 		StatsCounters["MessagePanics"].increase(1)
-		verdict = messageTempFail
+		verdict = MessageTempFail
 		msgStr = "An internal error occurred."
 		return
 	}()
 
 	flatResults := make([]*MessageCheckResult, 0)
-	results[messagePermit] = make([]*MessageCheckResult, 0)
-	results[messageTempFail] = make([]*MessageCheckResult, 0)
-	results[messageReject] = make([]*MessageCheckResult, 0)
-	results[messageError] = make([]*MessageCheckResult, 0)
+	results[MessagePermit] = make([]*MessageCheckResult, 0)
+	results[MessageTempFail] = make([]*MessageCheckResult, 0)
+	results[MessageReject] = make([]*MessageCheckResult, 0)
+	results[MessageError] = make([]*MessageCheckResult, 0)
 
 	var breakerScore [4]float64
 	done := make(chan bool)
 	errorCount := 0
 	resultsChan := messageGetResults(msg, done)
 	for result := range resultsChan {
-		if result.score == 0.0 {
-			result.suggestedAction = messagePermit // This is purely aesthetic but prevents confusion
+		if result.Score == 0.0 {
+			result.SuggestedAction = MessagePermit // This is purely aesthetic but prevents confusion
 		}
 
-		results[result.suggestedAction] = append(results[result.suggestedAction], result)
+		results[result.SuggestedAction] = append(results[result.SuggestedAction], result)
 		flatResults = append(flatResults, result)
-		breakerScore[result.suggestedAction] += result.score
-		result.weightedScore = result.score
+		breakerScore[result.SuggestedAction] += result.Score
+		result.WeightedScore = result.Score
 
-		if result.suggestedAction == messageError {
+		if result.SuggestedAction == MessageError {
 			errorCount = errorCount + 1
-		} else if breakerScore[result.suggestedAction] >= msg.session.config.ClueGetter.Breaker_Score {
+		} else if breakerScore[result.SuggestedAction] >= msg.session.config.ClueGetter.Breaker_Score {
 			Log.Debug(
 				"Breaker score %.2f/%.2f reached. Aborting all running modules",
-				breakerScore[result.suggestedAction],
+				breakerScore[result.SuggestedAction],
 				msg.session.config.ClueGetter.Breaker_Score,
 			)
 
@@ -299,9 +294,9 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 		out := results[0]
 		maxScore := float64(0)
 		for _, result := range results {
-			if result.weightedScore > maxScore && result.message != "" {
+			if result.WeightedScore > maxScore && result.Message != "" {
 				out = result
-				maxScore = result.weightedScore
+				maxScore = result.WeightedScore
 			}
 		}
 		return out
@@ -309,32 +304,32 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 
 	var totalScores [4]float64
 	for _, result := range flatResults {
-		totalScores[result.suggestedAction] += result.weightedScore
+		totalScores[result.SuggestedAction] += result.WeightedScore
 	}
 
-	verdict = messagePermit
+	verdict = MessagePermit
 	statusMsg := ""
 
 	sconf := msg.session.config
-	if totalScores[messageReject] >= sconf.ClueGetter.Message_Reject_Score {
+	if totalScores[MessageReject] >= sconf.ClueGetter.Message_Reject_Score {
 		StatsCounters["MessageVerdictReject"].increase(1)
-		verdict = messageReject
-		statusMsg = getDecidingResultWithMessage(results[messageReject]).message
+		verdict = MessageReject
+		statusMsg = getDecidingResultWithMessage(results[MessageReject]).Message
 	} else if errorCount > 0 {
 		statusMsg = "An internal server error ocurred"
-		verdict = messageTempFail
-	} else if (totalScores[messageTempFail] + totalScores[messageReject]) >= sconf.ClueGetter.Message_Tempfail_Score {
+		verdict = MessageTempFail
+	} else if (totalScores[MessageTempFail] + totalScores[MessageReject]) >= sconf.ClueGetter.Message_Tempfail_Score {
 		StatsCounters["MessageVerdictTempfail"].increase(1)
-		verdict = messageTempFail
-		statusMsg = getDecidingResultWithMessage(results[messageTempFail]).message
+		verdict = MessageTempFail
+		statusMsg = getDecidingResultWithMessage(results[MessageTempFail]).Message
 	}
 
-	if verdict != messagePermit && statusMsg == "" {
+	if verdict != MessagePermit && statusMsg == "" {
 		statusMsg = "Reason Unspecified"
 	}
 
 	for _, result := range flatResults {
-		for _, callback := range result.callbacks {
+		for _, callback := range result.Callbacks {
 			go func(callback *func(*Message, int), msg *Message, verdict int) {
 				defer func() {
 					if Config.ClueGetter.Exit_On_Panic {
@@ -353,9 +348,9 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 
 	msg.Verdict = verdict
 	msg.VerdictMsg = statusMsg
-	msg.RejectScore = totalScores[messageReject]
+	msg.RejectScore = totalScores[MessageReject]
 	msg.RejectScoreThreshold = sconf.ClueGetter.Message_Reject_Score
-	msg.TempfailScore = totalScores[messageTempFail]
+	msg.TempfailScore = totalScores[MessageTempFail]
 	msg.TempfailScoreThreshold = sconf.ClueGetter.Message_Tempfail_Score
 	msg.CheckResults = flatResults
 
@@ -371,11 +366,11 @@ func messageWeighResults(results []*MessageCheckResult) (ignoreErrorCount int) {
 
 		for _, moduleResult := range results {
 			for _, moduleGroupModule := range moduleGroup.modules {
-				if moduleResult.module != moduleGroupModule.module {
+				if moduleResult.Module != moduleGroupModule.module {
 					continue
 				}
 
-				if moduleResult.suggestedAction == messageError {
+				if moduleResult.SuggestedAction == MessageError {
 					moduleGroupErrorCount = moduleGroupErrorCount + 1
 				} else {
 					totalWeight = totalWeight + moduleGroupModule.weight
@@ -392,12 +387,12 @@ func messageWeighResults(results []*MessageCheckResult) (ignoreErrorCount int) {
 		multiply := 1.0 * (moduleGroup.totalWeight / totalWeight)
 		for _, moduleResult := range results {
 			for _, moduleGroupModule := range moduleGroup.modules {
-				if moduleResult.module != moduleGroupModule.module ||
-					moduleResult.suggestedAction == messageError {
+				if moduleResult.Module != moduleGroupModule.module ||
+					moduleResult.SuggestedAction == MessageError {
 					continue
 				}
 
-				moduleResult.weightedScore = moduleResult.weightedScore * moduleGroupModule.weight * multiply
+				moduleResult.WeightedScore = moduleResult.WeightedScore * moduleGroupModule.weight * multiply
 			}
 		}
 	}
@@ -408,11 +403,9 @@ func messageGetResults(msg *Message, done chan bool) chan *MessageCheckResult {
 	var wg sync.WaitGroup
 	out := make(chan *MessageCheckResult)
 
-	for _, module := range modules {
-		if module.milterCheck == nil {
-			continue
-		}
+	for _, module := range cg.Modules() {
 		wg.Add(1)
+		callback := module.MessageCheck
 		go func(moduleName string, moduleCallback *func(*Message, chan bool) *MessageCheckResult) {
 			defer wg.Done()
 			t0 := time.Now()
@@ -431,21 +424,21 @@ func messageGetResults(msg *Message, done chan bool) chan *MessageCheckResult {
 				determinants["error"] = r
 
 				out <- &MessageCheckResult{
-					module:          moduleName,
-					suggestedAction: messageError,
-					message:         "An internal error ocurred",
-					score:           25,
-					determinants:    determinants,
-					duration:        time.Now().Sub(t0),
+					Module:          moduleName,
+					SuggestedAction: MessageError,
+					Message:         "An internal error ocurred",
+					Score:           25,
+					Determinants:    determinants,
+					Duration:        time.Now().Sub(t0),
 				}
 			}()
 
 			res := (*moduleCallback)(msg, done)
 			if res != nil {
-				res.duration = time.Now().Sub(t0)
+				res.Duration = time.Now().Sub(t0)
 				out <- res
 			}
-		}(module.name, module.milterCheck)
+		}(module.Name(), &callback)
 	}
 
 	go func() {
@@ -459,16 +452,16 @@ func messageGetResults(msg *Message, done chan bool) chan *MessageCheckResult {
 func messageSave(msg *Message) {
 	checkResults := make([]*Proto_Message_CheckResult, 0)
 	for _, result := range msg.CheckResults {
-		determinants, _ := json.Marshal(result.determinants)
+		determinants, _ := json.Marshal(result.Determinants)
 
-		duration := result.duration.Seconds()
-		verdict := Proto_Message_Verdict(result.suggestedAction)
+		duration := result.Duration.Seconds()
+		verdict := Proto_Message_Verdict(result.SuggestedAction)
 		protoStruct := &Proto_Message_CheckResult{
 			MessageId:     msg.QueueId,
-			Module:        result.module,
+			Module:        result.Module,
 			Verdict:       verdict,
-			Score:         result.score,
-			WeightedScore: result.weightedScore,
+			Score:         result.Score,
+			WeightedScore: result.WeightedScore,
 			Duration:      duration,
 			Determinants:  determinants,
 		}
@@ -520,8 +513,8 @@ func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (a
 	copy(add, MessageInsertHeaders)
 
 	rejectscore := 0.0
-	for _, result := range results[messageReject] {
-		rejectscore += result.weightedScore
+	for _, result := range results[MessageReject] {
+		rejectscore += result.WeightedScore
 	}
 
 	// Add the recipients, duplicate lines if there's >1 recipients
@@ -644,6 +637,25 @@ func messageGetMessageId(msg *Message) string {
 	}
 
 	return msg.injectMessageId
+}
+
+func messageAcceptRecipient(rcpt *address.Address) (finalVerdict int, finalMsg string) {
+	finalVerdict = MessagePermit
+	finalMsg = ""
+
+	for _, module := range cg.Modules() {
+		verdict, msg := module.RecipientCheck(rcpt)
+		if verdict == MessageError {
+			return verdict, msg
+		}
+
+		if verdict > finalVerdict {
+			finalVerdict = verdict
+			finalMsg = msg
+		}
+	}
+
+	return
 }
 
 func messageGenerateMessageId(queueId, host string) string {

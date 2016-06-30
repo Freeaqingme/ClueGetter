@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	"cluegetter/address"
@@ -26,11 +26,11 @@ type milter struct {
 }
 
 type milterDataIndex struct {
-	sessions map[[16]byte]*milterSession
+	sessions map[[16]byte]*MilterSession
 	mu       sync.RWMutex
 }
 
-func (di *milterDataIndex) addNewSession(sess *milterSession) *milterSession {
+func (di *milterDataIndex) addNewSession(sess *MilterSession) *MilterSession {
 	di.mu.Lock()
 	defer di.mu.Unlock()
 
@@ -38,7 +38,7 @@ func (di *milterDataIndex) addNewSession(sess *milterSession) *milterSession {
 	return sess
 }
 
-func (di *milterDataIndex) delete(s *milterSession, lock bool) {
+func (di *milterDataIndex) delete(s *MilterSession, lock bool) {
 	s.DateDisconnect = time.Now()
 	s.persist()
 
@@ -65,7 +65,7 @@ func (di *milterDataIndex) prune() {
 var MilterDataIndex milterDataIndex
 
 func milterStart() {
-	MilterDataIndex = milterDataIndex{sessions: make(map[[16]byte]*milterSession)}
+	MilterDataIndex = milterDataIndex{sessions: make(map[[16]byte]*MilterSession)}
 
 	statsInitCounter("MilterCallbackConnect")
 	statsInitCounter("MilterCallbackHelo")
@@ -129,7 +129,7 @@ func milterGetNewSessionId() [16]byte {
 func (milter *milter) Connect(ctx uintptr, hostname string, ip net.IP) (sfsistat int8) {
 	defer milterHandleError(ctx, &sfsistat)
 
-	sess := &milterSession{
+	sess := &MilterSession{
 		id:          milterGetNewSessionId(),
 		DateConnect: time.Now(),
 		Instance:    instance,
@@ -202,9 +202,18 @@ func (milter *milter) EnvRcpt(ctx uintptr, rcpt []string) (sfsistat int8) {
 	Log.Debug("%s Milter.EnvRcpt() called: rcpt = %s", d.milterGetDisplayId(), fmt.Sprint(rcpt))
 
 	address := address.FromString(strings.ToLower(strings.Trim(rcpt[0], "<>")))
-	if srsIsSrsAddress(address) && !srsIsValidRecipient(address) {
-		Log.Debug("%s Milter.EnvRcpt() Not a valid SRS address: rcpt = %s", d.milterGetDisplayId(), fmt.Sprint(rcpt))
+	verdict, msgOut := messageAcceptRecipient(address)
+
+	switch {
+	case verdict == MessageTempFail:
+		Log.Debug("%s Milter.EnvRcpt() status=TempFail rcpt=%s msg=%s", d.milterGetDisplayId(), address.String(), msgOut)
+		return m.Tempfail
+	case verdict == MessageReject:
+		Log.Debug("%s Milter.EnvRcpt() status=Reject rcpt=%s msg=%s", d.milterGetDisplayId(), address.String(), msgOut)
 		return m.Reject
+	case verdict == MessageError:
+		Log.Error("%s Milter.EnvRcpt() status=Error rcpt=%s msg=%s", d.milterGetDisplayId(), address.String(), msgOut)
+		return m.Tempfail
 	}
 
 	msg.Rcpt = append(msg.Rcpt, address)
@@ -287,22 +296,22 @@ func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
 	}
 
 	if s.isWhitelisted() {
-		verdict = messagePermit
+		verdict = MessagePermit
 		msgOut = "Whitelisted"
 	}
 
 	switch {
-	case verdict == messagePermit:
+	case verdict == MessagePermit:
 		Log.Info("Message Permit: sess=%s message=%s %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msgOut)
 		return
-	case verdict == messageTempFail:
+	case verdict == MessageTempFail:
 		m.SetReply(ctx, "421", "4.7.0", fmt.Sprintf("%s (%s)", msgOut, s.getLastMessage().QueueId))
 		Log.Info("Message TempFail: sess=%s message=%s msg: %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msgOut)
 		if Config.ClueGetter.Noop {
 			return
 		}
 		return m.Tempfail
-	case verdict == messageReject:
+	case verdict == MessageReject:
 		m.SetReply(ctx, "550", "5.7.1", fmt.Sprintf("%s (%s)", msgOut, s.getLastMessage().QueueId))
 		Log.Info("Message Reject: sess=%s message=%s msg: %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msgOut)
 		if Config.ClueGetter.Noop {
@@ -364,19 +373,19 @@ func milterHandleError(ctx uintptr, sfsistat *int8) {
 	return
 }
 
-func milterChangeFrom(ctx uintptr, from string) {
-	m.ChgFrom(ctx, from, "")
+func MilterChangeFrom(sess *MilterSession, from string) {
+	m.ChgFrom(sess.milterCtx, from, "")
 }
 
-func milterAddRcpt(ctx uintptr, rcpt string) int {
-	return m.AddRcpt(ctx, rcpt)
+func MilterAddRcpt(sess *MilterSession, rcpt string) int {
+	return m.AddRcpt(sess.milterCtx, rcpt)
 }
 
-func milterDelRcpt(ctx uintptr, rcpt string) int {
-	return m.DelRcpt(ctx, rcpt)
+func MilterDelRcpt(sess *MilterSession, rcpt string) int {
+	return m.DelRcpt(sess.milterCtx, rcpt)
 }
 
-func milterGetSession(ctx uintptr, keep bool, returnNil bool) *milterSession {
+func milterGetSession(ctx uintptr, keep bool, returnNil bool) *MilterSession {
 	var u [16]byte
 	res := m.GetPriv(ctx, &u)
 	if res != 0 {
@@ -399,11 +408,13 @@ func milterGetSession(ctx uintptr, keep bool, returnNil bool) *milterSession {
 		panic(fmt.Sprintf("Session %d could not be found in milterDataIndex", u))
 	}
 
-	out.milterCtx = ctx
+	if out != nil {
+		out.milterCtx = ctx
+	}
 	return out
 }
 
-func (sess *milterSession) milterGetDisplayId() string {
+func (sess *MilterSession) milterGetDisplayId() string {
 	id := sess.getId()
 	return hex.EncodeToString(id[:])
 }

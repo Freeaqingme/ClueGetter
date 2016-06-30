@@ -27,11 +27,11 @@ Features:
   of items in the queue.
 * Contacts - Import address books (e.g. from RoundCube) so these addresses and/or domains can be used
   to (partially) blacklist messages from those addresses or domains.
+* SRS - Sender Rewriting Scheme
 
 Planned modules:
 * GeoIP - Detect anomalies in the countries used to send mail from
 * Reputation - Incorporate previous verdicts in future verdicts.
-* SRS - Implement with proper support for virtual domains
 
 See the [Wiki](https://github.com/Freeaqingme/ClueGetter/wiki) for more documentation how to use
 these features.

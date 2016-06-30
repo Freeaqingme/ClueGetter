@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ func init() {
 	milterCheck := contactsGetResult
 	init := contactsInit
 
-	ModuleRegister(&module{
+	ModuleRegister(&ModuleOld{
 		name:        "contacts",
 		enable:      &enable,
 		init:        &init,
@@ -34,16 +34,16 @@ func contactsInit() {
 
 func contactsGetResult(msg *Message, abort chan bool) *MessageCheckResult {
 	conf := Config.Contacts
-	if !conf.Enabled || !msg.session.config.Contacts.Enabled {
+	if !msg.session.config.Contacts.Enabled {
 		return nil
 	}
 
 	if msg.From.Domain() == "" || msg.Rcpt[0].Domain() == "" {
 		return &MessageCheckResult{
-			module:          "contacts",
-			suggestedAction: messagePermit,
-			score:           0,
-			determinants: map[string]interface{}{
+			Module:          "contacts",
+			SuggestedAction: MessagePermit,
+			Score:           0,
+			Determinants: map[string]interface{}{
 				"address":   msg.From.String(),
 				"domain":    msg.From.Domain(),
 				"unchecked": "true",
@@ -54,10 +54,10 @@ func contactsGetResult(msg *Message, abort chan bool) *MessageCheckResult {
 
 	if msg.From.String() == msg.Rcpt[0].String() {
 		return &MessageCheckResult{
-			module:          "contacts",
-			suggestedAction: messagePermit,
-			score:           0,
-			determinants: map[string]interface{}{
+			Module:          "contacts",
+			SuggestedAction: MessagePermit,
+			Score:           0,
+			Determinants: map[string]interface{}{
 				"address":   msg.From.String(),
 				"domain":    msg.From.Domain(),
 				"unchecked": "true",
@@ -73,12 +73,12 @@ func contactsGetResult(msg *Message, abort chan bool) *MessageCheckResult {
 
 	ret := func(score float64, list, value string) *MessageCheckResult {
 		return &MessageCheckResult{
-			module:          "contacts",
-			suggestedAction: messageReject,
-			score:           score,
-			message: "This message was sent from an address that was put on a local blacklist " +
+			Module:          "contacts",
+			SuggestedAction: MessageReject,
+			Score:           score,
+			Message: "This message was sent from an address that was put on a local blacklist " +
 				"by one of the recipients. Therefore, the message has been blocked.",
-			determinants: map[string]interface{}{
+			Determinants: map[string]interface{}{
 				"list":  list,
 				"value": value,
 				"key":   tpl,
@@ -109,10 +109,10 @@ func contactsGetResult(msg *Message, abort chan bool) *MessageCheckResult {
 	}
 
 	return &MessageCheckResult{
-		module:          "contacts",
-		suggestedAction: messagePermit,
-		score:           0,
-		determinants: map[string]interface{}{
+		Module:          "contacts",
+		SuggestedAction: MessagePermit,
+		Score:           0,
+		Determinants: map[string]interface{}{
 			"key":     tpl,
 			"address": msg.From.String(),
 			"domain":  msg.From.Domain(),

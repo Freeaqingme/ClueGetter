@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"testing"
@@ -76,19 +76,19 @@ func testLuaMilterCheck(t *testing.T, luaScript, message string, action int, sco
 	LuaReset()
 	DaemonReset()
 
-	if res.module != "lua-test" {
-		t.Fatal("Expected module name 'lua-test', but got:", res.module)
+	if res.Module != "lua-test" {
+		t.Fatal("Expected module name 'lua-test', but got:", res.Module)
 	}
 
-	if res.suggestedAction != action {
-		t.Fatalf("Expected suggested action '%d', but got: %d", action, res.suggestedAction)
+	if res.SuggestedAction != action {
+		t.Fatalf("Expected suggested action '%d', but got: %d", action, res.SuggestedAction)
 	}
 
-	if res.message != message {
-		t.Fatalf("Expected message '%s', but got: %s", message, res.message)
+	if res.Message != message {
+		t.Fatalf("Expected message '%s', but got: %s", message, res.Message)
 	}
 
-	if res.score != score {
-		t.Fatalf("Expected score '%f', but got: %f", score, res.score)
+	if res.Score != score {
+		t.Fatalf("Expected score '%f', but got: %f", score, res.Score)
 	}
 }

@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	cg_lua "cluegetter/lua"
@@ -19,7 +19,7 @@ var luaModules = make(map[string]string, 0)
 func init() {
 	init := LuaStart
 
-	ModuleRegister(&module{
+	ModuleRegister(&ModuleOld{
 		name: "lua",
 		init: &init,
 	})
@@ -63,7 +63,7 @@ func luaStartModule(name string, conf *ConfigLuaModule) {
 	}
 	luaModules[name] = string(scriptContents)
 
-	ModuleRegister(&module{
+	ModuleRegister(&ModuleOld{
 		name:        "lua-" + name,
 		enable:      &enable,
 		milterCheck: &milterCheck,
@@ -104,10 +104,10 @@ func LuaMilterCheck(luaModuleName string, msg *Message, done chan bool) *Message
 	}
 
 	return &MessageCheckResult{
-		module:          "lua-" + luaModuleName,
-		suggestedAction: int(suggestedAction),
-		message:         resMsg.String(),
-		score:           float64(lua.LVAsNumber(resScore)),
+		Module:          "lua-" + luaModuleName,
+		SuggestedAction: int(suggestedAction),
+		Message:         resMsg.String(),
+		Score:           float64(lua.LVAsNumber(resScore)),
 	}
 }
 
@@ -171,9 +171,9 @@ var luaSessionMethods = map[string]lua.LGFunction{
 	"getMtaDaemonName": luaSessionFuncMtaDaemonName,
 }
 
-func luaSessionGetFromVM(L *lua.LState) *milterSession {
+func luaSessionGetFromVM(L *lua.LState) *MilterSession {
 	ud := L.CheckUserData(1)
-	if v, ok := ud.Value.(*milterSession); ok {
+	if v, ok := ud.Value.(*MilterSession); ok {
 		return v
 	}
 	L.ArgError(1, "Session expected")

@@ -46,6 +46,13 @@ func FromString(address string) *Address {
 	return a
 }
 
+func FromAddressOrDomain(address string) *Address {
+	a := &Address{}
+	a.local, a.domain = messageParseAddress(address, false)
+
+	return a
+}
+
 func messageParseAddress(address string, singleIsUser bool) (local, domain string) {
 	if strings.Index(address, "@") != -1 {
 		local = strings.SplitN(address, "@", 2)[0]

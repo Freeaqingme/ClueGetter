@@ -11,21 +11,20 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strings"
-	"sync"
+
+	"cluegetter/core"
+	skel "github.com/Freeaqingme/GoDaemonSkeleton"
+	"github.com/Freeaqingme/GoDaemonSkeleton/log"
 )
 
-type subApp struct {
-	name     string
-	handover *func()
-}
+import (
+	_ "cluegetter/elasticsearch"
+	_ "cluegetter/srs"
+	//_ "cluegetter/demo"
+)
 
 var (
-	subAppsMu         sync.Mutex
-	subApps           = make([]*subApp, 0)
 	defaultConfigFile = "/etc/cluegetter/cluegetter.conf"
-	Config            = *new(config)
-	hostname, _       = os.Hostname()
 )
 
 // Set by linker flags
@@ -35,82 +34,29 @@ var (
 )
 
 func main() {
-	subAppNames := func() []string {
-		out := []string{}
-		for _, subApp := range subApps {
-			out = append(out, subApp.name)
-		}
+	app, args := skel.GetApp()
 
-		return out
-	}
-
-	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "No Sub-App specified. Must be one of: %s\n", strings.Join(subAppNames(), " "))
-		os.Exit(1)
-	}
-
-	var subAppArgs []string
-	var subApp *subApp
-OuterLoop:
-	for i, arg := range os.Args[1:] {
-		for _, subAppTemp := range subApps {
-			if arg == subAppTemp.name {
-				subApp = subAppTemp
-				subAppArgs = os.Args[i+2:]
-				os.Args = os.Args[:i+1]
-				break OuterLoop
-			}
-		}
-	}
-
-	if subApp == nil {
-		fmt.Fprintf(os.Stderr, "No Sub-App specified. Must be one of: %s\n", strings.Join(subAppNames(), " "))
-		os.Exit(1)
-	} else if subApp.name == "version" {
+	if app.Name == "version" {
 		// We don't want to require config stuff for merely displaying the version
-		(*subApp.handover)()
+		(*app.Handover)()
 		return
 	}
 
 	configFile := flag.String("config", defaultConfigFile, "Path to Config File")
-	logLevel := flag.String("loglevel", "NOTICE",
+	logLevel := flag.String("loglevel", "DEBUG",
 		"Log Level. One of: CRITICAL, ERROR, WARNING, NOTICE, INFO, DEBUG)")
 	flag.Parse()
 
-	logSetupGlobal(*logLevel)
+	core.Log = log.Open("ClueGetter", *logLevel)
 
-	DefaultConfig(&Config)
+	core.DefaultConfig(&core.Config)
 	if *configFile != "" {
-		LoadConfig(*configFile, &Config)
+		core.LoadConfig(*configFile, &core.Config)
 	}
+	core.InitCg()
 
-	os.Args = append([]string{os.Args[0]}, subAppArgs...)
-	(*subApp.handover)()
-}
-
-func subAppRegister(subApp *subApp) {
-	subAppsMu.Lock()
-	defer subAppsMu.Unlock()
-	if subApp == nil {
-		panic("nil subapp supplied")
-	}
-	for _, dup := range subApps {
-		if dup.name == subApp.name {
-			panic("Register called twice for subApp " + subApp.name)
-		}
-	}
-	subApps = append(subApps, subApp)
-}
-
-func cluegetterRecover(funcName string) {
-	if Config.ClueGetter.Exit_On_Panic {
-		return
-	}
-	r := recover()
-	if r == nil {
-		return
-	}
-	Log.Error("Panic caught in %s(). Recovering. Error: %s", funcName, r)
+	os.Args = append([]string{os.Args[0]}, args...)
+	(*app.Handover)()
 }
 
 func init() {
@@ -127,8 +73,8 @@ func init() {
 		os.Exit(0)
 	}
 
-	subAppRegister(&subApp{
-		name:     "version",
-		handover: &handover,
+	skel.AppRegister(&skel.App{
+		Name:     "version",
+		Handover: &handover,
 	})
 }

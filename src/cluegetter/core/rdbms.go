@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	"database/sql"
@@ -61,7 +61,8 @@ func rdbmsGetDsn(display bool) string {
 		cfg.Rdbms_Address, cfg.Rdbms_Database, dsn_options)
 }
 
-func rdbmsRowsInTable(table string) (count int) {
+// TODO: Make method of RdbmsClient
+func RdbmsRowsInTable(table string) (count int) {
 	err := Rdbms.QueryRow(`
 		SELECT TABLE_ROWS FROM information_schema.tables
 			WHERE TABLE_SCHEMA = database() AND TABLE_NAME = ?

@@ -5,51 +5,39 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	"bufio"
 	"flag"
 	"fmt"
+	"github.com/Freeaqingme/GoDaemonSkeleton"
+	"github.com/Freeaqingme/GoDaemonSkeleton/log"
 	"net"
 	"os"
 	"os/signal"
 	"strings"
-	"sync"
 	"syscall"
 )
 
 var (
-	modulesMu      sync.Mutex
-	modules        = make([]*module, 0)
 	ipcHandlers    = make(map[string]func(string), 0)
 	instance       uint
 	defaultLogFile = "/var/log/cluegetter.log"
 	logFile        string
 )
 
-type module struct {
-	name         string
-	enable       *func() bool
-	init         *func()
-	stop         *func()
-	milterCheck  *func(*Message, chan bool) *MessageCheckResult
-	ipc          map[string]func(string)
-	rpc          map[string]chan string
-	httpHandlers map[string]httpCallback
-}
-
 func init() {
 	handover := daemonStart
 
-	subAppRegister(&subApp{
-		name:     "daemon",
-		handover: &handover,
+	GoDaemonSkeleton.AppRegister(&GoDaemonSkeleton.App{
+		Name:     "daemon",
+		Handover: &handover,
 	})
 }
 
 func DaemonReset() {
-	modules = make([]*module, 0)
+	cg.modules = make([]Module, 0) // Todo: This is probably abundant
 	ipcHandlers = make(map[string]func(string), 0)
 }
 
@@ -60,7 +48,7 @@ func daemonStart() {
 
 	if !*foreground {
 		logFile = *logFileTmp
-		logRedirectStdOutToFile(logFile)
+		log.LogRedirectStdOutToFile(logFile)
 	}
 	Log.Notice("Starting ClueGetter...")
 
@@ -69,21 +57,15 @@ func daemonStart() {
 
 	done := make(chan struct{})
 	rdbmsStart()
-	setInstance()
+	instance = cg.Instance()
 	redisStart()
 
 	milterSessionStart()
 	httpStart(done)
 	messageStart()
-	for _, module := range modules {
-		if module.enable != nil && !(*module.enable)() {
-			Log.Info("Skipping module '%s' because it was not enabled", module.name)
-			continue
-		}
-		if module.init != nil {
-			(*module.init)()
-			Log.Info("Module '%s' started successfully", module.name)
-		}
+	for _, module := range cg.Modules() {
+		module.Init()
+		Log.Info("Module '" + module.Name() + "' started successfully")
 	}
 	milterStart()
 
@@ -93,54 +75,14 @@ func daemonStart() {
 
 	close(done)
 	milterStop()
-	for _, module := range modules {
-		if module.stop != nil {
-			(*module.stop)()
-		}
+	for _, module := range cg.Modules() {
+		module.Stop()
 	}
 	messageStop()
 	rdbmsStop()
 
 	Log.Notice("Successfully ceased all operations.")
 	os.Exit(0)
-}
-
-func setInstance() {
-	if Config.ClueGetter.Instance == "" {
-		Log.Fatal("No instance was set")
-	}
-
-	err := Rdbms.QueryRow("SELECT id from instance WHERE name = ?", Config.ClueGetter.Instance).Scan(&instance)
-	if err != nil {
-		Log.Fatal(fmt.Sprintf("Could not retrieve instance '%s' from database: %s",
-			Config.ClueGetter.Instance, err))
-	}
-
-	Log.Notice("Instance name: %s. Id: %d", Config.ClueGetter.Instance, instance)
-}
-
-func ModuleRegister(module *module) {
-	modulesMu.Lock()
-	defer modulesMu.Unlock()
-	if module == nil {
-		panic("Module: Register module is nil")
-	}
-	for _, dup := range modules {
-		if dup.name == module.name {
-			panic("Module: Register called twice for module " + module.name)
-		}
-	}
-
-	if module.ipc != nil {
-		for ipcName, ipcCallback := range module.ipc {
-			if _, ok := ipcHandlers[ipcName]; ok {
-				panic("Tried to register ipcHandler twice for " + ipcName)
-			}
-			ipcHandlers[ipcName] = ipcCallback
-		}
-	}
-
-	modules = append(modules, module)
 }
 
 func daemonIpc(done <-chan struct{}) {
@@ -178,7 +120,7 @@ func daemonIpc(done <-chan struct{}) {
 }
 
 func daemonIpcHandleConn(conn *net.UnixConn) {
-	defer cluegetterRecover("daemonIpcHandleConn")
+	defer CluegetterRecover("daemonIpcHandleConn")
 	defer conn.Close()
 
 	for {

@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	"encoding/json"
@@ -94,6 +94,7 @@ func redisStart() {
 
 	RedisLPushChan = make(chan *RedisKeyValue, 255)
 	redisClient = redisNewClient()
+	cg.Redis = redisClient
 
 	go redisChannelListener()
 
@@ -278,12 +279,8 @@ func redisRpc() {
 	defer pubsub.Close()
 
 	listeners := make(map[string][]chan string, 0)
-	for _, module := range modules {
-		if module.rpc == nil || (module.enable != nil && !(*module.enable)()) {
-			continue
-		}
-
-		for pattern, channel := range module.rpc {
+	for _, module := range cg.Modules() {
+		for pattern, channel := range module.Rpc() {
 			if listeners[pattern] == nil {
 				listeners[pattern] = make([]chan string, 0)
 			}

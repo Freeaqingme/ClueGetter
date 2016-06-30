@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	"database/sql"
@@ -68,13 +68,13 @@ func init() {
 	stop := quotasStop
 	milterCheck := quotasIsAllowed
 
-	ModuleRegister(&module{
+	ModuleRegister(&ModuleOld{
 		name:        "quotas",
 		enable:      &enable,
 		init:        &init,
 		stop:        &stop,
 		milterCheck: &milterCheck,
-		httpHandlers: map[string]httpCallback{
+		httpHandlers: map[string]HttpCallback{
 			"/quotas/sasl_username/": quotasSasluserStats,
 		},
 	})
@@ -272,7 +272,7 @@ func quotasStop() {
 }
 
 func quotasIsAllowed(msg *Message, _ chan bool) *MessageCheckResult {
-	if !Config.Quotas.Enabled || !msg.session.config.Quotas.Enabled {
+	if !msg.session.config.Quotas.Enabled {
 		return nil
 	}
 
@@ -336,22 +336,22 @@ func quotasRedisIsAllowed(msg *Message) *MessageCheckResult {
 
 	if rejectMsg != "" {
 		return &MessageCheckResult{
-			module:          "quotas",
-			suggestedAction: messageTempFail,
-			message:         rejectMsg,
-			score:           100,
-			determinants:    determinants,
-			callbacks:       callbacks,
+			Module:          "quotas",
+			SuggestedAction: MessageTempFail,
+			Message:         rejectMsg,
+			Score:           100,
+			Determinants:    determinants,
+			Callbacks:       callbacks,
 		}
 	}
 
 	return &MessageCheckResult{
-		module:          "quotas",
-		suggestedAction: messagePermit,
-		message:         "",
-		score:           1,
-		determinants:    determinants,
-		callbacks:       callbacks,
+		Module:          "quotas",
+		SuggestedAction: MessagePermit,
+		Message:         "",
+		Score:           1,
+		Determinants:    determinants,
+		Callbacks:       callbacks,
 	}
 }
 
@@ -536,5 +536,5 @@ func quotasSasluserStats(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	httpRenderOutput(w, r, "", nil, &jsonData)
+	HttpRenderOutput(w, r, "", nil, &jsonData)
 }

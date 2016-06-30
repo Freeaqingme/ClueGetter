@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	"github.com/scalingdata/gcfg"
@@ -52,6 +52,7 @@ type config struct {
 	ModuleGroup   map[string]*ConfigModuleGroup
 	Elasticsearch struct {
 		Enabled bool
+		Sniff   bool
 		Url     []string
 	}
 	Http struct {
@@ -263,6 +264,7 @@ func DefaultConfig(cfg *config) {
 	cfg.Redis.Method = "standalone"
 	cfg.Redis.Dump_Key = []string{}
 
+	cfg.Elasticsearch.Sniff = true
 	cfg.Elasticsearch.Url = []string{}
 
 	cfg.Http.Enabled = true

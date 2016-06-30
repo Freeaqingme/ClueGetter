@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	"bytes"
@@ -41,7 +41,7 @@ func init() {
 	enable := func() bool { return Config.Rspamd.Enabled }
 	milterCheck := rspamdGetResult
 
-	ModuleRegister(&module{
+	ModuleRegister(&ModuleOld{
 		name:        "rspamd",
 		enable:      &enable,
 		milterCheck: &milterCheck,
@@ -49,17 +49,17 @@ func init() {
 }
 
 func rspamdGetResult(msg *Message, abort chan bool) *MessageCheckResult {
-	if !Config.Rspamd.Enabled || !msg.session.config.Rspamd.Enabled {
+	if !msg.session.config.Rspamd.Enabled {
 		return nil
 	}
 
 	rawResult, err := rspamdGetRawResult(msg)
 	if err != nil {
 		return &MessageCheckResult{
-			module:          "rspamd",
-			suggestedAction: messageError,
-			score:           25,
-			determinants: map[string]interface{}{
+			Module:          "rspamd",
+			SuggestedAction: MessageError,
+			Score:           25,
+			Determinants: map[string]interface{}{
 				"error": err.Error(),
 			},
 		}
@@ -69,12 +69,12 @@ func rspamdGetResult(msg *Message, abort chan bool) *MessageCheckResult {
 	score := parsedResponse.Default.Score * msg.session.config.Rspamd.Multiplier
 
 	return &MessageCheckResult{
-		module:          "rspamd",
-		suggestedAction: messageReject,
-		message: "Our system has detected that this message is likely unsolicited mail (SPAM). " +
+		Module:          "rspamd",
+		SuggestedAction: MessageReject,
+		Message: "Our system has detected that this message is likely unsolicited mail (SPAM). " +
 			"To reduce the amount of spam, this message has been blocked.",
-		score: score,
-		determinants: map[string]interface{}{
+		Score: score,
+		Determinants: map[string]interface{}{
 			"response":   parsedResponse,
 			"multiplier": Config.Rspamd.Multiplier,
 		},

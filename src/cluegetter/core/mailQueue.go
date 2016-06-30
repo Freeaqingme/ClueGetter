@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	"bytes"
@@ -35,14 +35,14 @@ func init() {
 		mailQueueStart(deleteQueue)
 	}
 
-	ModuleRegister(&module{
+	ModuleRegister(&ModuleOld{
 		name:   "mailQueue",
 		enable: &enable,
 		init:   &init,
 		rpc: map[string]chan string{
 			"mailQueue!delete": deleteQueue,
 		},
-		httpHandlers: map[string]httpCallback{
+		httpHandlers: map[string]HttpCallback{
 			"/mailqueue":        mailQueueHttp,
 			"/mailqueue/delete": mailQueueHttpDelete,
 		},
@@ -203,7 +203,7 @@ func mailQueueGetFromDataStore(options *mailQueueGetOptions) map[string][]*mailQ
 }
 
 func mailQueueUpdate(queueName string) {
-	defer cluegetterRecover("mailQueueUpdate")
+	defer CluegetterRecover("mailQueueUpdate")
 	t0 := time.Now()
 
 	wg := &sync.WaitGroup{}
@@ -214,7 +214,7 @@ func mailQueueUpdate(queueName string) {
 	wg.Add(1)
 	go mailQueueProcessFileList(wg, files, path, envelopes)
 	go func() {
-		defer cluegetterRecover("mailQueueUpdate")
+		defer CluegetterRecover("mailQueueUpdate")
 		count := mailQueueAddToRedis(envelopes, queueName)
 		Log.Info("Imported %d items from the '%s' mailqueue into Redis in %.2f seconds",
 			count, queueName, time.Now().Sub(t0).Seconds())
@@ -272,7 +272,7 @@ func mailQueueAddToRedis(envelopes chan *mailQueueItem, queueName string) int {
 }
 
 func mailQueueProcessFileList(wg *sync.WaitGroup, files chan string, path string, envelopes chan *mailQueueItem) {
-	defer cluegetterRecover("mailQueueProcessFileList")
+	defer CluegetterRecover("mailQueueProcessFileList")
 
 	filesBatch := make([]string, 0, 256)
 	for file := range files {
@@ -293,7 +293,7 @@ func mailQueueProcessFileList(wg *sync.WaitGroup, files chan string, path string
 }
 
 func mailQueueProcessFiles(filesBatch []string, path string, envelopes chan *mailQueueItem) {
-	defer cluegetterRecover("mailQueueProcessFiles")
+	defer CluegetterRecover("mailQueueProcessFiles")
 
 	execPath := Config.MailQueue.PostcatExecutable
 	if execPath == "" {
@@ -378,11 +378,11 @@ func mailQueueHttp(w http.ResponseWriter, r *http.Request) {
 		Sender     string
 		Recipient  string
 	}{
-		HttpViewData: httpGetViewData(),
+		HttpViewData: HttpGetViewData(),
 		Instances:    httpGetInstances(),
 	}
 
-	selectedInstances, err := httpParseFilterInstance(r)
+	selectedInstances, err := HttpParseFilterInstance(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -398,7 +398,7 @@ func mailQueueHttp(w http.ResponseWriter, r *http.Request) {
 		Instances: selectedInstances,
 	})
 
-	httpRenderOutput(w, r, "mailQueue.html", &data, &data.QueueItems)
+	HttpRenderOutput(w, r, "mailQueue.html", &data, &data.QueueItems)
 }
 
 func mailQueueHttpDelete(w http.ResponseWriter, r *http.Request) {

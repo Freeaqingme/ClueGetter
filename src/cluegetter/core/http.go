@@ -5,13 +5,9 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
-	"cluegetter/assets"
-	proxyproto "github.com/Freeaqingme/go-proxyproto"
-	humanize "github.com/dustin/go-humanize"
-
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -23,9 +19,18 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"cluegetter/address"
+	"cluegetter/assets"
+
+	proxyproto "github.com/Freeaqingme/go-proxyproto"
+	humanize "github.com/dustin/go-humanize"
 )
 
-type httpCallback func(w http.ResponseWriter, r *http.Request)
+const datasource_mysql = "mysql"
+const datasource_es = "elasticsearch"
+
+type HttpCallback func(w http.ResponseWriter, r *http.Request)
 
 func httpStart(done <-chan struct{}) {
 	if !Config.Http.Enabled {
@@ -40,12 +45,8 @@ func httpStart(done <-chan struct{}) {
 	http.HandleFunc("/message/searchSaslUser/", httpHandleMessageSearchSaslUser)
 	http.HandleFunc("/", httpIndexHandler)
 
-	for _, module := range modules {
-		if module.enable != nil && !(*module.enable)() {
-			continue
-		}
-
-		for url, callback := range module.httpHandlers {
+	for _, module := range cg.Modules() {
+		for url, callback := range module.HttpHandlers() {
 			http.HandleFunc(url, callback)
 		}
 	}
@@ -75,10 +76,10 @@ type httpInstance struct {
 	Selected    bool
 }
 
-type httpMessage struct {
-	Recipients   []*httpMessageRecipient
-	Headers      []*httpMessageHeader
-	CheckResults []*httpMessageCheckResult
+type HttpMessage struct {
+	Recipients   []*HttpMessageRecipient
+	Headers      []*HttpMessageHeader
+	CheckResults []*HttpMessageCheckResult
 
 	Ip           string
 	ReverseDns   string
@@ -110,19 +111,19 @@ type httpMessage struct {
 	ScoreCombined          float64
 }
 
-type httpMessageRecipient struct {
+type HttpMessageRecipient struct {
 	Id     int
 	Local  string
 	Domain string
 	Email  string
 }
 
-type httpMessageHeader struct {
+type HttpMessageHeader struct {
 	Name string
 	Body string
 }
 
-type httpMessageCheckResult struct {
+type HttpMessageCheckResult struct {
 	Module        string
 	Verdict       string
 	Score         float64
@@ -178,16 +179,25 @@ func httpLogRequest(frontend string, handler http.Handler) http.Handler {
 }
 
 func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
-	address := r.URL.Path[len("/message/searchEmail/"):]
-	var local, domain string
-	if strings.Index(address, "@") != -1 {
-		local = strings.Split(address, "@")[0]
-		domain = strings.Split(address, "@")[1]
-	} else {
-		domain = address
+	source := httpParseDataSource(r)
+	if source == datasource_es {
+		if cg.Module("elasticsearch", "") == nil {
+			http.Error(w, "Elasticsearch not enabled", http.StatusBadRequest)
+			return
+		}
+
+		http.Redirect(w, r, "/es/"+r.URL.Path, http.StatusFound)
+		return
 	}
 
-	instances, err := httpParseFilterInstance(r)
+	address := address.FromAddressOrDomain(r.URL.Path[len("/message/searchEmail/"):])
+
+	if address.Local() == "" {
+		http.Error(w, "Only full addresses supported when searching through Mysql :(", http.StatusBadRequest)
+		return
+	}
+
+	instances, err := HttpParseFilterInstance(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -201,9 +211,9 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 				INNER JOIN session s ON s.id = m.session
 				INNER JOIN message_recipient mr on mr.message = m.id
 				INNER JOIN recipient r ON r.id = mr.recipient
-			WHERE (m.sender_domain = ? AND (m.sender_local = ? OR ? = '')) AND
-					s.cluegetter_instance IN (`+strings.Join(instances, ",")+`)
-				AND m.date >= CURDATE()-INTERVAL 1 WEEK
+			WHERE m.sender_domain = ?
+				AND s.cluegetter_instance IN (`+strings.Join(instances, ",")+`)
+				AND m.date >= CURDATE()-INTERVAL 2 WEEK
 			GROUP BY m.id
 			ORDER BY date DESC
 			LIMIT 0,250
@@ -214,16 +224,16 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 				INNER JOIN session s ON s.id = m.session
 				INNER JOIN message_recipient mr on mr.message = m.id
 				INNER JOIN recipient r ON r.id = mr.recipient
-			WHERE (r.domain = ? AND (r.local = ? OR ? = ''))
+			WHERE r.domain = ?
 				AND s.cluegetter_instance IN (`+strings.Join(instances, ",")+`)
-				AND m.date >= CURDATE()-INTERVAL 1 WEEK
+				AND m.date >= CURDATE()-INTERVAL 2 WEEK
 			GROUP BY m.id
 			ORDER BY date DESC
 			LIMIT 0,250
 		)
 		ORDER BY date DESC
 		LIMIT 0,250
-	`, domain, local, local, domain, local, local)
+	`, address.Domain(), address.Domain())
 	if err != nil {
 		panic(err)
 	}
@@ -234,7 +244,7 @@ func httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
 func httpHandlerMessageSearchClientAddress(w http.ResponseWriter, r *http.Request) {
 	address := r.URL.Path[len("/message/searchClientAddress/"):]
 
-	instances, err := httpParseFilterInstance(r)
+	instances, err := HttpParseFilterInstance(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -260,7 +270,7 @@ func httpHandlerMessageSearchClientAddress(w http.ResponseWriter, r *http.Reques
 func httpHandleMessageSearchSaslUser(w http.ResponseWriter, r *http.Request) {
 	saslUser := r.URL.Path[len("/message/searchSaslUser/"):]
 
-	instances, err := httpParseFilterInstance(r)
+	instances, err := HttpParseFilterInstance(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -284,27 +294,27 @@ func httpHandleMessageSearchSaslUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func httpProcessSearchResultRows(w http.ResponseWriter, r *http.Request, rows *sql.Rows) {
-	messages := make([]*httpMessage, 0)
+	messages := make([]*HttpMessage, 0)
 	for rows.Next() {
-		message := &httpMessage{Recipients: make([]*httpMessageRecipient, 0)}
+		message := &HttpMessage{Recipients: make([]*HttpMessageRecipient, 0)}
 		var rcptsStr string
 		rows.Scan(&message.Id, &message.Date, &message.Sender, &message.RcptCount,
 			&message.Verdict, &rcptsStr)
 		for _, rcpt := range strings.Split(rcptsStr, ",") {
-			message.Recipients = append(message.Recipients, &httpMessageRecipient{Email: rcpt})
+			message.Recipients = append(message.Recipients, &HttpMessageRecipient{Email: rcpt})
 		}
 		messages = append(messages, message)
 	}
 
 	data := struct {
 		*HttpViewData
-		Messages []*httpMessage
+		Messages []*HttpMessage
 	}{
-		HttpViewData: httpGetViewData(),
+		HttpViewData: HttpGetViewData(),
 		Messages:     messages,
 	}
 
-	httpRenderOutput(w, r, "messageSearchEmail.html", data, data.Messages)
+	HttpRenderOutput(w, r, "messageSearchEmail.html", data, data.Messages)
 }
 
 func httpReturnJson(w http.ResponseWriter, obj interface{}) {
@@ -314,7 +324,7 @@ func httpReturnJson(w http.ResponseWriter, obj interface{}) {
 
 func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 	queueId := r.URL.Path[len("/message/"):]
-	instances, err := httpParseFilterInstance(r)
+	instances, err := HttpParseFilterInstance(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -332,7 +342,7 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 				LEFT JOIN cluegetter_client cc on s.cluegetter_client = cc.id
 			WHERE s.cluegetter_instance IN (`+strings.Join(instances, ",")+`)
 				AND m.id = ?`, queueId)
-	msg := &httpMessage{Recipients: make([]*httpMessageRecipient, 0)}
+	msg := &HttpMessage{Recipients: make([]*HttpMessageRecipient, 0)}
 	err = row.Scan(&msg.SessionId, &msg.Date, &msg.BodySize, &msg.Sender, &msg.RcptCount,
 		&msg.Verdict, &msg.VerdictMsg, &msg.RejectScore, &msg.RejectScoreThreshold,
 		&msg.TempfailScore, &msg.ScoreCombined, &msg.TempfailScoreThreshold,
@@ -351,7 +361,7 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 			"LEFT JOIN message m ON m.id = mr.message WHERE message = ?", queueId)
 	defer recipientRows.Close()
 	for recipientRows.Next() {
-		recipient := &httpMessageRecipient{}
+		recipient := &HttpMessageRecipient{}
 		recipientRows.Scan(&recipient.Id, &recipient.Local, &recipient.Domain)
 		if recipient.Domain == "" {
 			recipient.Email = recipient.Local
@@ -364,7 +374,7 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 	headerRows, _ := Rdbms.Query("SELECT name, body FROM message_header WHERE message = ?", queueId)
 	defer headerRows.Close()
 	for headerRows.Next() {
-		header := &httpMessageHeader{}
+		header := &HttpMessageHeader{}
 		headerRows.Scan(&header.Name, &header.Body)
 		msg.Headers = append(msg.Headers, header)
 	}
@@ -377,7 +387,7 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	defer checkResultRows.Close()
 	for checkResultRows.Next() {
-		checkResult := &httpMessageCheckResult{}
+		checkResult := &HttpMessageCheckResult{}
 		checkResultRows.Scan(&checkResult.Module, &checkResult.Verdict, &checkResult.Score,
 			&checkResult.WeightedScore, &checkResult.Duration, &checkResult.Determinants)
 		msg.CheckResults = append(msg.CheckResults, checkResult)
@@ -385,13 +395,13 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		*HttpViewData
-		Message *httpMessage
+		Message *HttpMessage
 	}{
-		HttpViewData: httpGetViewData(),
+		HttpViewData: HttpGetViewData(),
 		Message:      msg,
 	}
 
-	httpRenderOutput(w, r, "message.html", data, msg)
+	HttpRenderOutput(w, r, "message.html", data, msg)
 }
 
 func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
@@ -400,7 +410,12 @@ func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page Not Found", http.StatusNotFound)
 		return
 	}
-	filter := "instance=" + strings.Join(r.Form["instance"], ",")
+	fmt.Println(r.Form["datasource"])
+	datasourceFilter := ""
+	if len(r.Form["datasource"]) > 0 {
+		datasourceFilter = "&datasource=" + r.Form["datasource"][0]
+	}
+	filter := "instance=" + strings.Join(r.Form["instance"], ",") + datasourceFilter
 
 	if r.FormValue("queueId") != "" {
 		http.Redirect(w, r, "/message/"+r.FormValue("queueId")+"?"+filter, http.StatusFound)
@@ -426,11 +441,11 @@ func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 		*HttpViewData
 		Instances []*httpInstance
 	}{
-		HttpViewData: httpGetViewData(),
+		HttpViewData: HttpGetViewData(),
 		Instances:    httpGetInstances(),
 	}
 
-	httpRenderOutput(w, r, "index.html", data, nil)
+	HttpRenderOutput(w, r, "index.html", data, nil)
 }
 
 type httpAbuserSelector struct {
@@ -445,7 +460,7 @@ type httpAbuserTop struct {
 	Count        int
 }
 
-func httpGetViewData() *HttpViewData {
+func HttpGetViewData() *HttpViewData {
 	return &HttpViewData{
 		Config: &Config,
 	}
@@ -462,7 +477,7 @@ func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
 		SenderDomainTop []*httpAbuserTop
 		Selectors       []*httpAbuserSelector
 	}{
-		httpGetViewData(),
+		HttpGetViewData(),
 		httpGetInstances(),
 		"4",
 		"5",
@@ -478,7 +493,7 @@ func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
 
 	data.Selectors = selectors
 
-	selectedInstances, err := httpParseFilterInstance(r)
+	selectedInstances, err := HttpParseFilterInstance(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -525,7 +540,7 @@ func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
 		data.SenderDomainTop = append(data.SenderDomainTop, result)
 	}
 
-	httpRenderOutput(w, r, "abusers.html", data, data.SenderDomainTop)
+	HttpRenderOutput(w, r, "abusers.html", data, data.SenderDomainTop)
 }
 
 func httpGetSelectors(r *http.Request) (out []*httpAbuserSelector, err error) {
@@ -575,7 +590,7 @@ func httpGetInstances() []*httpInstance {
 	return instances
 }
 
-func httpParseFilterInstance(r *http.Request) (out []string, err error) {
+func HttpParseFilterInstance(r *http.Request) (out []string, err error) {
 	r.ParseForm()
 	instanceIds := r.Form["instance"]
 
@@ -599,6 +614,17 @@ func httpParseFilterInstance(r *http.Request) (out []string, err error) {
 	return
 }
 
+func httpParseDataSource(r *http.Request) string {
+	r.ParseForm()
+	sources := r.Form["datasource"]
+
+	if len(sources) > 0 && sources[0] == datasource_es {
+		return datasource_es
+	}
+
+	return datasource_mysql
+}
+
 func httpSetSelectedInstances(instances []*httpInstance, selectedInstances []string) {
 	if len(selectedInstances) == 0 {
 		for _, instance := range instances {
@@ -615,7 +641,7 @@ func httpSetSelectedInstances(instances []*httpInstance, selectedInstances []str
 	}
 }
 
-func httpRenderOutput(w http.ResponseWriter, r *http.Request, templateFile string, data, jsonData interface{}) {
+func HttpRenderOutput(w http.ResponseWriter, r *http.Request, templateFile string, data, jsonData interface{}) {
 	if r.FormValue("json") == "1" {
 		if jsonData == nil {
 			http.Error(w, "No parameter 'json' supported", http.StatusBadRequest)

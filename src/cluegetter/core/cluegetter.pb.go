@@ -13,7 +13,7 @@
 		Proto_Session
 		Rpc
 */
-package main
+package core
 
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"

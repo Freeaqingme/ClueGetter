@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package main
+package core
 
 import (
 	"bufio"
@@ -21,6 +21,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/Freeaqingme/GoDaemonSkeleton"
 )
 
 type bounceHandlerBounce struct {
@@ -51,7 +53,7 @@ func init() {
 	stop := bounceHandlerStop
 	handleIpc := bounceHandlerHandleIpc
 
-	ModuleRegister(&module{
+	ModuleRegister(&ModuleOld{
 		name:   "bouncehandler",
 		enable: &enable,
 		init:   &init,
@@ -62,9 +64,9 @@ func init() {
 	})
 
 	submitCli := bounceHandlerSubmitCli
-	subAppRegister(&subApp{
-		name:     "bouncehandler",
-		handover: &submitCli,
+	GoDaemonSkeleton.AppRegister(&GoDaemonSkeleton.App{
+		Name:     "bouncehandler",
+		Handover: &submitCli,
 	})
 }
 
@@ -137,7 +139,7 @@ func bounceHandlerListen() {
 }
 
 func bounceHandlerHandleConn(conn net.Conn) {
-	defer cluegetterRecover("bounceHandlerParseReport")
+	defer CluegetterRecover("bounceHandlerParseReport")
 	defer conn.Close()
 
 	Log.Debug("Handling new connection from %s", conn.RemoteAddr())
@@ -332,7 +334,7 @@ func bounceHandlerSaveBounce(bounce *bounceHandlerBounce) {
 }
 
 func bounceHandlerPersistRawCopy(body []byte) {
-	defer cluegetterRecover("bounceHandlerPersistRawCopy")
+	defer CluegetterRecover("bounceHandlerPersistRawCopy")
 
 	if Config.BounceHandler.Dump_Dir == "" {
 		return
