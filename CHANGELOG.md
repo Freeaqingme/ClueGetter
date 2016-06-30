@@ -1,5 +1,10 @@
 # Change Log
 
+### 2016-06-30 Version 0.6.0
+* New Feature: Index and search messages through ElasticSearch
+* Many Improvements in SRS module
+* Refactored internal package layout
+
 ### 2016-06-06 Version 0.5.10
 * New Feature: SRS
 
