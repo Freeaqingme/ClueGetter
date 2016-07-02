@@ -152,8 +152,11 @@ func (milter *milter) Connect(ctx uintptr, hostname string, ip net.IP) (sfsistat
 	}
 
 	StatsCounters["MilterCallbackConnect"].increase(1)
-	Log.Debugf("%s Milter.Connect() called: ip = %s, hostname = %s", sess.milterGetDisplayId(), ip, sess.ReverseDns)
-
+	if sess.ClientIsMonitorHost() {
+		Log.Debugf("%s Milter.Connect() called: ip = %s (monitor host), hostname = %s", sess.milterGetDisplayId(), ip, sess.ReverseDns)
+	} else {
+		Log.Debugf("%s Milter.Connect() called: ip = %s, hostname = %s", sess.milterGetDisplayId(), ip, sess.ReverseDns)
+	}
 	return m.Continue
 }
 

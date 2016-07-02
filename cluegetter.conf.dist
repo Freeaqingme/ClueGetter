@@ -129,6 +129,12 @@ archive-retention-message = 52
 # Internal message cache size in MB
 message-cache-size = 256
 
+# Sessions from these IP's will not be persisted if they do not
+# carry at least one message. Typically - hence the name - used
+# with monitoring systems.
+# monitor-host = "127.0.0.1"
+# monitor-host = "::1"
+
 [moduleGroup "spam"]
 module = 0.9 spamassassin
 module = 0.1 rspamd

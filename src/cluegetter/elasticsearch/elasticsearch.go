@@ -156,6 +156,10 @@ func (m *module) SessionDisconnect(sess *core.MilterSession) {
 
 // TODO: Check what happens if we added a message-id header ourselves
 func (m *module) persistSession(coreSess *core.MilterSession) {
+	if coreSess.ClientIsMonitorHost() && len(coreSess.Messages) == 0 {
+		return
+	}
+
 	sess := &session{coreSess}
 
 	str, _ := sess.esMarshalJSON(m)

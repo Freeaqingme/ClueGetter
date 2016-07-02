@@ -41,6 +41,7 @@ type config struct {
 		Archive_Retention_Message        float64
 		Archive_Retention_Safeguard      float64
 		Message_Cache_Size               int
+		Monitor_Host                     []string
 	}
 	Redis struct {
 		Enabled  bool
@@ -260,6 +261,7 @@ func DefaultConfig(cfg *config) {
 	cfg.ClueGetter.Archive_Retention_Message_Result = 2
 	cfg.ClueGetter.Archive_Retention_Message = 52
 	cfg.ClueGetter.Message_Cache_Size = 256
+	cfg.ClueGetter.Monitor_Host = []string{}
 
 	cfg.Redis.Host = []string{}
 	cfg.Redis.Method = "standalone"
@@ -309,6 +311,7 @@ func DefaultConfig(cfg *config) {
 	cfg.SpamAssassin.Timeout = 10
 	cfg.SpamAssassin.Connect_Timeout = 0.1
 	cfg.SpamAssassin.Max_Size = 500000 // Default SA max file size: 512 KB
+	cfg.SpamAssassin.Verdict_Msg = []string{}
 }
 
 func GetNewConfig() *config {

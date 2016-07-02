@@ -51,6 +51,16 @@ func (m *MilterSession) Config() *SessionConfig {
 	return m.config
 }
 
+func (m *MilterSession) ClientIsMonitorHost() bool {
+	for _, monHost := range Config.ClueGetter.Monitor_Host {
+		if strings.EqualFold(m.Ip, monHost) {
+			return true
+		}
+	}
+
+	return false
+}
+
 type milterSessionWhitelistRange struct {
 	ipStart net.IP
 	ipEnd   net.IP
@@ -336,6 +346,14 @@ func milterSessionPersist(sess *Proto_Session) {
 }
 
 func (s *MilterSession) persist() {
+	// Whether or not the client is a monitor host we still enqueue the session.
+	// It's used for the SessionDisconnect() callback which could be used for other
+	// purposes than persisting as well.
+	milterSessionPersistQueue.Enqueue(s) // TODO: Log if ring buffer is (near) full
+
+	if s.ClientIsMonitorHost() && len(s.Messages) == 0 {
+		return
+	}
 
 	protoMsg, err := proto.Marshal(s.getProtoBufStruct())
 	if err != nil {
@@ -343,7 +361,6 @@ func (s *MilterSession) persist() {
 	}
 
 	milterSessionPersistChan <- protoMsg
-	milterSessionPersistQueue.Enqueue(s) // TODO: Log if ring buffer is (near) full
 }
 
 func (sess *MilterSession) getProtoBufStruct() *Proto_Session {
