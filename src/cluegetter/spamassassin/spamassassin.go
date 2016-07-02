@@ -9,7 +9,6 @@ package spamassassin
 
 import (
 	"errors"
-	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -157,82 +156,6 @@ func (m *module) saParseReplyReportVar(reportFactRaw map[string]interface{}) rep
 	}
 
 	return reportFact
-}
-
-func (m *module) BayesLearn(msg *core.Message, isSpam bool) {
-	bodyStr := string(msg.String())
-
-	host := m.cg.Config.SpamAssassin.Host + ":" + strconv.Itoa(m.cg.Config.SpamAssassin.Port)
-	sconf := msg.Session().Config().SpamAssassin
-	client := spamc.New(host, sconf.Timeout, sconf.Connect_Timeout)
-
-	abort := make(chan bool) // unused really. To implement or not to implement. That's the question
-	if isSpam {
-		client.Learn(abort, spamc.LEARN_SPAM, bodyStr)
-	} else {
-		client.Learn(abort, spamc.LEARN_HAM, bodyStr)
-	}
-	close(abort)
-}
-
-type report struct {
-	module *module
-
-	score float64
-	facts reportFacts
-}
-
-func (report *report) factsAsString() []string {
-	out := make([]string, 0)
-	for _, fact := range report.facts {
-		out = append(out, fact.String())
-	}
-
-	return out
-}
-
-func (report *report) verdictMessage() string {
-	maxScore := 0.0
-	msg := "Our system has detected that this message is likely unsolicited mail (SPAM). " +
-		"To reduce the amount of spam, this message has been blocked."
-
-	for _, fact := range report.facts {
-		value, set := report.module.verdictMsgs[fact.Symbol]
-		if !set {
-			continue
-		}
-
-		if fact.Score > maxScore {
-			maxScore = fact.Score
-			msg = value
-		}
-	}
-
-	return msg
-}
-
-type reportFacts []reportFact
-
-func (facts reportFacts) Len() int {
-	return len(facts)
-}
-
-func (facts reportFacts) Less(i, j int) bool {
-	return facts[i].Score > facts[j].Score
-}
-
-func (facts reportFacts) Swap(i, j int) {
-	facts[i], facts[j] = facts[j], facts[i]
-}
-
-type reportFact struct {
-	Score       float64
-	Symbol      string
-	Description string
-}
-
-func (fact *reportFact) String() string {
-	return fmt.Sprintf("%s=%.3f", fact.Symbol, fact.Score)
 }
 
 // See: http://intogooglego.blogspot.nl/2015/05/day-6-string-minifier-remove-whitespaces.html
