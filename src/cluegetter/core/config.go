@@ -124,6 +124,7 @@ type config struct {
 		Timeout         float64
 		Connect_Timeout float64
 		Max_Size        int
+		Verdict_Msg     []string
 	}
 }
 

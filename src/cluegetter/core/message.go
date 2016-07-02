@@ -348,7 +348,7 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 	}
 
 	msg.Verdict = verdict
-	msg.VerdictMsg = statusMsg
+	msg.VerdictMsg = msg.substituteStringVars(statusMsg)
 	msg.RejectScore = totalScores[MessageReject]
 	msg.RejectScoreThreshold = sconf.ClueGetter.Message_Reject_Score
 	msg.TempfailScore = totalScores[MessageTempFail]
@@ -356,7 +356,7 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 	msg.CheckResults = flatResults
 
 	messageSave(msg)
-	return verdict, statusMsg, results
+	return msg.Verdict, msg.VerdictMsg, results
 }
 
 func messageWeighResults(results []*MessageCheckResult) (ignoreErrorCount int) {
@@ -509,14 +509,8 @@ func messageSave(msg *Message) {
 }
 
 func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (add, delete []MessageHeader) {
-	sess := *msg.session
 	add = make([]MessageHeader, len(MessageInsertHeaders))
 	copy(add, MessageInsertHeaders)
-
-	rejectscore := 0.0
-	for _, result := range results[MessageReject] {
-		rejectscore += result.WeightedScore
-	}
 
 	// Add the recipients, duplicate lines if there's >1 recipients
 	for k, v := range add {
@@ -541,14 +535,7 @@ func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (a
 			delete = append(delete, msg.GetHeader(v.getKey(), false)...)
 		}
 
-		add[k].Value = strings.Replace(add[k].Value, "%{hostname}", sess.getMtaHostName(), -1)
-		add[k].Value = strings.Replace(add[k].Value, "%{rejectScore}", fmt.Sprintf("%.2f", rejectscore), -1)
-
-		if rejectscore >= msg.session.config.ClueGetter.Message_Spamflag_Score {
-			add[k].Value = strings.Replace(add[k].Value, "%{spamFlag}", "YES", -1)
-		} else {
-			add[k].Value = strings.Replace(add[k].Value, "%{spamFlag}", "NO", -1)
-		}
+		add[k].Value = msg.substituteStringVars(add[k].Value)
 	}
 
 	deleted := 0
@@ -567,6 +554,31 @@ func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (a
 	}
 
 	return add, delete
+}
+
+func (msg *Message) substituteStringVars(in string) string {
+	out := in
+	sess := msg.Session()
+
+	rejectscore := 0.0
+	for _, result := range msg.CheckResults {
+		if result.SuggestedAction != MessageReject {
+			continue
+		}
+		rejectscore += result.WeightedScore
+	}
+
+	out = strings.Replace(out, "%{clientIp}", sess.Ip, -1)
+	out = strings.Replace(out, "%{hostname}", sess.getMtaHostName(), -1)
+	out = strings.Replace(out, "%{rejectScore}", fmt.Sprintf("%.2f", rejectscore), -1)
+
+	if rejectscore >= msg.session.config.ClueGetter.Message_Spamflag_Score {
+		out = strings.Replace(out, "%{spamFlag}", "YES", -1)
+	} else {
+		out = strings.Replace(out, "%{spamFlag}", "NO", -1)
+	}
+
+	return out
 }
 
 func (msg *Message) GetHeader(key string, includeDeleted bool) []MessageHeader {

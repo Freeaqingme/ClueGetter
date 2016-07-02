@@ -91,7 +91,8 @@ whitelist = "::1"
 # Insert headers into each message. Can be repeated multiple times.
 # Key and value are separated by a ':'.
 # The following symbols can be used:
-# %{hostname}       hostname
+# %{clientIp}       The IP the client uses to connect from
+# %{hostname}       MTA Hostname
 # %{rejectScore}    The reject score
 # %{spamFlag}       YES/NO - Is higher than spam flag score, or not.
 # %{recipient}      The recipient(s), e.g. useful for X-Original-To
@@ -312,6 +313,14 @@ timeout = 10.0
 
 # The max message size (in bytes) to send to SpamAssassin.
 max-size = 500000
+
+# Use a specific verdict message for a specific SpamAssassin rule.
+# The same variables as with message-header can be used, except for
+# %{recipient}
+verdict-msg = GTUBE:        This messages contains the Generic Test for Unsolicited Bulk Email \
+            (GTUBE). Therefore, this message has been blocked.
+verdict-msg = RDNS_NONE:    No Reverse DNS could be found for your IP (%{clientIp}). If you're \
+            using IPv6, make sure you also enable it for IPv6.
 
 # You can script your own modules using Lua.
 # [luaModule "something"]

@@ -8,12 +8,15 @@
 package spamassassin
 
 import (
+	"errors"
 	"fmt"
-	spamc "github.com/Freeaqingme/go-spamc"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"cluegetter/core"
+
+	spamc "github.com/Freeaqingme/go-spamc"
 )
 
 const ModuleName = "spamassassin"
@@ -21,7 +24,8 @@ const ModuleName = "spamassassin"
 type module struct {
 	*core.BaseModule
 
-	cg *core.Cluegetter
+	cg          *core.Cluegetter
+	verdictMsgs map[string]string
 }
 
 func init() {
@@ -40,15 +44,23 @@ func (m *module) Enable() bool {
 	return m.cg.Config.SpamAssassin.Enabled
 }
 
-type saReport struct {
-	score float64
-	facts []*saReportFact
-}
+func (m *module) Init() {
+	m.verdictMsgs = make(map[string]string, 0)
 
-type saReportFact struct {
-	Score       float64
-	Symbol      string
-	Description string
+	for _, msg := range m.cg.Config.SpamAssassin.Verdict_Msg {
+		split := strings.SplitN(msg, ":", 2)
+		if len(split) < 2 {
+			m.cg.Log.Fatalf("%s: Verdict message does not fit format '<key>: <message>': %s", ModuleName, msg)
+		}
+
+		key := strings.ToUpper(split[0])
+		if _, set := m.verdictMsgs[split[0]]; set {
+			m.cg.Log.Fatalf("%s: A verdict message for key '%s' was configured more than once", ModuleName, key)
+		}
+
+		m.verdictMsgs[key] = strings.TrimSpace(trimAbundantSpace(split[1]))
+	}
+
 }
 
 func (m *module) MessageCheck(msg *core.Message, abort chan bool) *core.MessageCheckResult {
@@ -56,8 +68,9 @@ func (m *module) MessageCheck(msg *core.Message, abort chan bool) *core.MessageC
 		return nil
 	}
 
-	rawReply, err := m.getRawReply(msg, abort)
-	if err != nil || rawReply.Code != spamc.EX_OK {
+	m.cg.Log.Debugf("Getting SA report for %s", msg.QueueId)
+	report, err := m.scan(msg, abort)
+	if err != nil {
 		m.cg.Log.Errorf("SpamAssassin returned an error: %s", err)
 		return &core.MessageCheckResult{
 			Module:          ModuleName,
@@ -68,24 +81,18 @@ func (m *module) MessageCheck(msg *core.Message, abort chan bool) *core.MessageC
 		}
 	}
 
-	m.cg.Log.Debugf("Getting SA report for %s", msg.QueueId)
-	report := saParseReply(rawReply)
-	factsStr := func() []string {
-		out := make([]string, 0)
-		for _, fact := range report.facts {
-			out = append(out, fmt.Sprintf("%s=%.3f", fact.Symbol, fact.Score))
-		}
-		return out
-	}()
+	m.cg.Log.Debugf("Got SA score of %.2f for %s. Tests: [%s]",
+		report.score, msg.QueueId, strings.Join(report.factsAsString(), ","),
+	)
 
-	m.cg.Log.Debugf("Got SA score of %.2f for %s. Tests: [%s]", report.score, msg.QueueId, strings.Join(factsStr, ","))
 	return &core.MessageCheckResult{
 		Module:          "spamassassin",
 		SuggestedAction: core.MessageReject,
-		Message: "Our system has detected that this message is likely unsolicited mail (SPAM). " +
-			"To reduce the amount of spam, this message has been blocked.",
-		Score:        report.score,
-		Determinants: map[string]interface{}{"report": report.facts},
+		Message:         report.verdictMessage(),
+		Score:           report.score,
+		Determinants: map[string]interface{}{
+			"report": report.facts,
+		},
 	}
 }
 
@@ -108,8 +115,16 @@ func (m *module) getRawReply(msg *core.Message, abort chan bool) (*spamc.SpamDOu
  format, So we try to make the best of it and
  parse it into some nice structs.
 */
-func saParseReply(reply *spamc.SpamDOut) *saReport {
-	report := &saReport{facts: make([]*saReportFact, 0)}
+func (m *module) scan(msg *core.Message, abort chan bool) (*report, error) {
+	reply, err := m.getRawReply(msg, abort)
+	if err != nil {
+		return nil, err
+	}
+	if reply.Code != spamc.EX_OK {
+		return nil, errors.New("reply.code was: " + strconv.Itoa(reply.Code))
+	}
+
+	report := &report{module: m, facts: make([]*reportFact, 0)}
 
 	for key, value := range reply.Vars {
 		if key == "spamScore" {
@@ -118,16 +133,16 @@ func saParseReply(reply *spamc.SpamDOut) *saReport {
 			var reportFacts []map[string]interface{}
 			reportFacts = value.([]map[string]interface{})
 			for _, reportFact := range reportFacts {
-				report.facts = append(report.facts, saParseReplyReportVar(reportFact))
+				report.facts = append(report.facts, m.saParseReplyReportVar(reportFact))
 			}
 		}
 	}
 
-	return report
+	return report, nil
 }
 
-func saParseReplyReportVar(reportFactRaw map[string]interface{}) *saReportFact {
-	reportFact := &saReportFact{}
+func (m *module) saParseReplyReportVar(reportFactRaw map[string]interface{}) *reportFact {
+	reportFact := &reportFact{}
 	for key, value := range reportFactRaw {
 		switch {
 		case key == "score":
@@ -156,4 +171,67 @@ func (m *module) BayesLearn(msg *core.Message, isSpam bool) {
 		client.Learn(abort, spamc.LEARN_HAM, bodyStr)
 	}
 	close(abort)
+}
+
+type report struct {
+	module *module
+
+	score float64
+	facts []*reportFact
+}
+
+func (report *report) factsAsString() []string {
+	out := make([]string, 0)
+	for _, fact := range report.facts {
+		out = append(out, fact.String())
+	}
+
+	return out
+}
+
+func (report *report) verdictMessage() string {
+	maxScore := 0.0
+	msg := "Our system has detected that this message is likely unsolicited mail (SPAM). " +
+		"To reduce the amount of spam, this message has been blocked."
+
+	for _, fact := range report.facts {
+		value, set := report.module.verdictMsgs[fact.Symbol]
+		if !set {
+			continue
+		}
+
+		if fact.Score > maxScore {
+			maxScore = fact.Score
+			msg = value
+		}
+	}
+
+	return msg
+}
+
+type reportFact struct {
+	Score       float64
+	Symbol      string
+	Description string
+}
+
+func (fact *reportFact) String() string {
+	return fmt.Sprintf("%s=%.3f", fact.Symbol, fact.Score)
+}
+
+// See: http://intogooglego.blogspot.nl/2015/05/day-6-string-minifier-remove-whitespaces.html
+func trimAbundantSpace(in string) (out string) {
+	white := false
+	for _, c := range in {
+		if unicode.IsSpace(c) {
+			if !white {
+				out = out + " "
+			}
+			white = true
+		} else {
+			out = out + string(c)
+			white = false
+		}
+	}
+	return
 }
