@@ -13,12 +13,14 @@ import (
 	"os"
 
 	"cluegetter/core"
+
 	skel "github.com/Freeaqingme/GoDaemonSkeleton"
 	"github.com/Freeaqingme/GoDaemonSkeleton/log"
 )
 
 import (
 	_ "cluegetter/elasticsearch"
+	_ "cluegetter/spamassassin"
 	_ "cluegetter/srs"
 	//_ "cluegetter/demo"
 )

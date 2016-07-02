@@ -17,6 +17,7 @@ type Module interface {
 	Enable() bool
 	Init()
 	Stop()
+	BayesLearn(msg *Message, isSpam bool)
 	MessageCheck(msg *Message, done chan bool) *MessageCheckResult
 	RecipientCheck(rcpt *address.Address) (verdict int, msg string)
 	SessionDisconnect(s *MilterSession)
@@ -101,6 +102,8 @@ type BaseModule struct{}
 func (m *BaseModule) Init() {}
 
 func (m *BaseModule) Stop() {}
+
+func (m *BaseModule) BayesLearn(msg *Message, isSpam bool) {}
 
 func (m *BaseModule) MessageCheck(msg *Message, done chan bool) *MessageCheckResult {
 	return nil

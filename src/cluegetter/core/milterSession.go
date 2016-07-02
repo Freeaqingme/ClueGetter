@@ -47,6 +47,10 @@ type MilterSession struct {
 	milterCtx uintptr
 }
 
+func (m *MilterSession) Config() *SessionConfig {
+	return m.config
+}
+
 type milterSessionWhitelistRange struct {
 	ipStart net.IP
 	ipEnd   net.IP

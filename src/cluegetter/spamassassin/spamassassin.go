@@ -5,14 +5,40 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package core
+package spamassassin
 
 import (
 	"fmt"
 	spamc "github.com/Freeaqingme/go-spamc"
 	"strconv"
 	"strings"
+
+	"cluegetter/core"
 )
+
+const ModuleName = "spamassassin"
+
+type module struct {
+	*core.BaseModule
+
+	cg *core.Cluegetter
+}
+
+func init() {
+	core.ModuleRegister(&module{})
+}
+
+func (m *module) Name() string {
+	return ModuleName
+}
+
+func (m *module) SetCluegetter(cg *core.Cluegetter) {
+	m.cg = cg
+}
+
+func (m *module) Enable() bool {
+	return m.cg.Config.SpamAssassin.Enabled
+}
 
 type saReport struct {
 	score float64
@@ -25,35 +51,24 @@ type saReportFact struct {
 	Description string
 }
 
-func init() {
-	enable := func() bool { return Config.SpamAssassin.Enabled }
-	milterCheck := saGetResult
-
-	ModuleRegister(&ModuleOld{
-		name:        "spamassassin",
-		enable:      &enable,
-		milterCheck: &milterCheck,
-	})
-}
-
-func saGetResult(msg *Message, abort chan bool) *MessageCheckResult {
-	if !msg.session.config.SpamAssassin.Enabled {
+func (m *module) MessageCheck(msg *core.Message, abort chan bool) *core.MessageCheckResult {
+	if !msg.Session().Config().SpamAssassin.Enabled {
 		return nil
 	}
 
-	rawReply, err := saGetRawReply(msg, abort)
+	rawReply, err := m.getRawReply(msg, abort)
 	if err != nil || rawReply.Code != spamc.EX_OK {
-		Log.Errorf("SpamAssassin returned an error: %s", err)
-		return &MessageCheckResult{
-			Module:          "spamassassin",
-			SuggestedAction: MessageError,
+		m.cg.Log.Errorf("SpamAssassin returned an error: %s", err)
+		return &core.MessageCheckResult{
+			Module:          ModuleName,
+			SuggestedAction: core.MessageError,
 			Message:         "An internal error occurred",
 			Score:           25,
 			Determinants:    map[string]interface{}{"error": err.Error()},
 		}
 	}
 
-	Log.Debugf("Getting SA report for %s", msg.QueueId)
+	m.cg.Log.Debugf("Getting SA report for %s", msg.QueueId)
 	report := saParseReply(rawReply)
 	factsStr := func() []string {
 		out := make([]string, 0)
@@ -63,10 +78,10 @@ func saGetResult(msg *Message, abort chan bool) *MessageCheckResult {
 		return out
 	}()
 
-	Log.Debugf("Got SA score of %.2f for %s. Tests: [%s]", report.score, msg.QueueId, strings.Join(factsStr, ","))
-	return &MessageCheckResult{
+	m.cg.Log.Debugf("Got SA score of %.2f for %s. Tests: [%s]", report.score, msg.QueueId, strings.Join(factsStr, ","))
+	return &core.MessageCheckResult{
 		Module:          "spamassassin",
-		SuggestedAction: MessageReject,
+		SuggestedAction: core.MessageReject,
 		Message: "Our system has detected that this message is likely unsolicited mail (SPAM). " +
 			"To reduce the amount of spam, this message has been blocked.",
 		Score:        report.score,
@@ -74,11 +89,11 @@ func saGetResult(msg *Message, abort chan bool) *MessageCheckResult {
 	}
 }
 
-func saGetRawReply(msg *Message, abort chan bool) (*spamc.SpamDOut, error) {
+func (m *module) getRawReply(msg *core.Message, abort chan bool) (*spamc.SpamDOut, error) {
 	bodyStr := string(msg.String())
 
-	host := Config.SpamAssassin.Host + ":" + strconv.Itoa(Config.SpamAssassin.Port)
-	sconf := msg.session.config.SpamAssassin
+	host := m.cg.Config.SpamAssassin.Host + ":" + strconv.Itoa(m.cg.Config.SpamAssassin.Port)
+	sconf := msg.Session().Config().SpamAssassin
 	client := spamc.New(host, sconf.Timeout, sconf.Connect_Timeout)
 
 	if len(bodyStr) > sconf.Max_Size {
@@ -127,19 +142,15 @@ func saParseReplyReportVar(reportFactRaw map[string]interface{}) *saReportFact {
 	return reportFact
 }
 
-func saLearn(msg *Proto_Message, spam bool) {
-	if !Config.SpamAssassin.Enabled {
-		return
-	}
+func (m *module) BayesLearn(msg *core.Message, isSpam bool) {
+	bodyStr := string(msg.String())
 
-	bodyStr := string(bayesRenderProtoMsg(msg))
-
-	host := Config.SpamAssassin.Host + ":" + strconv.Itoa(Config.SpamAssassin.Port)
-	sconf := Config.SpamAssassin
+	host := m.cg.Config.SpamAssassin.Host + ":" + strconv.Itoa(m.cg.Config.SpamAssassin.Port)
+	sconf := msg.Session().Config().SpamAssassin
 	client := spamc.New(host, sconf.Timeout, sconf.Connect_Timeout)
 
 	abort := make(chan bool) // unused really. To implement or not to implement. That's the question
-	if spam {
+	if isSpam {
 		client.Learn(abort, spamc.LEARN_SPAM, bodyStr)
 	} else {
 		client.Learn(abort, spamc.LEARN_HAM, bodyStr)

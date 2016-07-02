@@ -8,7 +8,6 @@
 package core
 
 import (
-	"cluegetter/address"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -16,6 +15,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"cluegetter/address"
 )
 
 const (
@@ -681,4 +682,53 @@ func messageParseAddress(address string, singleIsUser bool) (local, domain strin
 	}
 
 	return
+}
+
+func (msg *Proto_Message) getAsMessage() *Message {
+	out := &Message{
+		// session		// TODO
+		QueueId:                msg.Id,
+		From:                   address.FromString(msg.From),
+		Body:                   msg.Body,
+		Verdict:                int(msg.Verdict),
+		VerdictMsg:             msg.VerdictMsg,
+		RejectScore:            msg.RejectScore,
+		RejectScoreThreshold:   msg.RejectScoreThreshold,
+		TempfailScore:          msg.TempfailScore,
+		TempfailScoreThreshold: msg.TempfailScoreThreshold,
+	}
+
+	for _, rcpt := range msg.Rcpt {
+		out.Rcpt = append(out.Rcpt, address.FromString(rcpt))
+	}
+
+	for _, hdr := range msg.Headers {
+		out.Headers = append(out.Headers, MessageHeader{
+			Key:   hdr.Key,
+			Value: hdr.Value,
+		})
+	}
+
+	for _, checkResult := range msg.CheckResults {
+		var determinants interface{}
+		determinantsMap := make(map[string]interface{}, 0)
+		var err error
+		if err = json.Unmarshal(checkResult.Determinants, &determinants); err != nil {
+			determinantsMap["error"] = "Could not unmarshal determinants from Elasticsearch Database: " + err.Error()
+		} else {
+			determinantsMap = determinants.(map[string]interface{})
+		}
+
+		out.CheckResults = append(out.CheckResults, &MessageCheckResult{
+			Module:          checkResult.Module,
+			SuggestedAction: int(checkResult.Verdict),
+			Message:         "", //TODO: Why dont we have this?!
+			Score:           checkResult.Score,
+			WeightedScore:   checkResult.WeightedScore,
+			Determinants:    determinantsMap,
+			Duration:        time.Duration(checkResult.Duration * float64(time.Second)),
+		})
+	}
+
+	return out
 }
