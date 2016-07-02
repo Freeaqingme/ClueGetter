@@ -10,6 +10,7 @@ package spamassassin
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode"
@@ -85,6 +86,7 @@ func (m *module) MessageCheck(msg *core.Message, abort chan bool) *core.MessageC
 		report.score, msg.QueueId, strings.Join(report.factsAsString(), ","),
 	)
 
+	sort.Sort(report.facts) // Put facts with highest score on top
 	return &core.MessageCheckResult{
 		Module:          "spamassassin",
 		SuggestedAction: core.MessageReject,
@@ -124,7 +126,7 @@ func (m *module) scan(msg *core.Message, abort chan bool) (*report, error) {
 		return nil, errors.New("reply.code was: " + strconv.Itoa(reply.Code))
 	}
 
-	report := &report{module: m, facts: make([]*reportFact, 0)}
+	report := &report{module: m, facts: make([]reportFact, 0)}
 
 	for key, value := range reply.Vars {
 		if key == "spamScore" {
@@ -141,8 +143,8 @@ func (m *module) scan(msg *core.Message, abort chan bool) (*report, error) {
 	return report, nil
 }
 
-func (m *module) saParseReplyReportVar(reportFactRaw map[string]interface{}) *reportFact {
-	reportFact := &reportFact{}
+func (m *module) saParseReplyReportVar(reportFactRaw map[string]interface{}) reportFact {
+	reportFact := reportFact{}
 	for key, value := range reportFactRaw {
 		switch {
 		case key == "score":
@@ -177,7 +179,7 @@ type report struct {
 	module *module
 
 	score float64
-	facts []*reportFact
+	facts reportFacts
 }
 
 func (report *report) factsAsString() []string {
@@ -207,6 +209,20 @@ func (report *report) verdictMessage() string {
 	}
 
 	return msg
+}
+
+type reportFacts []reportFact
+
+func (facts reportFacts) Len() int {
+	return len(facts)
+}
+
+func (facts reportFacts) Less(i, j int) bool {
+	return facts[i].Score > facts[j].Score
+}
+
+func (facts reportFacts) Swap(i, j int) {
+	facts[i], facts[j] = facts[j], facts[i]
 }
 
 type reportFact struct {
