@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <title>{{ template "title" . }} | ClueGetter</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css">
     <style>
         body {
             padding-top: 50px;
@@ -61,17 +61,19 @@
     </div>
 </nav>
 
+{{if .TplRendersFullBody }}
+    {{ template "body" . }}
+{{ else }}
 <div class="container">
-    <div class="starter-template">
-        <h1>{{ template "title" . }}</h1>
-        {{ template "body" . }}
-
-    </div>
-
+        <div class="starter-template">
+            <h1>{{ template "title" . }}</h1>
+            {{ template "body" . }}
+        </div>
 </div>
+{{ end }}
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
 
 

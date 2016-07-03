@@ -22,7 +22,27 @@ func (m *module) HttpHandlers() map[string]core.HttpCallback {
 		"/es/message/searchEmail/": func(w http.ResponseWriter, r *http.Request) {
 			m.httpHandlerMessageSearchEmail(w, r)
 		},
+		"/search/": func(w http.ResponseWriter, r *http.Request) {
+			m.httpHandlerMessageSearch(w, r)
+		},
 	}
+}
+
+func (m *module) httpHandlerMessageSearch(w http.ResponseWriter, r *http.Request) {
+	viewData := struct {
+		*core.HttpViewData
+		Instances []*core.HttpInstance
+
+		Messages []*core.HttpMessage
+	}{
+		HttpViewData: core.HttpGetViewData(),
+		Instances:    core.HttpGetInstances(),
+
+		//Messages:     httpHydrateLegacyViewObject(messages),
+	}
+	viewData.HttpViewData.TplRendersFullBody = true
+
+	core.HttpRenderOutput(w, r, "elasticsearch/search.html", viewData, viewData.Messages)
 }
 
 func (m *module) httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {

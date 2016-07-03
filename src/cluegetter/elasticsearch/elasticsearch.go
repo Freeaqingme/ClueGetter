@@ -54,7 +54,7 @@ func (m *module) Init() {
 		elastic.SetURL(m.cg.Config.Elasticsearch.Url...),
 	)
 	if err != nil {
-		m.cg.Log.Fatalf("Could not connect to ElasticSearch: ", err.Error())
+		m.cg.Log.Fatalf("Could not connect to ElasticSearch: %s", err.Error())
 	}
 
 	template := `{

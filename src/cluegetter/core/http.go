@@ -66,10 +66,12 @@ func httpStart(done <-chan struct{}) {
 }
 
 type HttpViewData struct {
-	Config *config
+	Config             *config
+	Cg                 *Cluegetter
+	TplRendersFullBody bool
 }
 
-type httpInstance struct {
+type HttpInstance struct {
 	Id          string
 	Name        string
 	Description string
@@ -438,10 +440,10 @@ func httpIndexHandler(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		*HttpViewData
-		Instances []*httpInstance
+		Instances []*HttpInstance
 	}{
 		HttpViewData: HttpGetViewData(),
-		Instances:    httpGetInstances(),
+		Instances:    HttpGetInstances(),
 	}
 
 	HttpRenderOutput(w, r, "index.html", data, nil)
@@ -462,6 +464,7 @@ type httpAbuserTop struct {
 func HttpGetViewData() *HttpViewData {
 	return &HttpViewData{
 		Config: &Config,
+		Cg:     cg,
 	}
 }
 
@@ -470,14 +473,14 @@ func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		*HttpViewData
-		Instances       []*httpInstance
+		Instances       []*HttpInstance
 		Period          string
 		Threshold       string
 		SenderDomainTop []*httpAbuserTop
 		Selectors       []*httpAbuserSelector
 	}{
 		HttpGetViewData(),
-		httpGetInstances(),
+		HttpGetInstances(),
 		"4",
 		"5",
 		make([]*httpAbuserTop, 0),
@@ -572,8 +575,8 @@ func httpGetSelectors(r *http.Request) (out []*httpAbuserSelector, err error) {
 	return selectors, nil
 }
 
-func httpGetInstances() []*httpInstance {
-	var instances []*httpInstance
+func HttpGetInstances() []*HttpInstance {
+	var instances []*HttpInstance
 	rows, err := Rdbms.Query(`SELECT id, name, description FROM instance`)
 	if err != nil {
 		panic(err)
@@ -581,7 +584,7 @@ func httpGetInstances() []*httpInstance {
 	defer rows.Close()
 
 	for rows.Next() {
-		instance := &httpInstance{}
+		instance := &HttpInstance{}
 		rows.Scan(&instance.Id, &instance.Name, &instance.Description)
 		instances = append(instances, instance)
 	}
@@ -594,7 +597,7 @@ func HttpParseFilterInstance(r *http.Request) (out []string, err error) {
 	instanceIds := r.Form["instance"]
 
 	if len(instanceIds) == 0 {
-		for _, instance := range httpGetInstances() {
+		for _, instance := range HttpGetInstances() {
 			instanceIds = append(instanceIds, instance.Id)
 		}
 	}
@@ -624,7 +627,7 @@ func httpParseDataSource(r *http.Request) string {
 	return datasource_mysql
 }
 
-func httpSetSelectedInstances(instances []*httpInstance, selectedInstances []string) {
+func httpSetSelectedInstances(instances []*HttpInstance, selectedInstances []string) {
 	if len(selectedInstances) == 0 {
 		for _, instance := range instances {
 			instance.Selected = true
@@ -659,6 +662,8 @@ func HttpRenderOutput(w http.ResponseWriter, r *http.Request, templateFile strin
 	tplPage, _ := assets.Asset("htmlTemplates/" + templateFile)
 	tplSkeleton, _ := assets.Asset("htmlTemplates/skeleton.html")
 	tpl := template.New("skeleton.html")
+
+	tpl.Parse(`{{$renderFullBody := false }}`)
 	tpl.Parse(string(tplPage))
 	tpl.Parse(string(tplSkeleton))
 

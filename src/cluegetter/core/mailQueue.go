@@ -373,13 +373,13 @@ func mailQueueHttp(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	data := struct {
 		*HttpViewData
-		Instances  []*httpInstance
+		Instances  []*HttpInstance
 		QueueItems map[string][]*mailQueueItem
 		Sender     string
 		Recipient  string
 	}{
 		HttpViewData: HttpGetViewData(),
-		Instances:    httpGetInstances(),
+		Instances:    HttpGetInstances(),
 	}
 
 	selectedInstances, err := HttpParseFilterInstance(r)

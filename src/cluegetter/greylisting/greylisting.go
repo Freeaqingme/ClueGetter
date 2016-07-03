@@ -56,21 +56,21 @@ func (m *module) Enable() bool {
 }
 
 func (m *module) Init() {
-	m.greylistPrepStmt()
+	m.prepStmt()
 	go func() {
 		ticker := time.NewTicker(time.Duration(1) * time.Minute)
 		for {
 			select {
 			case <-ticker.C:
-				m.greylistUpdateWhitelist()
+				m.updateWhitelist()
 			}
 		}
 	}()
 
-	go m.greylistUpdateWhitelist()
+	go m.updateWhitelist()
 }
 
-func (m *module) greylistPrepStmt() {
+func (m *module) prepStmt() {
 	_, tzOffset := time.Now().Local().Zone()
 
 	stmt, err := m.cg.Rdbms().Prepare(fmt.Sprintf(`
@@ -101,7 +101,7 @@ func (m *module) greylistPrepStmt() {
 	greylistGetWhitelist = stmt
 }
 
-func (m *module) greylistUpdateWhitelist() {
+func (m *module) updateWhitelist() {
 	core.CluegetterRecover("greylist.updateWhitelist")
 
 	key := fmt.Sprintf("cluegetter-%d-greylisting-schedule-greylistUpdateWhitelist", m.cg.Instance())
@@ -128,7 +128,7 @@ func (m *module) greylistUpdateWhitelist() {
 	m.cg.Log.Infof("Updated RDBMS greylist whitelist with %d to %d entries in %s",
 		int(rowCnt/2), rowCnt, time.Now().Sub(t0).String())
 
-	m.greylistPopulateRedis()
+	m.populateRedis()
 }
 
 func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCheckResult {
@@ -139,7 +139,7 @@ func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCh
 	ip := msg.Session().Ip
 
 	whitelist := msg.Session().Config().Greylisting.Whitelist_Spf
-	res, spfDomain, spfWhitelistErr := m.greylistIsSpfWhitelisted(net.ParseIP(ip), done, whitelist)
+	res, spfDomain, spfWhitelistErr := m.ipIsSpfWhitelisted(net.ParseIP(ip), done, whitelist)
 	if res {
 		m.cg.Log.Debugf("Found %s in %s SPF record", ip, spfDomain)
 		return &core.MessageCheckResult{
@@ -155,7 +155,7 @@ func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCh
 		}
 	}
 
-	if m.greylistIsWhitelisted(&ip) {
+	if m.ipIsWhitelisted(&ip) {
 		m.cg.Log.Debugf("Found %s in greylist whitelist", ip)
 		return &core.MessageCheckResult{
 			Module:          ModuleName,
@@ -171,10 +171,10 @@ func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCh
 		}
 	}
 
-	return m.getVerdictRedis(msg, spfWhitelistErr, spfDomain)
+	return m.getVerdict(msg, spfWhitelistErr, spfDomain)
 }
 
-func (m *module) getVerdictRedis(msg *core.Message, spfWhitelistErr error, spfDomain string) *core.MessageCheckResult {
+func (m *module) getVerdict(msg *core.Message, spfWhitelistErr error, spfDomain string) *core.MessageCheckResult {
 	determinants := map[string]interface{}{
 		"Found in whitelist":     "false",
 		"Found in SPF whitelist": "false",
@@ -210,12 +210,12 @@ func (m *module) getVerdictRedis(msg *core.Message, spfWhitelistErr error, spfDo
 	}
 }
 
-func (m *module) greylistIsWhitelisted(ip *string) bool {
+func (m *module) ipIsWhitelisted(ip *string) bool {
 	key := fmt.Sprintf("cluegetter-%d-greylisting-ip-%s", m.cg.Instance(), *ip)
 	return m.cg.Redis.Exists(key).Val()
 }
 
-func (m *module) greylistIsSpfWhitelisted(ip net.IP, done chan bool, whitelist []string) (bool, string, error) {
+func (m *module) ipIsSpfWhitelisted(ip net.IP, done chan bool, whitelist []string) (bool, string, error) {
 	var error error
 	for _, whitelistDomain := range whitelist {
 		res, err := greylistSpf2.Query(whitelistDomain, ip)
@@ -234,7 +234,7 @@ func (m *module) greylistIsSpfWhitelisted(ip net.IP, done chan bool, whitelist [
 	return false, "", error
 }
 
-func (m *module) greylistPopulateRedis() {
+func (m *module) populateRedis() {
 	core.CluegetterRecover("greylist.populateRedis")
 
 	m.cg.Log.Infof("Importing greylist whitelist into Redis")
