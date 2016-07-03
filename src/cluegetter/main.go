@@ -20,6 +20,7 @@ import (
 
 import (
 	_ "cluegetter/elasticsearch"
+	_ "cluegetter/greylisting"
 	_ "cluegetter/rspamd"
 	_ "cluegetter/spamassassin"
 	_ "cluegetter/srs"

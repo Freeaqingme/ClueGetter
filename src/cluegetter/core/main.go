@@ -49,6 +49,10 @@ func (cg *Cluegetter) Instance() uint {
 	return cg.instance
 }
 
+func (cg *Cluegetter) Hostname() string {
+	return hostname
+}
+
 func (cg *Cluegetter) Rdbms() *sql.DB {
 	if Rdbms == nil {
 		rdbmsStart()
