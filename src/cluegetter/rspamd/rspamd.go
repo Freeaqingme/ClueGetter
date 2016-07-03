@@ -5,7 +5,7 @@
 // This Source Code Form is subject to the terms of the two-clause BSD license.
 // For its contents, please refer to the LICENSE file.
 //
-package core
+package rspamd
 
 import (
 	"bytes"
@@ -14,7 +14,17 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"cluegetter/core"
 )
+
+const ModuleName = "rspamd"
+
+type module struct {
+	*core.BaseModule
+
+	cg *core.Cluegetter
+}
 
 type rspamdResponseCheckResult struct {
 	Description string
@@ -38,50 +48,55 @@ type rspamdResponse struct {
 }
 
 func init() {
-	enable := func() bool { return Config.Rspamd.Enabled }
-	milterCheck := rspamdGetResult
-
-	ModuleRegister(&ModuleOld{
-		name:        "rspamd",
-		enable:      &enable,
-		milterCheck: &milterCheck,
-	})
+	core.ModuleRegister(&module{})
 }
 
-func rspamdGetResult(msg *Message, abort chan bool) *MessageCheckResult {
-	if !msg.session.config.Rspamd.Enabled {
+func (m *module) Name() string {
+	return ModuleName
+}
+
+func (m *module) SetCluegetter(cg *core.Cluegetter) {
+	m.cg = cg
+}
+
+func (m *module) Enable() bool {
+	return m.cg.Config.Rspamd.Enabled
+}
+
+func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCheckResult {
+	if !msg.Session().Config().Rspamd.Enabled {
 		return nil
 	}
 
-	rawResult, err := rspamdGetRawResult(msg)
+	rawResult, err := m.getRawResult(msg)
 	if err != nil {
-		return &MessageCheckResult{
-			Module:          "rspamd",
-			SuggestedAction: MessageError,
+		return &core.MessageCheckResult{
+			Module:          ModuleName,
+			SuggestedAction: core.MessageError,
 			Score:           25,
 			Determinants: map[string]interface{}{
 				"error": err.Error(),
 			},
 		}
 	}
-	parsedResponse := rspamdParseRawResult(rawResult)
+	parsedResponse := m.parseRawResult(rawResult)
 
-	score := parsedResponse.Default.Score * msg.session.config.Rspamd.Multiplier
+	score := parsedResponse.Default.Score * msg.Session().Config().Rspamd.Multiplier
 
-	return &MessageCheckResult{
-		Module:          "rspamd",
-		SuggestedAction: MessageReject,
+	return &core.MessageCheckResult{
+		Module:          ModuleName,
+		SuggestedAction: core.MessageReject,
 		Message: "Our system has detected that this message is likely unsolicited mail (SPAM). " +
 			"To reduce the amount of spam, this message has been blocked.",
 		Score: score,
 		Determinants: map[string]interface{}{
 			"response":   parsedResponse,
-			"multiplier": Config.Rspamd.Multiplier,
+			"multiplier": m.cg.Config.Rspamd.Multiplier,
 		},
 	}
 }
 
-func rspamdParseRawResult(rawResult interface{}) *rspamdResponse {
+func (m *module) parseRawResult(rawResult interface{}) *rspamdResponse {
 	raw := rawResult.(map[string]interface{})
 	res := &rspamdResponse{
 		Urls:   make([]string, 0),
@@ -106,7 +121,7 @@ func rspamdParseRawResult(rawResult interface{}) *rspamdResponse {
 					res.Default.Action = vv.(string)
 				default:
 					if strings.ToUpper(kk) != kk {
-						Log.Noticef("Received unknown key in 'default' from Rspamd: ", kk)
+						m.cg.Log.Noticef("Received unknown key in 'default' from Rspamd: ", kk)
 						continue
 					}
 
@@ -145,11 +160,11 @@ func rspamdParseRawResult(rawResult interface{}) *rspamdResponse {
 
 }
 
-func rspamdGetRawResult(msg *Message) (interface{}, error) {
-	sess := *msg.session
+func (m *module) getRawResult(msg *core.Message) (interface{}, error) {
+	sess := *msg.Session()
 	var reqBody = msg.String()
 
-	url := fmt.Sprintf("http://%s:%d/check", Config.Rspamd.Host, Config.Rspamd.Port)
+	url := fmt.Sprintf("http://%s:%d/check", m.cg.Config.Rspamd.Host, m.cg.Config.Rspamd.Port)
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, bytes.NewBuffer(reqBody))
 	if err != nil {
@@ -158,11 +173,11 @@ func rspamdGetRawResult(msg *Message) (interface{}, error) {
 	for _, rcpt := range msg.Rcpt {
 		req.Header.Add("Rcpt", rcpt.String())
 	}
-	req.Header.Set("IP", sess.getIp())
-	req.Header.Set("Helo", sess.getHelo())
+	req.Header.Set("IP", sess.Ip)
+	req.Header.Set("Helo", sess.Helo)
 	req.Header.Set("From", msg.From.String())
 	req.Header.Set("Queue-Id", msg.QueueId)
-	req.Header.Set("User", sess.getSaslUsername())
+	req.Header.Set("User", sess.SaslUsername)
 	res, err := client.Do(req)
 
 	if err != nil {

@@ -28,12 +28,12 @@ func (m *module) Name() string {
 	return ModuleName
 }
 
-func (m *module) Enable() bool {
-	return true
-}
-
 func (m *module) SetCluegetter(cg *core.Cluegetter) {
 	m.cg = cg
+}
+
+func (m *module) Enable() bool {
+	return true
 }
 
 func (m *module) Init() {
