@@ -1,0 +1,25 @@
+{{ define "MessageResults" }}
+
+<table class="table table-striped">
+    <tr>
+        <th>Id</th><th>Date</th><th>Verdict</th><th>Sender</th><th>Rcpt Count</th><th>Recipients</th>
+    </tr>
+    {{ range $sessid, $session := .Results.Sessions }}
+        {{ range $msgId, $msg := .Messages }}
+        <tr>
+            <td><a href="/message/{{ $msg.QueueId }}">{{ $msg.QueueId }}</a></td>
+            <td>{{ $msg.Date.Format "2006-01-02 15:04:05 -0700 MST" }}</td>
+            <td>{{ $msg.Verdict }}</td>
+            <td>{{ $msg.From.String }}</td>
+            <td>{{ len $msg.Rcpt }}</td>
+            <td>
+                {{ range $key2, $recipient := .Rcpt }}
+                    {{ $recipient.String }}
+                {{ end }}
+            </td>
+        </tr>
+        {{ end }}
+    {{ end }}
+</table>
+
+{{ end }}

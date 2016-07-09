@@ -123,7 +123,7 @@ func (m *module) Init() {
             "TempfailScore":          { "type": "float"   },
             "TempfailScoreThreshold": { "type": "float"   },
 
-            "results": {
+            "CheckResults": {
               "type": "nested",
               "properties": {
                 "Module":         { "type": "string" },

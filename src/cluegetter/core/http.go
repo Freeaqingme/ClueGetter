@@ -500,7 +500,7 @@ func httpAbusersHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	httpSetSelectedInstances(data.Instances, selectedInstances)
+	HttpSetSelectedInstances(data.Instances, selectedInstances)
 
 	period := r.FormValue("period")
 	if _, err := strconv.ParseFloat(period, 64); err != nil || period == "" {
@@ -627,7 +627,7 @@ func httpParseDataSource(r *http.Request) string {
 	return datasource_mysql
 }
 
-func httpSetSelectedInstances(instances []*HttpInstance, selectedInstances []string) {
+func HttpSetSelectedInstances(instances []*HttpInstance, selectedInstances []string) {
 	if len(selectedInstances) == 0 {
 		for _, instance := range instances {
 			instance.Selected = true
@@ -644,6 +644,10 @@ func httpSetSelectedInstances(instances []*HttpInstance, selectedInstances []str
 }
 
 func HttpRenderOutput(w http.ResponseWriter, r *http.Request, templateFile string, data, jsonData interface{}) {
+	HttpRenderTemplates(w, r, []string{templateFile}, "skeleton.html", data, jsonData)
+}
+
+func HttpRenderTemplates(w http.ResponseWriter, r *http.Request, templateFiles []string, skeleton string, data, jsonData interface{}) {
 	if r.FormValue("json") == "1" {
 		if jsonData == nil {
 			http.Error(w, "No parameter 'json' supported", http.StatusBadRequest)
@@ -651,7 +655,7 @@ func HttpRenderOutput(w http.ResponseWriter, r *http.Request, templateFile strin
 		}
 		httpReturnJson(w, jsonData)
 		return
-	} else if templateFile == "" {
+	} else if len(templateFiles) == 0 || templateFiles[0] == "" {
 		http.Error(w, "Parameter 'json' required", http.StatusBadRequest)
 		return
 	} else if data == nil {
@@ -659,16 +663,18 @@ func HttpRenderOutput(w http.ResponseWriter, r *http.Request, templateFile strin
 		return
 	}
 
-	tplPage, _ := assets.Asset("htmlTemplates/" + templateFile)
-	tplSkeleton, _ := assets.Asset("htmlTemplates/skeleton.html")
-	tpl := template.New("skeleton.html")
+	tplSkeleton, _ := assets.Asset("htmlTemplates/" + skeleton)
+	tpl := template.New(skeleton)
 
 	tpl.Parse(`{{$renderFullBody := false }}`)
-	tpl.Parse(string(tplPage))
+	for _, page := range templateFiles {
+		tplPage, _ := assets.Asset("htmlTemplates/" + page)
+		tpl.Parse(string(tplPage))
+	}
 	tpl.Parse(string(tplSkeleton))
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := tpl.ExecuteTemplate(w, "skeleton.html", data); err != nil {
+	if err := tpl.ExecuteTemplate(w, skeleton, data); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

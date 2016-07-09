@@ -387,7 +387,7 @@ func mailQueueHttp(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	httpSetSelectedInstances(data.Instances, selectedInstances)
+	HttpSetSelectedInstances(data.Instances, selectedInstances)
 
 	data.Sender = r.FormValue("sender")
 	data.Recipient = r.FormValue("recipient")

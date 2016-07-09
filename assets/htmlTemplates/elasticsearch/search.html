@@ -31,10 +31,6 @@
         }
     }
 
-    .navbar-top-links {
-        margin-right: 0;
-    }
-
     .navbar-top-links li {
         display: inline-block;
     }
@@ -155,46 +151,58 @@
 
     <div class="navbar-default sidebar" role="navigation">
         <div class="sidebar-nav navbar-collapse">
-            <ul class="nav" id="side-menu">
-                <li>
-                    <label for="input-from">From</label>
-                    <input type="text" class="form-control" id="input-from" placeholder="Domain or Address"
-                           name="from"/>
-                </li>
-                <li>
-                    <label for="input-to">To</label>
-                    <input type="text" class="form-control" id="input-to" placeholder="Domain or Address"
-                           name="to"/>
-                </li>
-                <li>
-                    <label for="input-saslUser">User</label>
-                    <input type="text" class="form-control" id="input-saslUser" placeholder="SASL Username"
-                           name="saslUser"
-                           autocomplete="off"/>
-                </li>
-                <li>
-                    <label for="input-clientAddress">IP</label>
-                    <input type="text" class="form-control" id="input-clientAddress" placeholder="IP Address"
-                           name="clientAddress"/>
-                </li>
-                <li>
-                    <label>Date Range</label>
-                    <input type="datetime-local" name="dateStart"  />
-                    <input type="datetime-local" name="dateEnd" />
-                </li>
-                <li>
-                    <label>Instance</label>
-                    {{ range $key, $instance := .Instances }}
-                    <label for="input-instance-{{ $instance.Id }}" title="{{ $instance.Name }} instance">
-                        <input type="checkbox" name="instance" value="{{ $instance.Id }}"
-                               id="input-instance-{{ $instance.Id }}" checked="checked"/>
+            <form id="form-search" method="get" action="">
+                <ul class="nav" id="side-menu">
+                    <p>
+                        <button type="submit" class="btn btn-default" style="width: 100%"
+                        >Search
+                        </button>
+                    </p>
+                    </li>
+                    <li>
+                        <label for="input-from">From</label>
+                        <input type="text" class="form-control" id="input-from" placeholder="Domain or Address"
+                               name="from" value="{{ .Finder.From.String }}" autofocus="autofocus"/>
+                    </li>
+                    <li>
+                        <label for="input-to">To</label>
+                        <input type="text" class="form-control" id="input-to" placeholder="Domain or Address"
+                               name="to" value="{{ .Finder.To.String }}" />
+                    </li>
+                    <li>
+                        <label for="input-saslUser">User</label>
+                        <input type="text" class="form-control" id="input-saslUser" placeholder="SASL Username"
+                               name="saslUser" value="{{ .Finder.SaslUser }}"
+                               autocomplete="off"/>
+                    </li>
+                    <li>
+                        <label for="input-clientAddress">IP</label>
+                        <input type="text" class="form-control" id="input-clientAddress" placeholder="IP Address"
+                               name="clientAddress" value="{{ .Finder.ClientAddress }}" />
+                    </li>
+                    <li>
+                        <label>Date Range</label>
+                        <input type="datetime-local" name="dateStart" value="{{ .Finder.DateStart }}" />
+                        <input type="datetime-local" name="dateEnd" value="{{ .Finder.DateEnd }}"/>
+                    </li>
+                    <li>
+                        <label>Instance</label>
+                        {{ range $key, $instance := .Instances }}
+                        <label for="input-instance-{{ $instance.Id }}" title="{{ $instance.Name }} instance">
+                            <input type="checkbox" name="instance" value="{{ $instance.Id }}"
+                                   id="input-instance-{{ $instance.Id }}"
+                                   {{ if $instance.Selected }}
+                                        checked="checked"
+                                   {{ end }}
+                            />
 
-                        {{ $instance.Description }}
-                    </label>
-                    {{ end }}
-                </li>
+                            {{ $instance.Description }}
+                        </label>
+                        {{ end }}
+                    </li>
 
-            </ul>
+                </ul>
+            </form>
         </div>
         <!-- /.sidebar-collapse -->
     </div>
@@ -203,6 +211,9 @@
 
     <div id="page-wrapper">
         <h1>{{ template "title" . }}</h1>
+        <div id="searchResults">
+            {{ template "MessageResults" . }}
+        </div>
     </div>
     <!-- /#page-wrapper -->
 
@@ -210,4 +221,18 @@
 
 {{ end }}
 {{ define "script_footer" }}
+<script>
+
+    $("#form-search").submit(function (e) {
+        e.preventDefault();
+        var url = '?' + $('#form-search').serialize()
+        window.history.replaceState('Object', document.title, url);
+//        $.get(url)
+
+        $.get( url, function( data ) {
+            $( "#searchResults" ).html( data );
+        });
+    });
+
+</script>
 {{end}}

@@ -33,16 +33,59 @@ func (m *module) httpHandlerMessageSearch(w http.ResponseWriter, r *http.Request
 		*core.HttpViewData
 		Instances []*core.HttpInstance
 
-		Messages []*core.HttpMessage
+		Finder  *Finder
+		Results *FinderResponse
 	}{
 		HttpViewData: core.HttpGetViewData(),
 		Instances:    core.HttpGetInstances(),
 
-		//Messages:     httpHydrateLegacyViewObject(messages),
+		Finder: m.NewFinder(),
+		Results: &FinderResponse{
+			Sessions: make([]session, 0),
+		},
 	}
 	viewData.HttpViewData.TplRendersFullBody = true
+	instances, err := core.HttpParseFilterInstance(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	core.HttpSetSelectedInstances(viewData.Instances, instances)
 
-	core.HttpRenderOutput(w, r, "elasticsearch/search.html", viewData, viewData.Messages)
+	r.ParseForm()
+	if r.URL.RawQuery != "" {
+		//dateStartStr := r.FormValue("dateStart")
+		//dateEndStr:= r.FormValue("dateEnd")
+		f := viewData.Finder
+		f = f.SetFrom(address.FromAddressOrDomain(r.FormValue("from")))
+		f = f.SetTo(address.FromAddressOrDomain(r.FormValue("to")))
+		f = f.SetSaslUser(r.FormValue("saslUser"))
+		f = f.SetClientAddress(r.FormValue("clientAddress"))
+		f = f.SetInstances(instances)
+
+		viewData.Results, err = f.Find()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if r.Header.Get("X-Requested-With") == "XMLHttpRequest" {
+			core.HttpRenderTemplates(w, r,
+				[]string{"elasticsearch/msgResults.html"},
+				"elasticsearch/msgResultsWrapper.html",
+				viewData,
+				viewData,
+			)
+			return
+		}
+	}
+
+	core.HttpRenderTemplates(w, r,
+		[]string{"elasticsearch/search.html", "elasticsearch/msgResults.html"},
+		"skeleton.html",
+		viewData,
+		viewData,
+	)
 }
 
 func (m *module) httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
