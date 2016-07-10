@@ -36,7 +36,9 @@ func (m *module) httpHandlerMessageSearch(w http.ResponseWriter, r *http.Request
 		Finder  *Finder
 		Results *FinderResponse
 
-		DateHistogram24HrsJsonStr string
+		DateHistogram24HrsJsonStr  string
+		DateHistogram30DaysJsonStr string
+		DateHistogram1YrsJsonStr   string
 	}{
 		HttpViewData: core.HttpGetViewData(),
 		Instances:    core.HttpGetInstances(),
@@ -73,6 +75,19 @@ func (m *module) httpHandlerMessageSearch(w http.ResponseWriter, r *http.Request
 
 		jsonBytes, _ := json.Marshal(viewData.Results.DateHistogram24Hrs)
 		viewData.DateHistogram24HrsJsonStr = string(jsonBytes)
+
+		jsonBytes, _ = json.Marshal(viewData.Results.DateHistogram30Days)
+		viewData.DateHistogram30DaysJsonStr = string(jsonBytes)
+
+		jsonBytes, _ = json.Marshal(viewData.Results.DateHistogram1Yrs)
+		viewData.DateHistogram1YrsJsonStr = string(jsonBytes)
+
+		if r.FormValue("json") == "1" {
+			// API is not considered stable, but this part even less
+			viewData.Results.DateHistogram24Hrs = nil
+			viewData.Results.DateHistogram30Days = nil
+			viewData.Results.DateHistogram1Yrs = nil
+		}
 
 		if r.Header.Get("X-Requested-With") == "XMLHttpRequest" {
 			core.HttpRenderTemplates(w, r,

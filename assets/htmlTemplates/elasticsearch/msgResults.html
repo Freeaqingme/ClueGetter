@@ -1,6 +1,11 @@
 {{ define "MessageResults" }}
 
-<div id="chartContainer" style="height: 300px; width: 100%;"></div>
+
+<div>
+    <div id="chartContainer1Yrs" style="height: 150px; width: 33%; float: left"></div>
+    <div id="chartContainer30Days" style="height: 150px; width: 33%; float: left"></div>
+    <div id="chartContainer24H" style="height: 150px; width: 33%; float: left"></div>
+</div>
 
 <table class="table table-striped">
     <tr>
@@ -28,31 +33,34 @@
 
 {{ define "script_footer" }}
 <script type="text/javascript">
-    var data = {{ .Results.DateHistogram24Hrs }}
-    var dataPoints = []
-    for (var timestamp in data) {
-        dataPoints.push({ x: timestamp / 100, y: data[timestamp]})
-//        console.log(timestamp, data[timestamp])
+
+    var drawGraph = function(chartId, data, title) {
+        var dataPoints = []
+        for (var timestamp in data) {
+            dataPoints.push({x: new Date(+timestamp), y: data[timestamp]})
+        }
+
+        var chart = new CanvasJS.Chart(chartId,
+                {
+                    zoomEnabled: false,
+                    title: {
+                        text: title
+                    },
+                    data: [
+                        {
+                            type: "spline", // "area",
+                            xValueType: "dateTime",
+                            dataPoints: dataPoints
+                        }
+                    ]
+                });
+
+        chart.render();
     }
 
-    var chart = new CanvasJS.Chart("chartContainer",
-            {
-                zoomEnabled: true,
+    drawGraph("chartContainer24H", {{ .Results.DateHistogram24Hrs }}, "Past 24 Hours")
+    drawGraph("chartContainer30Days", {{ .Results.DateHistogram30Days }}, "Past Month")
+    drawGraph("chartContainer1Yrs", {{ .Results.DateHistogram1Yrs }}, "Past Year")
 
-                title:{
-                    text: "Past 24 Hours"
-                },
-
-                data: [
-                    {
-                        type: "area", // "spline",
-                        xValueType: "dateTime",
-                        dataPoints: dataPoints
-                    }
-                ]
-            });
-
-    chart.render();
-chart.render();
 </script>
 {{ end }}

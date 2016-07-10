@@ -75,7 +75,9 @@ type FinderResponse struct {
 	Total    int64
 	Sessions []session
 
-	DateHistogram24Hrs map[int64]int64
+	DateHistogram24Hrs  map[int64]int64
+	DateHistogram30Days map[int64]int64
+	DateHistogram1Yrs   map[int64]int64
 }
 
 func (m *module) NewFinder() *Finder {
@@ -151,7 +153,11 @@ func (f *Finder) SetInstances(instances []string) *Finder {
 }
 
 func (f *Finder) Find() (*FinderResponse, error) {
-	resp := &FinderResponse{}
+	resp := &FinderResponse{
+		DateHistogram24Hrs:  make(map[int64]int64, 0),
+		DateHistogram30Days: make(map[int64]int64, 0),
+		DateHistogram1Yrs:   make(map[int64]int64, 0),
+	}
 
 	search := f.module.esClient.Search().
 		Index("cluegetter-sessions").
@@ -174,51 +180,41 @@ func (f *Finder) Find() (*FinderResponse, error) {
 		return resp, err
 	}
 
-	aggParent, _ := sr.Aggregations.Nested("DateHistogram24Hrs")
-	agg, _ := aggParent.DateHistogram("sessions")
-	resp.DateHistogram24Hrs = make(map[int64]int64)
-	for _, bucket := range agg.Buckets {
-		resp.DateHistogram24Hrs[bucket.Key] = bucket.DocCount
+	parseAggregation := func(name string, store map[int64]int64) {
+		aggParent, _ := sr.Aggregations.Nested(name)
+		agg, _ := aggParent.DateHistogram("sessions")
+		for _, bucket := range agg.Buckets {
+			store[bucket.Key] = bucket.DocCount
+		}
+
 	}
+
+	parseAggregation("DateHistogram24Hrs", resp.DateHistogram24Hrs)
+	parseAggregation("DateHistogram30Days", resp.DateHistogram30Days)
+	parseAggregation("DateHistogram1Yrs", resp.DateHistogram1Yrs)
 
 	return resp, nil
 }
 
 func (f *Finder) aggs(service *elastic.SearchService) *elastic.SearchService {
-	dateAgg := elastic.NewDateHistogramAggregation().
-		Field("DateConnect").
-		Interval("15m").
-		Format("yyyy-MM-dd HH:mm").
-		TimeZone("CET") // Do more intelligently?
-	filter := elastic.NewRangeQuery("DateConnect").
-		Gt("now-24h")
-	agg := elastic.NewFilterAggregation().Filter(filter).
-		SubAggregation("sessions", dateAgg)
-	service = service.Aggregation("DateHistogram24Hrs", agg)
 
-	/*
-		dateAgg = elastic.NewDateHistogramAggregation().
+	addAgg := func(name, interval, period string) {
+		dateAgg := elastic.NewDateHistogramAggregation().
 			Field("DateConnect").
-			Interval("2h").
+			Interval(interval).
 			Format("yyyy-MM-dd HH:mm").
 			TimeZone("CET") // Do more intelligently?
-		filter = elastic.NewRangeQuery("DateConnect").
-			Gt("now-30d")
-		agg = elastic.NewFilterAggregation().Filter(filter).
+		filter := elastic.NewRangeQuery("DateConnect").
+			Gt(period)
+		agg := elastic.NewFilterAggregation().Filter(filter).
 			SubAggregation("sessions", dateAgg)
-		service = service.Aggregation("DateHistogram30Days", agg)
+		service = service.Aggregation(name, agg)
 
-		dateAgg = elastic.NewDateHistogramAggregation().
-			Field("DateConnect").
-			Interval("1d").
-			Format("yyyy-MM-dd HH:mm").
-			TimeZone("CET") // Do more intelligently?
-		filter = elastic.NewRangeQuery("DateConnect").
-			Gt("now-365d")
-		agg = elastic.NewFilterAggregation().Filter(filter).
-			SubAggregation("sessions", dateAgg)
-		service = service.Aggregation("DateHistogram1Yrs", agg)
-	*/
+	}
+
+	addAgg("DateHistogram24Hrs", "15m", "now-24h")
+	addAgg("DateHistogram30Days", "2h", "now-30d")
+	addAgg("DateHistogram1Yrs", "1d", "now-365d")
 
 	return service
 }
