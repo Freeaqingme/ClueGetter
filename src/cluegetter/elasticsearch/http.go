@@ -35,6 +35,8 @@ func (m *module) httpHandlerMessageSearch(w http.ResponseWriter, r *http.Request
 
 		Finder  *Finder
 		Results *FinderResponse
+
+		DateHistogram24HrsJsonStr string
 	}{
 		HttpViewData: core.HttpGetViewData(),
 		Instances:    core.HttpGetInstances(),
@@ -69,12 +71,15 @@ func (m *module) httpHandlerMessageSearch(w http.ResponseWriter, r *http.Request
 			return
 		}
 
+		jsonBytes, _ := json.Marshal(viewData.Results.DateHistogram24Hrs)
+		viewData.DateHistogram24HrsJsonStr = string(jsonBytes)
+
 		if r.Header.Get("X-Requested-With") == "XMLHttpRequest" {
 			core.HttpRenderTemplates(w, r,
 				[]string{"elasticsearch/msgResults.html"},
 				"elasticsearch/msgResultsWrapper.html",
 				viewData,
-				viewData,
+				viewData.Results,
 			)
 			return
 		}
@@ -84,7 +89,7 @@ func (m *module) httpHandlerMessageSearch(w http.ResponseWriter, r *http.Request
 		[]string{"elasticsearch/search.html", "elasticsearch/msgResults.html"},
 		"skeleton.html",
 		viewData,
-		viewData,
+		viewData.Results,
 	)
 }
 

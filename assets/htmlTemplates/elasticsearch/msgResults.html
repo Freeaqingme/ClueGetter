@@ -1,5 +1,7 @@
 {{ define "MessageResults" }}
 
+<div id="chartContainer" style="height: 300px; width: 100%;"></div>
+
 <table class="table table-striped">
     <tr>
         <th>Id</th><th>Date</th><th>Verdict</th><th>Sender</th><th>Rcpt Count</th><th>Recipients</th>
@@ -22,4 +24,35 @@
     {{ end }}
 </table>
 
+{{ end }}
+
+{{ define "script_footer" }}
+<script type="text/javascript">
+    var data = {{ .Results.DateHistogram24Hrs }}
+    var dataPoints = []
+    for (var timestamp in data) {
+        dataPoints.push({ x: timestamp / 100, y: data[timestamp]})
+//        console.log(timestamp, data[timestamp])
+    }
+
+    var chart = new CanvasJS.Chart("chartContainer",
+            {
+                zoomEnabled: true,
+
+                title:{
+                    text: "Past 24 Hours"
+                },
+
+                data: [
+                    {
+                        type: "area", // "spline",
+                        xValueType: "dateTime",
+                        dataPoints: dataPoints
+                    }
+                ]
+            });
+
+    chart.render();
+chart.render();
+</script>
 {{ end }}

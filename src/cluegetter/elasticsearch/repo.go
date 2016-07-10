@@ -74,6 +74,8 @@ type Finder struct {
 type FinderResponse struct {
 	Total    int64
 	Sessions []session
+
+	DateHistogram24Hrs map[int64]int64
 }
 
 func (m *module) NewFinder() *Finder {
@@ -159,6 +161,7 @@ func (f *Finder) Find() (*FinderResponse, error) {
 	//Pretty(true).
 
 	f.query(search)
+	f.aggs(search)
 
 	sr, err := search.Do()
 	if err != nil {
@@ -171,7 +174,53 @@ func (f *Finder) Find() (*FinderResponse, error) {
 		return resp, err
 	}
 
+	aggParent, _ := sr.Aggregations.Nested("DateHistogram24Hrs")
+	agg, _ := aggParent.DateHistogram("sessions")
+	resp.DateHistogram24Hrs = make(map[int64]int64)
+	for _, bucket := range agg.Buckets {
+		resp.DateHistogram24Hrs[bucket.Key] = bucket.DocCount
+	}
+
 	return resp, nil
+}
+
+func (f *Finder) aggs(service *elastic.SearchService) *elastic.SearchService {
+	dateAgg := elastic.NewDateHistogramAggregation().
+		Field("DateConnect").
+		Interval("15m").
+		Format("yyyy-MM-dd HH:mm").
+		TimeZone("CET") // Do more intelligently?
+	filter := elastic.NewRangeQuery("DateConnect").
+		Gt("now-24h")
+	agg := elastic.NewFilterAggregation().Filter(filter).
+		SubAggregation("sessions", dateAgg)
+	service = service.Aggregation("DateHistogram24Hrs", agg)
+
+	/*
+		dateAgg = elastic.NewDateHistogramAggregation().
+			Field("DateConnect").
+			Interval("2h").
+			Format("yyyy-MM-dd HH:mm").
+			TimeZone("CET") // Do more intelligently?
+		filter = elastic.NewRangeQuery("DateConnect").
+			Gt("now-30d")
+		agg = elastic.NewFilterAggregation().Filter(filter).
+			SubAggregation("sessions", dateAgg)
+		service = service.Aggregation("DateHistogram30Days", agg)
+
+		dateAgg = elastic.NewDateHistogramAggregation().
+			Field("DateConnect").
+			Interval("1d").
+			Format("yyyy-MM-dd HH:mm").
+			TimeZone("CET") // Do more intelligently?
+		filter = elastic.NewRangeQuery("DateConnect").
+			Gt("now-365d")
+		agg = elastic.NewFilterAggregation().Filter(filter).
+			SubAggregation("sessions", dateAgg)
+		service = service.Aggregation("DateHistogram1Yrs", agg)
+	*/
+
+	return service
 }
 
 func (f *Finder) query(service *elastic.SearchService) *elastic.SearchService {
