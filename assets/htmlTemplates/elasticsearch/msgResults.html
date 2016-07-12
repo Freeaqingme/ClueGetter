@@ -16,7 +16,19 @@
         <tr>
             <td><a href="/message/{{ $msg.QueueId }}">{{ $msg.QueueId }}</a></td>
             <td>{{ $msg.Date.Format "2006-01-02 15:04:05 -0700 MST" }}</td>
-            <td>{{ $msg.Verdict }}</td>
+            <td>{{ if eq $msg.Verdict 0 }}
+                    permit
+                {{ end }}
+                {{ if eq $msg.Verdict 1 }}
+                    tempfail
+                {{ end }}
+                {{ if eq $msg.Verdict 2 }}
+                    reject
+                {{ end }}
+                {{ if eq $msg.Verdict 3 }}
+                    error
+                {{ end }}
+            </td>
             <td>{{ $msg.From.String }}</td>
             <td>{{ len $msg.Rcpt }}</td>
             <td>
