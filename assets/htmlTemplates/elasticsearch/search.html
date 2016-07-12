@@ -180,11 +180,13 @@
                         <input type="text" class="form-control" id="input-clientAddress" placeholder="IP Address"
                                name="clientAddress" value="{{ .Finder.ClientAddress }}" />
                     </li>
+<!-- Not yet implemented
                     <li>
                         <label>Date Range</label>
                         <input type="datetime-local" name="dateStart" value="{{ .Finder.DateStart }}" />
                         <input type="datetime-local" name="dateEnd" value="{{ .Finder.DateEnd }}"/>
                     </li>
+-->
                     <li>
                         <label>Instance</label>
                         {{ range $key, $instance := .Instances }}
@@ -220,19 +222,3 @@
 </div>
 
 {{ end }}
-{{ define "script_footer" }}
-<script>
-
-    $("#form-search").submit(function (e) {
-        e.preventDefault();
-        var url = '?' + $('#form-search').serialize()
-        window.history.replaceState('Object', document.title, url);
-//        $.get(url)
-
-        $.get( url, function( data ) {
-            $( "#searchResults" ).html( data );
-        });
-    });
-
-</script>
-{{end}}

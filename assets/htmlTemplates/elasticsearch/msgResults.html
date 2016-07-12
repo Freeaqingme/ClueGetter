@@ -34,6 +34,16 @@
 {{ define "script_footer" }}
 <script type="text/javascript">
 
+    $("#form-search").submit(function (e) {
+        e.preventDefault();
+        var url = '?' + $('#form-search').serialize()
+        window.history.replaceState('Object', document.title, url);
+
+        $.get( url, function( data ) {
+            $( "#searchResults" ).html( data );
+        });
+    });
+
     var drawGraph = function(chartId, data, title) {
         var dataPoints = []
         for (var timestamp in data) {

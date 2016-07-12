@@ -209,7 +209,6 @@ func (f *Finder) aggs(service *elastic.SearchService) *elastic.SearchService {
 		agg := elastic.NewFilterAggregation().Filter(filter).
 			SubAggregation("sessions", dateAgg)
 		service = service.Aggregation(name, agg)
-
 	}
 
 	addAgg("DateHistogram24Hrs", "15m", "now-24h")
@@ -234,8 +233,12 @@ func (f *Finder) query(service *elastic.SearchService) *elastic.SearchService {
 	}
 	q.Must(elastic.NewNestedQuery("Messages", qMsg))
 
-	// saslUser
-	// clientAddress
+	if f.saslUser != "" {
+		q.Must(elastic.NewTermsQuery("SaslUsername", f.saslUser))
+	}
+	if f.clientAddress != "" {
+		q.Must(elastic.NewTermsQuery("Ip", f.clientAddress))
+	}
 
 	return service.Query(q)
 }
