@@ -351,8 +351,6 @@ func (s *MilterSession) persist() {
 	// purposes than persisting as well.
 	milterSessionPersistQueue.Enqueue(s) // TODO: Log if ring buffer is (near) full
 
-	return // Do no longer log messages in mysql. Pending change to other primary datastore.
-
 	if s.ClientIsMonitorHost() && len(s.Messages) == 0 {
 		return
 	}
