@@ -355,7 +355,8 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 	msg.TempfailScoreThreshold = sconf.ClueGetter.Message_Tempfail_Score
 	msg.CheckResults = flatResults
 
-	messageSave(msg)
+	//	messageSave(msg) Don't store messages in mysql for the forseeable future
+	// TODO: This also means the message cache won't get filled, and as such bayesian things wont work
 	return msg.Verdict, msg.VerdictMsg, results
 }
 

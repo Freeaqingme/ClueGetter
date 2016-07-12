@@ -416,6 +416,8 @@ func messageSaveRecipients(recipients []string, msgId string) {
 }
 
 func messagePersistInCache(queueId string, msgId string, msg []byte) {
+	CluegetterRecover("messagePersistInCache")
+
 	if ok, err := messagePersistCache.Set(queueId, msgId, msg); !ok {
 		Log.Noticef("Could not add message %s to message cache: %s",
 			queueId, err.Error())
