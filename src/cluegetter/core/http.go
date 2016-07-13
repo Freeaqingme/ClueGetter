@@ -352,7 +352,7 @@ func httpHandlerMessage(w http.ResponseWriter, r *http.Request) {
 		&msg.CertIssuer, &msg.CertSubject, &msg.CipherBits, &msg.Cipher, &msg.TlsVersion,
 		&msg.MtaHostname, &msg.MtaDaemonName)
 	if err != nil {
-		http.Error(w, "Page Not Found: "+err.Error(), http.StatusNotFound)
+		http.Redirect(w, r, "/es/message/" + queueId, 301)
 		return
 	}
 	msg.BodySizeStr = humanize.Bytes(uint64(msg.BodySize))

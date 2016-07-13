@@ -170,8 +170,6 @@ func (f *Finder) Find() (*FinderResponse, error) {
 		Sort("DateConnect", false).
 		From(0).
 		Size(250)
-	//Pretty(true).
-
 	f.query(search)
 	f.aggs(search)
 
@@ -192,7 +190,6 @@ func (f *Finder) Find() (*FinderResponse, error) {
 		for _, bucket := range agg.Buckets {
 			store[bucket.Key] = bucket.DocCount
 		}
-
 	}
 
 	parseAggregation("DateHistogram24Hrs", resp.DateHistogram24Hrs)
