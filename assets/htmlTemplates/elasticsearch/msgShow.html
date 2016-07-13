@@ -1,0 +1,102 @@
+{{ define "title" }}Message{{ end }}
+{{ define "body" }}
+
+{{ range $sess := .Results.Sessions }}
+{{ range $msg := $sess.Messages }}
+
+<dl class="dl-horizontal">
+    <dt>Date</dt>
+    <dd>{{printf "%s" $msg.Date}}</dd>
+    <dt>MTA</dt>
+    <dd>{{printf "%s" $sess.MtaHostName}} ({{printf "%s" $sess.MtaDaemonName}})</dd>
+
+
+    <dt>IP</dt>
+    <dd>{{printf "%s" $sess.Ip}}
+        (RDNS: <i>{{printf "%s" $sess.ReverseDns}}</i>,
+        HELO: <i>{{printf "%s" $sess.Helo}}</i>)</dd>
+    <dt>Sasl Username</dt>
+    <dd>{{printf "%s" $sess.SaslUsername}} ({{printf "%s" $sess.SaslMethod}})</dd>
+    <dt>Certificate</dt>
+    <dd title="Issued by: {{printf "%s" $sess.CertIssuer}}">{{printf "%s" $sess.CertSubject}}</dd>
+
+    <dt>Cipher</dt>
+    <dd>{{printf "%s" $sess.TlsVersion}} {{printf "%d" $sess.CipherBits}} {{printf "%s" $sess.Cipher}}</dd>
+    <dt>Sender</dt>
+    <dd>{{printf "%s" $msg.From.String}}</dd>
+    <dt>Recipient Count</dt>
+    <dd>{{ len $msg.Rcpt }}</dd>
+    <dt>Recipients</dt>
+    {{ range $key, $value := $msg.Rcpt }}
+        <dd>{{ $value.String }}</dd>
+    {{ end }}
+    <dt>Verdict</dt>
+    <dd>
+        {{ if eq $msg.Verdict 0 }}
+        permit
+        {{ end }}
+        {{ if eq $msg.Verdict 1 }}
+        tempfail
+        {{ end }}
+        {{ if eq $msg.Verdict 2 }}
+        reject
+        {{ end }}
+        {{ if eq $msg.Verdict 3 }}
+        error
+        {{ end }}
+    </dd>
+    <dt>Verdict Message</dt>
+    <dd>{{printf "%s" $msg.VerdictMsg}}</dd>
+    <dt>Reject Score</dt>
+    <dd>{{printf "%.2f" $msg.RejectScore}} (threshold: {{printf "%.2f" $msg.RejectScoreThreshold}})</dd>
+    <dt>Tempfail Score</dt>
+    <dd>{{printf "%.2f" $msg.TempfailScore}}
+        threshold: {{printf "%.2f" $msg.TempfailScoreThreshold}})</dd>
+    <dt>Body size</dt>
+    <dd title="{{printf "%d" $msg.BodySize}} Bytes">{{printf "%d" $msg.BodySize }}</dd>
+    <dt>Headers</dt>
+    <dd>
+        <dl class="dl-horizontal">
+    <dt></dt><dd></dd> <!-- Circumvent CSS bug -->
+    {{ range $key, $value := $msg.Headers }}
+    <dt>{{ $value.Key }}</dt>
+    <dd>{{ $value.Value }}</dd>
+    {{ end }}
+</dl>
+</dd>
+</dl>
+
+<h2>Check Results</h2>
+<table class="table">
+    <tr>
+        <th>Module</th><th>Verdict</th><th>Duration</th><th>Score</th><th>Determinants</th>
+    </tr>
+    {{ range $key, $value := $msg.CheckResults }}
+    <tr>
+        <td>{{ $value.Module }}</td>
+        <td>{{ $value.SuggestedAction }}</td>
+        <td>{{ printf "%.3f" $value.Duration.Seconds }} s</td>
+        <td>{{ printf "%.2f" $value.Score }}
+            {{ if ne $value.WeightedScore $value.Score }}
+            <span title="Weighted Score">({{ printf "%.2f" $value.WeightedScore }})</span>
+            {{ end }}
+        </td>
+        <td class="determinant">{{ jsonEncode $value.Determinants }}</td>
+    </tr>
+    {{ end }}
+</table>
+
+
+{{ end }}
+{{ end }}
+{{ end }}
+
+{{ define "script_footer" }}
+<script>
+    $(".determinant").each(function() {
+        var jsonStr = $(this).text();
+        var jsonObj = JSON.parse(jsonStr);
+        $(this).html("<pre>"  + JSON.stringify(jsonObj, null, '\t') + "</pre>");
+    })
+</script>
+{{ end }}

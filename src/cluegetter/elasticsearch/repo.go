@@ -62,6 +62,7 @@ func (m *module) getSessionsByAddress(instances []string, address *address.Addre
 type Finder struct {
 	module *module
 
+	queueId       string
 	from          *address.Address
 	to            *address.Address
 	saslUser      string
@@ -152,6 +153,11 @@ func (f *Finder) SetInstances(instances []string) *Finder {
 	return f
 }
 
+func (f *Finder) SetQueueId(id string) *Finder {
+	f.queueId = id
+	return f
+}
+
 func (f *Finder) Find() (*FinderResponse, error) {
 	resp := &FinderResponse{
 		DateHistogram24Hrs:  make(map[int64]int64, 0),
@@ -220,18 +226,30 @@ func (f *Finder) aggs(service *elastic.SearchService) *elastic.SearchService {
 
 func (f *Finder) query(service *elastic.SearchService) *elastic.SearchService {
 	q := elastic.NewBoolQuery()
-	q.Must(elastic.NewTermsQuery("InstanceId", stringSliceToIface(f.instances)...))
+	if len(f.instances) > 0 {
+		q.Must(elastic.NewTermsQuery("InstanceId", stringSliceToIface(f.instances)...))
+	}
 
+	searchMessages := false
 	qMsg := elastic.NewBoolQuery()
 	if f.from.String() != "" {
 		qMsg.Must(addressQuery("Messages.From", f.from))
+		searchMessages = true
 	}
 	if f.to.String() != "" {
 		qMsg.Must(elastic.NewNestedQuery("Messages.Rcpt",
 			addressQuery("Messages.Rcpt", f.to),
 		))
+		searchMessages = true
 	}
-	q.Must(elastic.NewNestedQuery("Messages", qMsg))
+	if f.queueId != "" {
+		qMsg.Must(elastic.NewMatchQuery("Messages.QueueId", f.queueId))
+		searchMessages = true
+	}
+
+	if searchMessages {
+		q.Must(elastic.NewNestedQuery("Messages", qMsg))
+	}
 
 	if f.saslUser != "" {
 		q.Must(elastic.NewTermsQuery("SaslUsername", f.saslUser))

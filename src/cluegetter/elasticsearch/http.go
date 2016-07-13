@@ -22,10 +22,51 @@ func (m *module) HttpHandlers() map[string]core.HttpCallback {
 		"/es/message/searchEmail/": func(w http.ResponseWriter, r *http.Request) {
 			m.httpHandlerMessageSearchEmail(w, r)
 		},
+		"/es/message/": func(w http.ResponseWriter, r *http.Request) {
+			m.httpHandlerMessageShow(w, r)
+		},
 		"/search/": func(w http.ResponseWriter, r *http.Request) {
 			m.httpHandlerMessageSearch(w, r)
 		},
 	}
+}
+
+func (m *module) httpHandlerMessageShow(w http.ResponseWriter, r *http.Request) {
+	queueId := r.URL.Path[len("/es/message/"):]
+
+	f := m.NewFinder()
+	f.SetQueueId(queueId)
+	res, err := f.Find()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if res.Total == 0 {
+		http.Error(w, "No messages found", http.StatusNotFound)
+		return
+	}
+
+	if res.Total > 1 {
+		http.Error(w, "More than one session found. Not yet supported :(", http.StatusInternalServerError)
+		return
+	}
+
+	if len(res.Sessions[0].Messages) > 1 {
+		http.Error(w, "Session carry more than one message. Not yet supported :(", http.StatusInternalServerError)
+		return
+	}
+
+	viewData := struct {
+		*core.HttpViewData
+
+		Results *FinderResponse
+	}{
+		HttpViewData: core.HttpGetViewData(),
+		Results:      res,
+	}
+
+	core.HttpRenderOutput(w, r, "elasticsearch/msgShow.html", viewData, viewData.Results)
 }
 
 func (m *module) httpHandlerMessageSearch(w http.ResponseWriter, r *http.Request) {

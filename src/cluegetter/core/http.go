@@ -666,6 +666,13 @@ func HttpRenderTemplates(w http.ResponseWriter, r *http.Request, templateFiles [
 	tplSkeleton, _ := assets.Asset("htmlTemplates/" + skeleton)
 	tpl := template.New(skeleton)
 
+	tpl.Funcs(template.FuncMap{
+		"jsonEncode": func(input interface{}) string {
+			ret, _ := json.Marshal(input)
+			return string(ret)
+		},
+	})
+
 	tpl.Parse(`{{$renderFullBody := false }}`)
 	for _, page := range templateFiles {
 		tplPage, _ := assets.Asset("htmlTemplates/" + page)
