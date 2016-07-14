@@ -18,10 +18,12 @@ var luaModules = make(map[string]string, 0)
 
 func init() {
 	init := LuaStart
+	enable := func() bool { return true }
 
 	ModuleRegister(&ModuleOld{
-		name: "lua",
-		init: &init,
+		name:   "lua",
+		enable: &enable,
+		init:   &init,
 	})
 }
 
