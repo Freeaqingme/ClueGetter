@@ -282,6 +282,8 @@ func (m *esMessage) UnmarshalJSON(data []byte) error {
 		var err error
 		if err = json.Unmarshal([]byte(v.Determinants), &determinants); err != nil {
 			determinantsMap["error"] = "Could not unmarshal determinants from Elasticsearch Database: " + err.Error()
+		} else if determinants == nil {
+			determinantsMap = make(map[string]interface{}, 0)
 		} else {
 			determinantsMap = determinants.(map[string]interface{})
 		}
