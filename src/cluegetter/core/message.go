@@ -306,6 +306,9 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 	var totalScores [4]float64
 	for _, result := range flatResults {
 		totalScores[result.SuggestedAction] += result.WeightedScore
+		if result.Determinants == nil {
+			result.Determinants = make(map[string]interface{}, 0)
+		}
 	}
 
 	verdict = MessagePermit
