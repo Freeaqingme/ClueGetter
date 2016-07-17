@@ -44,9 +44,9 @@ least you've been warned.
 
 ## Screenshots
 
-| Message Details | Searching for a message | Search results | Mail Queue |
+| Message Details | Searching for a message | Mail Queue |
 | ------------- | ------------- | ------------- | ------------- | 
-| [![Message Details](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/thumbs/200.MessageDetails.png)](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/MessageDetails.png) | [![Search for a message](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/thumbs/200.Search.png)](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/Search.png) | [![Search Results](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/thumbs/200.SearchResultsByEmail.png)](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/SearchResultsByEmail.png) | [![Mail Queue ](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/thumbs/200.MailQueue.png)](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/MailQueue.png) |
+| [![Message Details](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/thumbs/200.MessageDetails.png)](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/MessageDetails.png) | [![Search for a message](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/thumbs/200.Search.png)](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/Search.png) | [![Mail Queue ](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/thumbs/200.MailQueue.png)](https://raw.githubusercontent.com/Freeaqingme/ClueGetter/develop/screenshots/MailQueue.png) |
 
 
 
