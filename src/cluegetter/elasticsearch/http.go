@@ -19,20 +19,17 @@ import (
 
 func (m *module) HttpHandlers() map[string]core.HttpCallback {
 	return map[string]core.HttpCallback{
-		"/es/message/searchEmail/": func(w http.ResponseWriter, r *http.Request) {
-			m.httpHandlerMessageSearchEmail(w, r)
-		},
-		"/es/message/": func(w http.ResponseWriter, r *http.Request) {
+		"/message/": func(w http.ResponseWriter, r *http.Request) {
 			m.httpHandlerMessageShow(w, r)
 		},
-		"/search/": func(w http.ResponseWriter, r *http.Request) {
+		"/message/search/": func(w http.ResponseWriter, r *http.Request) {
 			m.httpHandlerMessageSearch(w, r)
 		},
 	}
 }
 
 func (m *module) httpHandlerMessageShow(w http.ResponseWriter, r *http.Request) {
-	queueId := r.URL.Path[len("/es/message/"):]
+	queueId := r.URL.Path[len("/message/"):]
 
 	f := m.NewFinder()
 	f.SetQueueId(queueId)
@@ -106,6 +103,7 @@ func (m *module) httpHandlerMessageSearch(w http.ResponseWriter, r *http.Request
 		f = f.SetTo(address.FromAddressOrDomain(r.FormValue("to")))
 		f = f.SetSaslUser(r.FormValue("saslUser"))
 		f = f.SetClientAddress(r.FormValue("clientAddress"))
+		f = f.SetQueueId(r.FormValue("queueId"))
 		f = f.SetInstances(instances)
 
 		viewData.Results, err = f.Find()
@@ -147,42 +145,6 @@ func (m *module) httpHandlerMessageSearch(w http.ResponseWriter, r *http.Request
 		viewData,
 		viewData.Results,
 	)
-}
-
-func (m *module) httpHandlerMessageSearchEmail(w http.ResponseWriter, r *http.Request) {
-	address := address.FromAddressOrDomain(r.URL.Path[len("/es/message/searchEmail/"):])
-
-	instances, err := core.HttpParseFilterInstance(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	sessions, err := m.getSessionsByAddress(instances, address)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	messages := make([]*core.Message, 0)
-	for _, sess := range sessions {
-		for _, msg := range sess.Messages {
-			messages = append(messages, msg)
-		}
-	}
-
-	// Ideally we'd just pass the messages slice to the view, but to be able
-	// to put this live more quickly we'll just use the old (legacy) interface
-	// for now. Also keep in mind API BC.
-	viewData := struct {
-		*core.HttpViewData
-		Messages []*core.HttpMessage
-	}{
-		HttpViewData: core.HttpGetViewData(),
-		Messages:     httpHydrateLegacyViewObject(messages),
-	}
-
-	core.HttpRenderOutput(w, r, "messageSearchEmail.html", viewData, viewData.Messages)
 }
 
 func httpHydrateLegacyViewObject(messages []*core.Message) []*core.HttpMessage {

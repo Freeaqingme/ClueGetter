@@ -106,6 +106,10 @@ func (f *Finder) ClientAddress() string {
 	return f.clientAddress
 }
 
+func (f *Finder) QueueId() string {
+	return f.queueId
+}
+
 func (f *Finder) DateStart() *time.Time {
 	return f.dateStart
 }
