@@ -74,14 +74,29 @@ func (m *module) Init() {
         "InstanceId":     { "type": "integer" },
         "DateConnect":    { "type": "date"    },
         "DateDisconnect": { "type": "date"    },
-        "SaslUsername":   { "type": "string"  },
-        "SaslSender":     { "type": "string"  },
-        "SaslMethod":     { "type": "string"  },
+        "SaslUsername":   {
+          "type":  "string",
+          "index": "not_analyzed"
+        },
+        "SaslSender":     {
+          "type":  "string",
+          "index": "not_analyzed"
+        },
+        "SaslMethod":     {
+          "type":  "string",
+          "index": "not_analyzed"
+        },
         "CertIssuer":     { "type": "string"  },
         "CipherBits":     { "type": "short"   },
         "Cipher":         { "type": "string"  },
-        "TlsVersion":     { "type": "string"  },
-        "Ip":             { "type": "string"  },
+        "TlsVersion":     {
+          "type":  "string",
+          "index": "not_analyzed"
+        },
+        "Ip":             {
+          "type":  "string",
+          "index": "not_analyzed"
+        },
         "ReverseDns":     { "type": "string"  },
         "Hostname":       { "type": "string"  },
         "Helo":           { "type": "string"  },
@@ -91,18 +106,33 @@ func (m *module) Init() {
         "Messages": {
           "type": "nested",
           "properties": {
-            "QueueId": { "type": "string"  },
+            "QueueId": {
+              "type":  "string",
+              "index": "not_analyzed"
+            },
             "From": {
               "properties": {
-                "Local":  { "type": "string" },
-                "Domain": { "type": "string" }
+                "Local": {
+                  "type":     "string",
+                  "analyzer": "simple"
+                },
+                "Domain": {
+                  "type":     "string",
+                  "analyzer": "simple"
+                }
               }
             },
             "Rcpt": {
               "type": "nested",
               "properties": {
-                "Local":  { "type": "string" },
-                "Domain": { "type": "string" }
+                "Local":  {
+                  "type":     "string",
+                  "analyzer": "simple"
+                },
+                "Domain": {
+                  "type":     "string",
+                  "analyzer": "simple"
+                }
               }
             },
             "Headers": {
@@ -117,7 +147,10 @@ func (m *module) Init() {
             "BodySize":               { "type": "integer" },
             "BodyHash":               { "type": "string"  },
             "Verdict":                { "type": "integer" },
-            "VerdictMsg":             { "type": "string"  },
+            "VerdictMsg":             {
+              "type":  "string",
+              "index": "not_analyzed"
+            },
             "RejectScore":            { "type": "float"   },
             "RejectScoreThreshold":   { "type": "float"   },
             "TempfailScore":          { "type": "float"   },
@@ -126,7 +159,10 @@ func (m *module) Init() {
             "CheckResults": {
               "type": "nested",
               "properties": {
-                "Module":         { "type": "string" },
+                "Module":         {
+                  "type":  "string",
+                  "index": "not_analyzed"
+                },
                 "Verdict":        { "type": "integer" },
                 "Message":        { "type": "string" },
                 "Score":          { "type": "float" },
