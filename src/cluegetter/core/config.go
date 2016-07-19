@@ -98,8 +98,13 @@ type config struct {
 		Blacklist_Domain_Score  float64
 	}
 	Dkim struct {
-		Enabled bool
+		Enabled  bool
+		Sign     bool
 		Selector []string
+		Backend  string
+	}
+	Dkim_FileBackend struct {
+		Key_Path []string
 	}
 	Greylisting struct {
 		Enabled        bool
@@ -297,6 +302,10 @@ func DefaultConfig(cfg *config) {
 	cfg.Contacts.Whitelist_Domain_Score = -0.85
 	cfg.Contacts.Blacklist_Address_Score = 6
 	cfg.Contacts.Blacklist_Domain_Score = 1
+
+	cfg.Dkim.Selector = []string{}
+	cfg.Dkim.Backend = "file"
+	cfg.Dkim_FileBackend.Key_Path = []string{}
 
 	cfg.Greylisting.Initial_Score = 7.0
 	cfg.Greylisting.Initial_Period = 5

@@ -112,9 +112,8 @@ func milterSessionPrepStmt() {
 }
 
 func (s *MilterSession) getNewMessage() *Message {
-	msg := &Message{
-		session: s,
-	}
+	msg := NewMessage()
+	msg.SetSession(s)
 
 	s.Messages = append(s.Messages, msg)
 	return msg

@@ -258,6 +258,24 @@ whitelist-domain-score = -0.85
 blacklist-address-score = 6
 blacklist-domain-score = 1
 
+[dkim]
+# Sign messages with DKIM, or verify if a message was correctly signed.
+enabled = false
+sign = true
+
+# Selectors to use when signing. Allow to specify multiple if more than
+# one selector could be used.
+selector = default
+
+# What backend should be used for signing messages. Currently, only
+# 'file' is supported
+backend = file
+
+[dkim-filebackend]
+
+# Where the private keys to use with signing can be found.
+key-path = /etc/cluegetter/dkim/*.key
+
 [greylisting]
 # When the greylisting module is enabled, hosts that haven not been seen
 # before and that seem a little spammy are temporarily rejected until
