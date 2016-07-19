@@ -19,6 +19,7 @@ import (
 )
 
 import (
+	_ "cluegetter/dkim"
 	_ "cluegetter/elasticsearch"
 	_ "cluegetter/greylisting"
 	_ "cluegetter/rspamd"

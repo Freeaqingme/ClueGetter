@@ -97,6 +97,10 @@ type config struct {
 		Blacklist_Address_Score float64
 		Blacklist_Domain_Score  float64
 	}
+	Dkim struct {
+		Enabled bool
+		Selector []string
+	}
 	Greylisting struct {
 		Enabled        bool
 		Initial_Score  float64
@@ -161,6 +165,9 @@ type SessionConfig struct {
 		Whitelist_Domain_Score  float64
 		Blacklist_Address_Score float64
 		Blacklist_Domain_Score  float64
+	}
+	Dkim struct {
+		Selector []string
 	}
 	Greylisting struct {
 		Enabled        bool

@@ -11,6 +11,7 @@ github.com/Freeaqingme/GoDaemonSkeleton 419d4185373da00cc5799038185897742fddcb15
 github.com/Freeaqingme/golang-sql-driver-mysql cc60643cc960cb640e30d95b87d61aa4ca6ef3fb
 github.com/Freeaqingme/go-libspf2 b6690e62a7ecafbe84c3a722351015563089de1a
 github.com/Freeaqingme/go-clamd 4ca7e7b82651009473ab23a8a24bf7f5700f61bd
+github.com/Freeaqingme/go-dkim 5359189bbeaea04d2221936dc0f4cfe03515d9fa
 github.com/Freeaqingme/gomilter ec6c4f311354d82c74260255dbe8a0ab6705939a
 github.com/Freeaqingme/go-spamc baaefdc3478cdf09e5db128b45e7597f51a69ff3
 github.com/Freeaqingme/go-proxyproto 673e5fd897f42e9212ca2495bd0c43d9ab872619

@@ -680,7 +680,7 @@ func messageGenerateMessageId(queueId, host string) string {
 	}
 
 	return fmt.Sprintf("<%d.%s.cluegetter@%s>",
-		time.Now().Unix(), queueId, hostname)
+		time.Now().Unix(), queueId, host)
 }
 
 // Deprecated: Use package address instead
