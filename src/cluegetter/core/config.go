@@ -98,10 +98,12 @@ type config struct {
 		Blacklist_Domain_Score  float64
 	}
 	Dkim struct {
-		Enabled  bool
-		Sign     string
-		Selector []string
-		Backend  string
+		Enabled         bool
+		Sign            string
+		Selector        []string
+		Backend         string
+		Sign_Headers    []string
+		Sign_Bodylength uint
 	}
 	Dkim_FileBackend struct {
 		Key_Path []string
@@ -311,6 +313,7 @@ func DefaultConfig(cfg *config) {
 	cfg.Dkim.Selector = []string{}
 	cfg.Dkim.Backend = "file"
 	cfg.Dkim_FileBackend.Key_Path = []string{}
+	cfg.Dkim.Sign_Headers = []string{}
 
 	cfg.Greylisting.Initial_Score = 7.0
 	cfg.Greylisting.Initial_Period = 5

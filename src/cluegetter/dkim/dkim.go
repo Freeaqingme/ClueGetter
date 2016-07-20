@@ -63,7 +63,6 @@ func (m *module) Init() {
 		m.initFileBackend()
 	default:
 		m.cg.Log.Fatalf("Invalid backend specified: %s", m.cg.Config.Dkim.Backend)
-
 	}
 }
 
@@ -76,7 +75,9 @@ func (m *module) initFileBackend() {
 }
 
 func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCheckResult {
-	determinants := map[string]interface{}{}
+	determinants := map[string]interface{}{
+		"selectors": msg.Session().Config().Dkim.Selector,
+	}
 	errMsg := "An internal error has occurred"
 	var hdr string
 
@@ -101,7 +102,7 @@ func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCh
 
 	hdr, err = m.signMessage(msg)
 	if err != nil {
-		if err, ok := err.(*noSelectorInDnsFoundError); ok {
+		if _, ok := err.(*noSelectorInDnsFoundError); ok {
 			if required == signing_optional {
 				determinants["reason"] = "No valid DKIM records found"
 				return &core.MessageCheckResult{
@@ -112,9 +113,8 @@ func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCh
 					Determinants:    determinants,
 				}
 			}
-			determinants["selectors"] = err.selectors
 			errMsg = fmt.Sprintf(
-				"No valid DKIM records were found in the DNS of your domain '%s'",
+				"No valid DKIM records were found in the DNS configuration of your domain '%s'",
 				msg.From.Domain(),
 			)
 			return &core.MessageCheckResult{
@@ -155,28 +155,24 @@ func (m *module) signMessage(msg *core.Message) (string, error) {
 	dkimKeys := m.getDkimKeys(msg)
 	if len(dkimKeys) == 0 {
 		return "", &noSelectorInDnsFoundError{
-			msg:       "No selectors found in DNS",
-			selectors: msg.Session().Config().Dkim.Selector,
+			msg: "No selectors found in DNS",
 		}
 	}
 	dkimKey := m.backend.GetPreferredKey(dkimKeys)
 	if dkimKey == nil {
 		return "", &noSelectorInDnsFoundError{
-			msg:       "No selectors found in DNS",
-			selectors: msg.Session().Config().Dkim.Selector,
+			msg: "No selectors found in DNS",
 		}
 	}
 
+	conf := m.cg.Config.Dkim
 	dkim := dkim.NewDkim()
 	options := dkim.NewSigOptions()
 	options.Domain = domain
 	options.Selector = dkimKey.Selector
 	//options.SignatureExpireIn = 3600
-	options.SignatureExpireIn = 0
-	options.BodyLength = 50
-	options.Headers = []string{"from", "subject"}
-	//options.AddSignatureTimestamp = true
-	options.AddSignatureTimestamp = false
+	options.BodyLength = conf.Sign_Bodylength
+	options.Headers = conf.Sign_Headers
 	options.Canonicalization = "relaxed/relaxed"
 
 	signer, err := m.backend.NewSigner(dkimKey)
@@ -228,12 +224,10 @@ func signingRequired(msg *core.Message) (string, error) {
 	}
 
 	return "", errors.New("Invalid signing mode: " + mode)
-
 }
 
 type noSelectorInDnsFoundError struct {
-	msg       string
-	selectors []string
+	msg string
 }
 
 func (err noSelectorInDnsFoundError) Error() string {
