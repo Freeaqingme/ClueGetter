@@ -99,7 +99,7 @@ type config struct {
 	}
 	Dkim struct {
 		Enabled  bool
-		Sign     bool
+		Sign     string
 		Selector []string
 		Backend  string
 	}
@@ -172,6 +172,7 @@ type SessionConfig struct {
 		Blacklist_Domain_Score  float64
 	}
 	Dkim struct {
+		Sign     string
 		Selector []string
 	}
 	Greylisting struct {
@@ -218,6 +219,9 @@ func (conf *config) sessionConfig() (sconf *SessionConfig) {
 	sconf.Contacts.Blacklist_Domain_Score = conf.Contacts.Blacklist_Domain_Score
 	sconf.Contacts.Whitelist_Address_Score = conf.Contacts.Whitelist_Address_Score
 	sconf.Contacts.Whitelist_Domain_Score = conf.Contacts.Whitelist_Domain_Score
+
+	sconf.Dkim.Sign = conf.Dkim.Sign
+	sconf.Dkim.Selector = conf.Dkim.Selector
 
 	sconf.Greylisting.Enabled = conf.Greylisting.Enabled
 	sconf.Greylisting.Initial_Score = conf.Greylisting.Initial_Score
@@ -303,6 +307,7 @@ func DefaultConfig(cfg *config) {
 	cfg.Contacts.Blacklist_Address_Score = 6
 	cfg.Contacts.Blacklist_Domain_Score = 1
 
+	cfg.Dkim.Sign = "optional"
 	cfg.Dkim.Selector = []string{}
 	cfg.Dkim.Backend = "file"
 	cfg.Dkim_FileBackend.Key_Path = []string{}

@@ -9,8 +9,9 @@ package dkim
 
 import (
 	"crypto/rsa"
-	//	"fmt"
 	"errors"
+	"fmt"
+	"strings"
 
 	"cluegetter/core"
 	fileBackend "cluegetter/dkim/backend/file"
@@ -19,6 +20,12 @@ import (
 )
 
 const ModuleName = "dkim"
+
+const (
+	signing_required = "required"
+	signing_optional = "optional"
+	signing_none     = "none"
+)
 
 type module struct {
 	*core.BaseModule
@@ -69,32 +76,95 @@ func (m *module) initFileBackend() {
 }
 
 func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCheckResult {
+	determinants := map[string]interface{}{}
+	errMsg := "An internal error has occurred"
+	var hdr string
 
 	// TODO: Check somewhere if domain and from/sender headers match
 	// TODO: Check somewhere that from & subject header only occur once
 
-	err := m.signMessage(msg)
+	required, err := signingRequired(msg)
+	determinants["sign"] = required
 	if err != nil {
-		m.cg.Log.Errorf("DKIM: %s", err.Error())
+		goto Error
+	}
+
+	if required == signing_none {
 		return &core.MessageCheckResult{
 			Module:          m.Name(),
-			SuggestedAction: core.MessageError,
-			Message:         "An internal error occurred.",
-			Score:           25,
-			Determinants:    make(map[string]interface{}, 0),
+			SuggestedAction: core.MessagePermit,
+			Message:         "",
+			Score:           0,
+			Determinants:    determinants,
 		}
 	}
 
-	return nil
+	hdr, err = m.signMessage(msg)
+	if err != nil {
+		if err, ok := err.(*noSelectorInDnsFoundError); ok {
+			if required == signing_optional {
+				determinants["reason"] = "No valid DKIM records found"
+				return &core.MessageCheckResult{
+					Module:          m.Name(),
+					SuggestedAction: core.MessagePermit,
+					Message:         "",
+					Score:           0,
+					Determinants:    determinants,
+				}
+			}
+			determinants["selectors"] = err.selectors
+			errMsg = fmt.Sprintf(
+				"No valid DKIM records were found in the DNS of your domain '%s'",
+				msg.From.Domain(),
+			)
+			return &core.MessageCheckResult{
+				Module:          m.Name(),
+				SuggestedAction: core.MessageReject,
+				Message:         errMsg,
+				Score:           100,
+				Determinants:    determinants,
+			}
+		}
+
+		goto Error
+	}
+
+	determinants["injectedHeader"] = []string{hdr}
+	return &core.MessageCheckResult{
+		Module:          m.Name(),
+		SuggestedAction: core.MessagePermit,
+		Message:         "",
+		Score:           0,
+		Determinants:    determinants,
+	}
+
+Error:
+	determinants["error"] = err.Error()
+	return &core.MessageCheckResult{
+		Module:          m.Name(),
+		SuggestedAction: core.MessageError,
+		Message:         errMsg,
+		Score:           25,
+		Determinants:    determinants,
+	}
 }
 
-func (m *module) signMessage(msg *core.Message) error {
+func (m *module) signMessage(msg *core.Message) (string, error) {
 	domain := msg.From.Domain()
 
-	dkimKeys := m.getDkimKeys(domain)
+	dkimKeys := m.getDkimKeys(msg)
+	if len(dkimKeys) == 0 {
+		return "", &noSelectorInDnsFoundError{
+			msg:       "No selectors found in DNS",
+			selectors: msg.Session().Config().Dkim.Selector,
+		}
+	}
 	dkimKey := m.backend.GetPreferredKey(dkimKeys)
 	if dkimKey == nil {
-		return errors.New("No valid key could be found for " + domain)
+		return "", &noSelectorInDnsFoundError{
+			msg:       "No selectors found in DNS",
+			selectors: msg.Session().Config().Dkim.Selector,
+		}
 	}
 
 	dkim := dkim.NewDkim()
@@ -111,12 +181,12 @@ func (m *module) signMessage(msg *core.Message) error {
 
 	signer, err := m.backend.NewSigner(dkimKey)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	dHeader, err := dkim.GetDkimHeader(msg.String(), signer, &options)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	msg.AddHeader(core.MessageHeader{
@@ -124,17 +194,18 @@ func (m *module) signMessage(msg *core.Message) error {
 		Value: dHeader,
 	})
 
-	return nil
+	return dHeader, nil
 }
 
-func (m *module) getDkimKeys(domain string) []*dkim.PubKey {
+func (m *module) getDkimKeys(msg *core.Message) []*dkim.PubKey {
 	recordsFound := make([]*dkim.PubKey, 0)
 	dkim := dkim.NewDkim()
 
-	for _, selector := range m.cg.Config.Dkim.Selector {
+	domain := msg.From.Domain()
+	for _, selector := range msg.Session().Config().Dkim.Selector {
 		res, err := dkim.PubKeyFromDns(selector, domain)
 		if err != nil {
-			m.cg.Log.Notice("Could not get DKIM record '%s._domainkey.%s': %s", selector, domain, err.Error())
+			m.cg.Log.Debug("Could not get DKIM record '%s._domainkey.%s': %s", selector, domain, err.Error())
 			continue
 		}
 
@@ -142,4 +213,29 @@ func (m *module) getDkimKeys(domain string) []*dkim.PubKey {
 	}
 
 	return recordsFound
+}
+
+func signingRequired(msg *core.Message) (string, error) {
+	mode := strings.ToLower(msg.Session().Config().Dkim.Sign)
+
+	switch mode {
+	case "required":
+		return signing_required, nil
+	case "optional":
+		return signing_optional, nil
+	case "none":
+		return signing_none, nil
+	}
+
+	return "", errors.New("Invalid signing mode: " + mode)
+
+}
+
+type noSelectorInDnsFoundError struct {
+	msg       string
+	selectors []string
+}
+
+func (err noSelectorInDnsFoundError) Error() string {
+	return err.msg
 }

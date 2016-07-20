@@ -261,10 +261,15 @@ blacklist-domain-score = 1
 [dkim]
 # Sign messages with DKIM, or verify if a message was correctly signed.
 enabled = false
-sign = true
+
+# Must be one of:
+# required - Report an error if no DNS record matching any of the specified selectors can be found
+# optional - Sign if such a record (with known key) can be found, otherwise don't.
+# none     - Don't sign any mail using DKIM
+sign = optional
 
 # Selectors to use when signing. Allow to specify multiple if more than
-# one selector could be used.
+# one selector could be used. Will be suffixed by _domainkey.<msg.From.Domain>
 selector = default
 
 # What backend should be used for signing messages. Currently, only
