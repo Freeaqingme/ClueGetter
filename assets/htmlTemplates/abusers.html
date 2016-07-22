@@ -50,12 +50,12 @@
         {{ range $key, $senderDomain := .SenderDomainTop }}
             <tr>
                 <td>
-                    <a href="/message/searchEmail/@{{ $senderDomain.SenderDomain }}">
+                    <a href="/message/search/?from={{ $senderDomain.SenderDomain }}">
                         {{ $senderDomain.SenderDomain }}
                     </a>
                 </td>
                 <td>
-                    <a href="/message/searchSaslUser/{{ $senderDomain.SaslUsername }}">
+                    <a href="/message/search/?saslUser={{ $senderDomain.SenderDomain }}">
                         {{ $senderDomain.SaslUsername }}
                     </a>
                 </td>
