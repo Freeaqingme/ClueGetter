@@ -47,7 +47,20 @@ type Message struct {
 
 	CheckResults []*MessageCheckResult
 
+	addHeaders      []MessageHeader
+	addHeadersMutex *sync.Mutex
+
 	injectMessageId string
+}
+
+func NewMessage() *Message {
+	msg := &Message{}
+
+	msg.addHeadersMutex = &sync.Mutex{}
+	msg.addHeaders = make([]MessageHeader, len(MessageInsertHeaders))
+	copy(msg.addHeaders, MessageInsertHeaders)
+
+	return msg
 }
 
 func (msg *Message) Session() *MilterSession {
@@ -59,6 +72,13 @@ func (msg *Message) SetSession(s *MilterSession) {
 		panic("Cannot set session because session is already set")
 	}
 	msg.session = s
+}
+
+func (msg *Message) AddHeader(hdr MessageHeader) {
+	msg.addHeadersMutex.Lock()
+	defer msg.addHeadersMutex.Unlock()
+
+	msg.addHeaders = append(msg.addHeaders, hdr)
 }
 
 type MessageHeader struct {
@@ -512,51 +532,48 @@ func messageSave(msg *Message) {
 }
 
 func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (add, delete []MessageHeader) {
-	add = make([]MessageHeader, len(MessageInsertHeaders))
-	copy(add, MessageInsertHeaders)
-
 	// Add the recipients, duplicate lines if there's >1 recipients
-	for k, v := range add {
+	for k, v := range msg.addHeaders {
 		if strings.Index(v.Value, "%{recipient}") == -1 {
 			continue
 		}
 
 		for _, rcpt := range msg.Rcpt[1:] {
-			value := strings.Replace(add[k].Value, "%{recipient}", rcpt.String(), -1)
-			add = append(add, MessageHeader{Key: v.Key, Value: value})
+			value := strings.Replace(msg.addHeaders[k].Value, "%{recipient}", rcpt.String(), -1)
+			msg.addHeaders = append(msg.addHeaders, MessageHeader{Key: v.Key, Value: value})
 		}
 
-		add[k].Value = strings.Replace(add[k].Value, "%{recipient}", msg.Rcpt[0].String(), -1)
+		msg.addHeaders[k].Value = strings.Replace(msg.addHeaders[k].Value, "%{recipient}", msg.Rcpt[0].String(), -1)
 	}
 
 	if msg.session.config.ClueGetter.Insert_Missing_Message_Id == true && msg.injectMessageId != "" {
-		add = append(add, MessageHeader{Key: "Message-Id", Value: msg.injectMessageId})
+		msg.addHeaders = append(msg.addHeaders, MessageHeader{Key: "Message-Id", Value: msg.injectMessageId})
 	}
 
-	for k, v := range add {
+	for k, v := range msg.addHeaders {
 		if v.flagUnique {
 			delete = append(delete, msg.GetHeader(v.getKey(), false)...)
 		}
 
-		add[k].Value = msg.substituteStringVars(add[k].Value)
+		msg.addHeaders[k].Value = msg.substituteStringVars(msg.addHeaders[k].Value)
 	}
 
 	deleted := 0
-	for k := range add {
+	for k := range msg.addHeaders {
 		k -= deleted
-		if add[k].Value != "" {
+		if msg.addHeaders[k].Value != "" {
 			continue
 		}
 
 		deleted += 1
-		if len(add) > k {
-			add = append(add[:k], add[k+1:]...)
+		if len(msg.addHeaders) > k {
+			msg.addHeaders = append(msg.addHeaders[:k], msg.addHeaders[k+1:]...)
 		} else {
-			add = add[:k]
+			msg.addHeaders = msg.addHeaders[:k]
 		}
 	}
 
-	return add, delete
+	return msg.addHeaders, delete
 }
 
 func (msg *Message) substituteStringVars(in string) string {
@@ -680,7 +697,7 @@ func messageGenerateMessageId(queueId, host string) string {
 	}
 
 	return fmt.Sprintf("<%d.%s.cluegetter@%s>",
-		time.Now().Unix(), queueId, hostname)
+		time.Now().Unix(), queueId, host)
 }
 
 // Deprecated: Use package address instead
@@ -700,18 +717,17 @@ func messageParseAddress(address string, singleIsUser bool) (local, domain strin
 }
 
 func (msg *Proto_Message) getAsMessage() *Message {
-	out := &Message{
-		// session		// TODO
-		QueueId:                msg.Id,
-		From:                   address.FromString(msg.From),
-		Body:                   msg.Body,
-		Verdict:                int(msg.Verdict),
-		VerdictMsg:             msg.VerdictMsg,
-		RejectScore:            msg.RejectScore,
-		RejectScoreThreshold:   msg.RejectScoreThreshold,
-		TempfailScore:          msg.TempfailScore,
-		TempfailScoreThreshold: msg.TempfailScoreThreshold,
-	}
+	out := NewMessage()
+	//	out.session TODO
+	out.QueueId = msg.Id
+	out.From = address.FromString(msg.From)
+	out.Body = msg.Body
+	out.Verdict = int(msg.Verdict)
+	out.VerdictMsg = msg.VerdictMsg
+	out.RejectScore = msg.RejectScore
+	out.RejectScoreThreshold = msg.RejectScoreThreshold
+	out.TempfailScore = msg.TempfailScore
+	out.TempfailScoreThreshold = msg.TempfailScoreThreshold
 
 	for _, rcpt := range msg.Rcpt {
 		out.Rcpt = append(out.Rcpt, address.FromString(rcpt))

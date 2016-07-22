@@ -253,6 +253,8 @@ func (milter *milter) Eoh(ctx uintptr) (sfsistat int8) {
 
 	StatsCounters["MilterCallbackEoh"].increase(1)
 	Log.Debugf("%s milter.Eoh() was called", sess.milterGetDisplayId())
+
+	milterSessionConfigureModule(sess)
 	return
 }
 

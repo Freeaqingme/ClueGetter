@@ -8,10 +8,12 @@
 package core
 
 import (
-	cg_lua "cluegetter/lua"
-	"github.com/yuin/gopher-lua"
-
 	"io/ioutil"
+	"strings"
+
+	cg_lua "cluegetter/lua"
+
+	"github.com/yuin/gopher-lua"
 )
 
 var luaModules = make(map[string]string, 0)
@@ -42,6 +44,9 @@ func luaStartModule(name string, conf *ConfigLuaModule) {
 	milterCheck := func(msg *Message, done chan bool) *MessageCheckResult {
 		return LuaMilterCheck(name, msg, done)
 	}
+	sessConf := func(sess *MilterSession) {
+		luaSessionConfigure(name, sess)
+	}
 
 	if conf.Script != "" && conf.ScriptContents != "" {
 		panic("Cannot specify both Script as well as scriptContents in " + name)
@@ -65,10 +70,12 @@ func luaStartModule(name string, conf *ConfigLuaModule) {
 	}
 	luaModules[name] = string(scriptContents)
 
+	Log.Infof("Registered LUA module " + name)
 	ModuleRegister(&ModuleOld{
 		name:        "lua-" + name,
 		enable:      &enable,
 		milterCheck: &milterCheck,
+		sessConfig:  &sessConf,
 	})
 }
 
@@ -113,8 +120,32 @@ func LuaMilterCheck(luaModuleName string, msg *Message, done chan bool) *Message
 	}
 }
 
+func luaSessionConfigure(luaModuleName string, sess *MilterSession) {
+	L := luaGetState()
+
+	if err := L.DoString(luaModules[luaModuleName]); err != nil {
+		panic("Could not execute lua module " + luaModuleName + ": " + err.Error())
+	}
+
+	callback := L.GetField(L.Get(-1), "sessionConfigure")
+	if callback == nil {
+		return
+	}
+
+	err := L.CallByParam(lua.P{
+		Fn:      callback,
+		NRet:    0,
+		Protect: true,
+	}, luaGetSession(L, sess))
+	if err != nil {
+		panic("Error in lua module '" + luaModuleName + "': " + err.Error())
+	}
+}
+
 func luaGetState() *lua.LState {
-	L := lua.NewState()
+	L := lua.NewState(lua.Options{
+		IncludeGoStackTrace: true,
+	})
 	defer L.Close()
 
 	L.PreloadModule("crypto", cg_lua.CryptoLoader)
@@ -142,9 +173,9 @@ func luaCanParse(script string) (bool, error) {
 
 /* Session */
 
-func luaGetSession(L *lua.LState, msg *Message) lua.LValue {
+func luaGetSession(L *lua.LState, sess *MilterSession) lua.LValue {
 	ud := L.NewUserData()
-	ud.Value = msg.session
+	ud.Value = sess
 	L.SetMetatable(ud, L.GetTypeMetatable("session"))
 	L.Push(ud)
 
@@ -158,6 +189,8 @@ func luaSessionRegisterType(L *lua.LState) {
 }
 
 var luaSessionMethods = map[string]lua.LGFunction{
+	"config": luaSessionFuncGetSetSessionConfig,
+
 	"getSaslUsername":  luaSessionFuncSaslUsername,
 	"getSaslMethod":    luaSessionFuncSaslMethod,
 	"getCertIssuer":    luaSessionFuncCertIssuer,
@@ -180,6 +213,48 @@ func luaSessionGetFromVM(L *lua.LState) *MilterSession {
 	}
 	L.ArgError(1, "Session expected")
 	return nil
+}
+
+var sessionConfigSetters = map[string]func(*SessionConfig, *lua.LState){
+	"dkim.sign": func(c *SessionConfig, L *lua.LState) {
+		c.Dkim.Sign = L.CheckString(3)
+	},
+
+	// Greylisting
+	"greylisting.enabled": func(c *SessionConfig, L *lua.LState) {
+		c.Greylisting.Enabled = L.CheckBool(3)
+	},
+}
+
+var sessionConfigGetters = map[string]func(*SessionConfig) lua.LValue{
+	"dkim.sign": func(c *SessionConfig) lua.LValue {
+		return lua.LString(c.Dkim.Sign)
+	},
+
+	// Greylisting
+	"greylisting.enabled": func(c *SessionConfig) lua.LValue {
+		return lua.LBool(c.Greylisting.Enabled)
+	},
+}
+
+func luaSessionFuncGetSetSessionConfig(L *lua.LState) int {
+	s := luaSessionGetFromVM(L)
+	sconf := s.Config()
+	key := strings.ToLower(L.CheckString(2))
+	setter, ok := sessionConfigSetters[key]
+	getter, ok2 := sessionConfigGetters[key]
+	if !ok || !ok2 { // ensure each getter also has a setter, and vice versa
+		L.ArgError(1, "No value by name '"+key+"'")
+		return 0
+	}
+
+	if L.GetTop() == 3 {
+		setter(sconf, L)
+		return 0
+	}
+
+	L.Push(getter(sconf))
+	return 1
 }
 
 func luaSessionFuncSaslUsername(L *lua.LState) int {
@@ -297,7 +372,7 @@ func luaMessageGetFromVM(L *lua.LState) *Message {
 
 func luaMessageFuncSession(L *lua.LState) int {
 	m := luaMessageGetFromVM(L)
-	L.Push(luaGetSession(L, m))
+	L.Push(luaGetSession(L, m.Session()))
 	return 1
 }
 

@@ -112,9 +112,8 @@ func milterSessionPrepStmt() {
 }
 
 func (s *MilterSession) getNewMessage() *Message {
-	msg := &Message{
-		session: s,
-	}
+	msg := NewMessage()
+	msg.SetSession(s)
 
 	s.Messages = append(s.Messages, msg)
 	return msg
@@ -292,6 +291,14 @@ func milterSessionPostDisconnectModule(s *MilterSession) {
 			CluegetterRecover(m.Name() + ".SessionDisconnect")
 			m.SessionDisconnect(s)
 		}(module, s)
+	}
+}
+
+func milterSessionConfigureModule(s *MilterSession) {
+	for _, module := range cg.Modules() {
+		// Modules are expected to modify the SessionConfig
+		// So we do not run them concurrently
+		module.SessionConfigure(s)
 	}
 }
 

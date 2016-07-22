@@ -49,11 +49,6 @@ func (m *module) httpHandlerMessageShow(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if len(res.Sessions[0].Messages) > 1 {
-		http.Error(w, "Session carry more than one message. Not yet supported :(", http.StatusInternalServerError)
-		return
-	}
-
 	viewData := struct {
 		*core.HttpViewData
 

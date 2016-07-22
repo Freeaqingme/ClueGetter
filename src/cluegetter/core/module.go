@@ -20,6 +20,7 @@ type Module interface {
 	BayesLearn(msg *Message, isSpam bool)
 	MessageCheck(msg *Message, done chan bool) *MessageCheckResult
 	RecipientCheck(rcpt *address.Address) (verdict int, msg string)
+	SessionConfigure(s *MilterSession)
 	SessionDisconnect(s *MilterSession)
 	Ipc() map[string]func(string)
 	Rpc() map[string]chan string
@@ -113,6 +114,7 @@ func (m *BaseModule) RecipientCheck(rcpt *address.Address) (verdict int, msg str
 	return MessagePermit, ""
 }
 
+func (m *BaseModule) SessionConfigure(s *MilterSession)  {}
 func (m *BaseModule) SessionDisconnect(s *MilterSession) {}
 
 func (m *BaseModule) Ipc() map[string]func(string) {
@@ -139,6 +141,7 @@ type ModuleOld struct {
 	init         *func()
 	stop         *func()
 	milterCheck  *func(*Message, chan bool) *MessageCheckResult
+	sessConfig   *func(*MilterSession)
 	ipc          map[string]func(string)
 	rpc          map[string]chan string
 	httpHandlers map[string]HttpCallback
@@ -181,6 +184,14 @@ func (m *ModuleOld) MessageCheck(msg *Message, done chan bool) *MessageCheckResu
 	}
 
 	return (*m.milterCheck)(msg, done)
+}
+
+func (m *ModuleOld) SessionConfigure(sess *MilterSession) {
+	if m.sessConfig == nil {
+		return
+	}
+
+	(*m.sessConfig)(sess)
 }
 
 func (m *ModuleOld) RecipientCheck(rcpt *address.Address) (verdict int, msg string) {

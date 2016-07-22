@@ -258,6 +258,45 @@ whitelist-domain-score = -0.85
 blacklist-address-score = 6
 blacklist-domain-score = 1
 
+[dkim]
+# Sign messages with DKIM, or verify if a message was correctly signed.
+enabled = false
+
+# Must be one of:
+# required - Report an error if no DNS record matching any of the specified selectors can be found
+# optional - Sign if such a record (with known key) can be found, otherwise don't.
+# none     - Don't sign any mail using DKIM
+sign = optional
+
+# What headers should be signed. Also see RFC 6376 5.4.1 for some recommendations.
+sign-headers = from
+sign-headers = reply-to
+sign-headers = subject
+sign-headers = to
+sign-headers = cc
+sign-headers = references
+sign-headers = in-reply-to
+sign-headers = date
+sign-headers = mime-version
+sign-headers = content-type
+
+# Limit the body hash to N characters. Set to 0 to not limit anything.
+# This is recommended by RFC 6376 8.2
+sign-bodylength = 0
+
+# Selectors to use when signing. Allow to specify multiple if more than
+# one selector could be used. Will be suffixed by _domainkey.<msg.From.Domain>
+selector = default
+
+# What backend should be used for signing messages. Currently, only
+# 'file' is supported
+backend = file
+
+[dkim-filebackend]
+
+# Where the private keys to use with signing can be found.
+key-path = /etc/cluegetter/dkim/*.key
+
 [greylisting]
 # When the greylisting module is enabled, hosts that haven not been seen
 # before and that seem a little spammy are temporarily rejected until
