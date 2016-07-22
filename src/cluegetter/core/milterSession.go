@@ -294,6 +294,14 @@ func milterSessionPostDisconnectModule(s *MilterSession) {
 	}
 }
 
+func milterSessionConfigureModule(s *MilterSession) {
+	for _, module := range cg.Modules() {
+		// Modules are expected to modify the SessionConfig
+		// So we do not run them concurrently
+		module.SessionConfigure(s)
+	}
+}
+
 func milterSessionPersistHandleQueue(queue chan []byte) {
 	for {
 		data := <-queue
