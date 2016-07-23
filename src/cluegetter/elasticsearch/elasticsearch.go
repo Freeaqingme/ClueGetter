@@ -16,9 +16,13 @@ import (
 	"cluegetter/core"
 
 	"gopkg.in/olivere/elastic.v3"
+	"strings"
 )
 
 const ModuleName = "elasticsearch"
+
+// Needs updating with every significant mapping update
+const mappingVersion = "1"
 
 type module struct {
 	*core.BaseModule
@@ -58,12 +62,25 @@ func (m *module) Init() {
 	}
 
 	template := `{
-  "template": "cluegetter-*",
+  "template": "cluegetter-*-%%MAPPING_VERSION%%",
   "settings": {
     "number_of_shards": 5
   },
   "aliases" : {
     "cluegetter-sessions" : {}
+  },
+  "settings":{
+    "analysis": {
+      "analyzer": {
+        "lowercase": {
+          "type": "custom",
+          "tokenizer": "keyword",
+          "filter": [
+            "lowercase"
+          ]
+        }
+      }
+    }
   },
   "mappings": {
     "session": {
@@ -75,12 +92,12 @@ func (m *module) Init() {
         "DateConnect":    { "type": "date"    },
         "DateDisconnect": { "type": "date"    },
         "SaslUsername":   {
-          "type":  "string",
-          "index": "not_analyzed"
+          "type":     "string",
+          "analyzer": "lowercase"
         },
         "SaslSender":     {
-          "type":  "string",
-          "index": "not_analyzed"
+          "type":     "string",
+          "analyzer": "lowercase"
         },
         "SaslMethod":     {
           "type":  "string",
@@ -94,8 +111,8 @@ func (m *module) Init() {
           "index": "not_analyzed"
         },
         "Ip":             {
-          "type":  "string",
-          "index": "not_analyzed"
+          "type":     "string",
+          "analyzer": "lowercase"
         },
         "ReverseDns":     { "type": "string"  },
         "Hostname":       { "type": "string"  },
@@ -114,11 +131,11 @@ func (m *module) Init() {
               "properties": {
                 "Local": {
                   "type":     "string",
-                  "analyzer": "simple"
+                  "analyzer": "lowercase"
                 },
                 "Domain": {
                   "type":     "string",
-                  "analyzer": "simple"
+                  "analyzer": "lowercase"
                 }
               }
             },
@@ -127,11 +144,11 @@ func (m *module) Init() {
               "properties": {
                 "Local":  {
                   "type":     "string",
-                  "analyzer": "simple"
+                  "analyzer": "lowercase"
                 },
                 "Domain": {
                   "type":     "string",
-                  "analyzer": "simple"
+                  "analyzer": "lowercase"
                 }
               }
             },
@@ -148,8 +165,8 @@ func (m *module) Init() {
             "BodyHash":               { "type": "string"  },
             "Verdict":                { "type": "integer" },
             "VerdictMsg":             {
-              "type":  "string",
-              "index": "not_analyzed"
+              "type":     "string",
+              "analyzer": "simple"
             },
             "RejectScore":            { "type": "float"   },
             "RejectScoreThreshold":   { "type": "float"   },
@@ -180,7 +197,9 @@ func (m *module) Init() {
 }
 	`
 
-	_, err = m.esClient.IndexPutTemplate("cluegetter").BodyString(template).Do()
+	template = strings.Replace(template, "%%MAPPING_VERSION%%", mappingVersion, -1)
+
+	_, err = m.esClient.IndexPutTemplate("cluegetter-" + mappingVersion).BodyString(template).Do()
 	if err != nil {
 		m.cg.Log.Fatalf("Could not create ES template: %s", err.Error())
 	}
@@ -202,7 +221,7 @@ func (m *module) persistSession(coreSess *core.MilterSession) {
 	id := hex.EncodeToString(sess.Id())
 
 	_, err := m.esClient.Index().
-		Index("cluegetter-" + sess.DateConnect.Format("20060102")).
+		Index("cluegetter-" + sess.DateConnect.Format("20060102") + "-" + mappingVersion).
 		Type("session").
 		Id(id).
 		BodyString(string(str)).

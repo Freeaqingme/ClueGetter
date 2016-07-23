@@ -28,6 +28,7 @@ Features:
 * Contacts - Import address books (e.g. from RoundCube) so these addresses and/or domains can be used
   to (partially) blacklist messages from those addresses or domains.
 * SRS - Sender Rewriting Scheme
+* DKIM - Sign messages using DKIM
 
 Planned modules:
 * GeoIP - Detect anomalies in the countries used to send mail from
