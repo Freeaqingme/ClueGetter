@@ -2,7 +2,7 @@
 //
 // Copyright 2016 Dolf Schimmel, Freeaqingme.
 //
-// This Source Code Form is subject to the terms of the two-clause BSD license.
+// This Source Code Form is subject to the terms of the Apache License, Version 2.0.
 // For its contents, please refer to the LICENSE file.
 //
 // Test using: http://sanesecurity.com/support/signature-testing/

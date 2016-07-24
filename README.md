@@ -95,5 +95,5 @@ under load.
 
 ## License
 
-ClueGetter is distributed under a BSD 2-clause style license.
+ClueGetter is distributed under the Apache License, Version 2.0.
 Please see the *LICENSE* file for specifics.

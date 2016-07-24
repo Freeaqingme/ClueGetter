@@ -2,7 +2,7 @@
 //
 // Copyright 2016 Dolf Schimmel, Freeaqingme.
 //
-// This Source Code Form is subject to the terms of the two-clause BSD license.
+// This Source Code Form is subject to the terms of the Apache License, Version 2.0.
 // For its contents, please refer to the LICENSE file.
 //
 package main
@@ -71,11 +71,10 @@ func init() {
 		fmt.Printf(
 			"ClueGetter - Does things with mail - %s\n\n"+
 				"%s\nCopyright (c) 2015-2016, Dolf Schimmel\n"+
-				"License BSD-2 clause <%s>\n\n"+
+				"License: Apache License, Version 2.0\n\n"+
 				"Time of Build: %s\n\n",
 			buildTag,
 			"https://github.com/Freeaqingme/ClueGetter",
-			"http://git.io/vuTAf",
 			buildTime)
 		os.Exit(0)
 	}

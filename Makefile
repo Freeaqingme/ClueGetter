@@ -81,7 +81,7 @@ deb: release
 		--before-remove dist/debian/prerm \
 		--depends libspf2-2 \
 		--depends libmilter1.0.1 \
-		--license BSD-2-clause \
+		--license "Apache 2.0" \
 		-m "Dolf Schimmel <dolf@transip.nl>" \
 		--url "https://github.com/Freeaqingme/ClueGetter" \
 		--vendor "cluegetter.net" \
