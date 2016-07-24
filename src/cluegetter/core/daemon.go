@@ -148,7 +148,7 @@ func daemonIpcHandleConn(conn *net.UnixConn) {
 	}
 }
 
-func daemonIpcSend(handle string, message string) {
+func DaemonIpcSend(handle string, message string) {
 	c, err := net.Dial("unix", Config.ClueGetter.IPC_Socket)
 	if err != nil {
 		// TODO: Why does log.fatal not write to stderr?

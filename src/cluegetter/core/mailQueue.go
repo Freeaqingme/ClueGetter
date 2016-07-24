@@ -92,11 +92,11 @@ func mailQueueStart(deleteQueue chan string) {
 func mailQueueHandleDeleteChannel(deleteQueue chan string) {
 	for queueString := range deleteQueue {
 		queueIds := strings.Split(queueString, " ")
-		go mailQueueDeleteItems(queueIds)
+		go MailQueueDeleteItems(queueIds)
 	}
 }
 
-func mailQueueDeleteItems(queueIds []string) {
+func MailQueueDeleteItems(queueIds []string) {
 	if !Config.MailQueue.Enabled {
 		return
 	}

@@ -665,7 +665,7 @@ func messageGetMessageId(msg *Message) string {
 	}
 
 	if msg.injectMessageId == "" {
-		messageIdHdr = messageGenerateMessageId(msg.QueueId, sess.getMtaHostName())
+		messageIdHdr = MessageGenerateMessageId(msg.QueueId, sess.getMtaHostName())
 		msg.injectMessageId = messageIdHdr
 	}
 
@@ -691,7 +691,7 @@ func messageAcceptRecipient(rcpt *address.Address) (finalVerdict int, finalMsg s
 	return
 }
 
-func messageGenerateMessageId(queueId, host string) string {
+func MessageGenerateMessageId(queueId, host string) string {
 	if host != "" {
 		host = hostname
 	}
