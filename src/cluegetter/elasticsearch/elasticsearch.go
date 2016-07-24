@@ -27,7 +27,6 @@ const mappingVersion = "1"
 type module struct {
 	*core.BaseModule
 
-	cg       *core.Cluegetter
 	esClient *elastic.Client
 }
 
@@ -36,29 +35,27 @@ type session struct {
 }
 
 func init() {
-	core.ModuleRegister(&module{})
+	core.ModuleRegister(&module{
+		BaseModule: core.NewBaseModule(nil),
+	})
 }
 
 func (m *module) Name() string {
 	return ModuleName
 }
 
-func (m *module) SetCluegetter(cg *core.Cluegetter) {
-	m.cg = cg
-}
-
 func (m *module) Enable() bool {
-	return m.cg.Config.Elasticsearch.Enabled
+	return m.Config().Elasticsearch.Enabled
 }
 
 func (m *module) Init() {
 	var err error
 	m.esClient, err = elastic.NewClient(
-		elastic.SetSniff(m.cg.Config.Elasticsearch.Sniff),
-		elastic.SetURL(m.cg.Config.Elasticsearch.Url...),
+		elastic.SetSniff(m.Config().Elasticsearch.Sniff),
+		elastic.SetURL(m.Config().Elasticsearch.Url...),
 	)
 	if err != nil {
-		m.cg.Log.Fatalf("Could not connect to ElasticSearch: %s", err.Error())
+		m.Log().Fatalf("Could not connect to ElasticSearch: %s", err.Error())
 	}
 
 	template := `{
@@ -201,7 +198,7 @@ func (m *module) Init() {
 
 	_, err = m.esClient.IndexPutTemplate("cluegetter-" + mappingVersion).BodyString(template).Do()
 	if err != nil {
-		m.cg.Log.Fatalf("Could not create ES template: %s", err.Error())
+		m.Log().Fatalf("Could not create ES template: %s", err.Error())
 	}
 }
 
@@ -228,7 +225,7 @@ func (m *module) persistSession(coreSess *core.MilterSession) {
 		Do()
 
 	if err != nil {
-		m.cg.Log.Errorf("Could not index session '%s', error: %s", id, err.Error())
+		m.Log().Errorf("Could not index session '%s', error: %s", id, err.Error())
 		return
 	}
 	//fmt.Printf("Indexed tweet %s to index %s, type %s\n", put1.Id, put1.Index, put1.Type)
@@ -248,7 +245,7 @@ func (s *session) esMarshalJSON(m *module) ([]byte, error) {
 		*Alias
 		EsMessages []*esMessage `json:"Messages"`
 	}{
-		InstanceId: m.cg.Instance(),
+		InstanceId: m.Instance(),
 		Alias:      (*Alias)(s),
 		EsMessages: esMessages,
 	}

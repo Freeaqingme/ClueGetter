@@ -28,8 +28,6 @@ const ModuleName = "bouncehandler"
 type module struct {
 	*core.BaseModule
 
-	cg *core.Cluegetter
-
 	bounceHandlerSaveBounceStmt       *sql.Stmt
 	bounceHandlerSaveBounceReportStmt *sql.Stmt
 }
@@ -58,19 +56,21 @@ type bayesModule interface {
 }
 
 func init() {
-	core.ModuleRegister(&module{})
+	core.ModuleRegister(&module{
+		BaseModule: core.NewBaseModule(nil),
+	})
 }
 
 func (m *module) Name() string {
 	return ModuleName
 }
 
-func (m *module) SetCluegetter(cg *core.Cluegetter) {
-	m.cg = cg
+func (m *module) config() core.ConfigBounceHandler {
+	return m.Config().BounceHandler
 }
 
 func (m *module) Enable() bool {
-	return m.cg.Config.BounceHandler.Enabled
+	return m.config().Enabled
 }
 
 func (m *module) Init() {
@@ -86,38 +86,37 @@ func (m *module) Ipc() map[string]func(string) {
 }
 
 func (m *module) prepStmt() {
-	stmt, err := m.cg.Rdbms().Prepare(
+	stmt, err := m.Rdbms().Prepare(
 		"INSERT INTO bounce (cluegetter_instance, date, mta, queueId, messageId, sender) VALUES (?, ?, ?, ?, ?, ?)")
 	if err != nil {
-		m.cg.Log.Fatalf("%s", err)
+		m.Log().Fatalf("%s", err)
 	}
 	m.bounceHandlerSaveBounceStmt = stmt
 
-	stmt, err = m.cg.Rdbms().Prepare(`
+	stmt, err = m.Rdbms().Prepare(`
 		INSERT INTO bounce_report (bounce, status, orig_rcpt, final_rcpt, remote_mta, diag_code)
 			VALUES (?, ?, ?, ?, ?, ?)
 	`)
 	if err != nil {
-		m.cg.Log.Fatalf("%s", err)
+		m.Log().Fatalf("%s", err)
 	}
 	m.bounceHandlerSaveBounceReportStmt = stmt
 }
 
 func (m *module) listen() {
-	conf := m.cg.Config.BounceHandler
-	listenStr := conf.Listen_Host + ":" + conf.Listen_Port
+	listenStr := m.config().Listen_Host + ":" + m.config().Listen_Port
 	l, err := net.Listen("tcp", listenStr)
 	if err != nil {
-		m.cg.Log.Fatalf(fmt.Sprintf("Cannot bind on tcp/%s: %s", listenStr, err.Error()))
+		m.Log().Fatalf(fmt.Sprintf("Cannot bind on tcp/%s: %s", listenStr, err.Error()))
 	}
 
 	defer l.Close()
-	m.cg.Log.Infof("Now listening on tcp/%s", listenStr)
+	m.Log().Infof("Now listening on tcp/%s", listenStr)
 
 	for {
 		conn, err := l.Accept()
 		if err != nil {
-			m.cg.Log.Errorf("Could not accept new connection: ", err.Error())
+			m.Log().Errorf("Could not accept new connection: ", err.Error())
 			continue
 		}
 		go m.handleConn(conn)
@@ -128,7 +127,7 @@ func (m *module) handleConn(conn net.Conn) {
 	defer core.CluegetterRecover("bounceHandler.ParseReport")
 	defer conn.Close()
 
-	m.cg.Log.Debugf("Handling new connection from %s", conn.RemoteAddr())
+	m.Log().Debugf("Handling new connection from %s", conn.RemoteAddr())
 	body := make([]byte, 0)
 	for {
 		buf := make([]byte, 512)
@@ -144,11 +143,11 @@ func (m *module) handleConn(conn net.Conn) {
 }
 
 func (m *module) handleIpc(bodyB64 string) {
-	m.cg.Log.Debugf("Received new report through IPC")
+	m.Log().Debugf("Received new report through IPC")
 
 	body, err := base64.StdEncoding.DecodeString(bodyB64)
 	if err != nil {
-		m.cg.Log.Errorf("Could not base64 decode report received over IPC: %s", err.Error())
+		m.Log().Errorf("Could not base64 decode report received over IPC: %s", err.Error())
 		return
 	}
 
@@ -179,7 +178,7 @@ func (m *module) parseReport(body []byte, remoteAddr string) {
 
 	date, _ := hdrs.Date()
 	bounce := &bounceHandlerBounce{
-		instance:    m.cg.Instance(),
+		instance:    m.Instance(),
 		date:        &date,
 		mta:         bounceReasons.Get("Reporting-MTA"),
 		queueId:     bounceReasons.Get("X-Postfix-Queue-Id"),
@@ -190,7 +189,7 @@ func (m *module) parseReport(body []byte, remoteAddr string) {
 
 	m.saveBounce(bounce)
 	if bayesReason != "" {
-		bayes := (*m.cg.Module("bayes", "")).(bayesModule)
+		bayes := (*m.Module("bayes", "")).(bayesModule)
 		if bayes != nil {
 			go bayes.ReportMessageId(true, bounce.messageId, bounce.mta, "__MTA", bayesReason)
 		}
@@ -198,7 +197,7 @@ func (m *module) parseReport(body []byte, remoteAddr string) {
 		queueId := bounceHandlerGetHeaderFromBytes(deliveryReports, "X-Postfix-Queue-ID")
 		core.MailQueueDeleteItems([]string{queueId}) // TODO: Once this becomes a module...
 	}
-	m.cg.Log.Infof("Successfully saved %d reports from %s", len(rcptReports), remoteAddr)
+	m.Log().Infof("Successfully saved %d reports from %s", len(rcptReports), remoteAddr)
 }
 
 func (m *module) getMessageId(msgBytes []byte, queueId string) string {
@@ -323,25 +322,24 @@ func (m *module) saveBounce(bounce *bounceHandlerBounce) {
 func (m *module) persistRawCopy(body []byte) {
 	defer core.CluegetterRecover("bounceHandlerPersistRawCopy")
 
-	conf := m.cg.Config.BounceHandler
-	if conf.Dump_Dir == "" {
+	if m.config().Dump_Dir == "" {
 		return
 	}
 
-	f, err := ioutil.TempFile(conf.Dump_Dir, "cluegetter-deliveryreport-")
+	f, err := ioutil.TempFile(m.config().Dump_Dir, "cluegetter-deliveryreport-")
 	if err != nil {
-		m.cg.Log.Errorf("Could not open file for delivery report: %s", err.Error())
+		m.Log().Errorf("Could not open file for delivery report: %s", err.Error())
 		return
 	}
 
 	defer f.Close()
 	count, err := f.Write(body)
 	if err != nil {
-		m.cg.Log.Errorf("Wrote %d bytes to %s, then got error: %s", count, f.Name(), err.Error())
+		m.Log().Errorf("Wrote %d bytes to %s, then got error: %s", count, f.Name(), err.Error())
 		return
 	}
 
-	m.cg.Log.Debugf("Wrote %d bytes to %s", count, f.Name())
+	m.Log().Debugf("Wrote %d bytes to %s", count, f.Name())
 }
 
 // We only want to add emails to our bayes corpus if the remote

@@ -16,20 +16,16 @@ const ModuleName = "demo"
 
 type module struct {
 	*core.BaseModule
-
-	cg *core.Cluegetter
 }
 
 func init() {
-	core.ModuleRegister(&module{})
+	core.ModuleRegister(&module{
+		BaseModule: core.NewBaseModule(nil),
+	})
 }
 
 func (m *module) Name() string {
 	return ModuleName
-}
-
-func (m *module) SetCluegetter(cg *core.Cluegetter) {
-	m.cg = cg
 }
 
 func (m *module) Enable() bool {
@@ -37,21 +33,21 @@ func (m *module) Enable() bool {
 }
 
 func (m *module) Init() {
-	m.cg.Log.Noticef("Initializing module demo")
+	m.Log().Noticef("Initializing module demo")
 }
 
 func (m *module) Stop() {
-	m.cg.Log.Noticef("Stopping module demo")
+	m.Log().Noticef("Stopping module demo")
 }
 
 func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCheckResult {
-	m.cg.Log.Noticef("Milter Checking Message %s", msg.QueueId)
+	m.Log().Noticef("Milter Checking Message %s", msg.QueueId)
 
 	return nil
 }
 
 func (m *module) RecipientCheck(rcpt *address.Address) (verdict int, msg string) {
-	m.cg.Log.Debugf("Considering if we should accept recipient %s", rcpt.String())
+	m.Log().Debugf("Considering if we should accept recipient %s", rcpt.String())
 
 	return core.MessagePermit, ""
 }

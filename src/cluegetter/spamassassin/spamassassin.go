@@ -24,38 +24,35 @@ const ModuleName = "spamassassin"
 type module struct {
 	*core.BaseModule
 
-	cg          *core.Cluegetter
 	verdictMsgs map[string]string
 }
 
 func init() {
-	core.ModuleRegister(&module{})
+	core.ModuleRegister(&module{
+		BaseModule: core.NewBaseModule(nil),
+	})
 }
 
 func (m *module) Name() string {
 	return ModuleName
 }
 
-func (m *module) SetCluegetter(cg *core.Cluegetter) {
-	m.cg = cg
-}
-
 func (m *module) Enable() bool {
-	return m.cg.Config.SpamAssassin.Enabled
+	return m.Config().SpamAssassin.Enabled
 }
 
 func (m *module) Init() {
 	m.verdictMsgs = make(map[string]string, 0)
 
-	for _, msg := range m.cg.Config.SpamAssassin.Verdict_Msg {
+	for _, msg := range m.Config().SpamAssassin.Verdict_Msg {
 		split := strings.SplitN(msg, ":", 2)
 		if len(split) < 2 {
-			m.cg.Log.Fatalf("%s: Verdict message does not fit format '<key>: <message>': %s", ModuleName, msg)
+			m.Log().Fatalf("%s: Verdict message does not fit format '<key>: <message>': %s", ModuleName, msg)
 		}
 
 		key := strings.ToUpper(split[0])
 		if _, set := m.verdictMsgs[split[0]]; set {
-			m.cg.Log.Fatalf("%s: A verdict message for key '%s' was configured more than once", ModuleName, key)
+			m.Log().Fatalf("%s: A verdict message for key '%s' was configured more than once", ModuleName, key)
 		}
 
 		m.verdictMsgs[key] = strings.TrimSpace(trimAbundantSpace(split[1]))
@@ -68,10 +65,10 @@ func (m *module) MessageCheck(msg *core.Message, abort chan bool) *core.MessageC
 		return nil
 	}
 
-	m.cg.Log.Debugf("Getting SA report for %s", msg.QueueId)
+	m.Log().Debugf("Getting SA report for %s", msg.QueueId)
 	report, err := m.scan(msg, abort)
 	if err != nil {
-		m.cg.Log.Errorf("SpamAssassin returned an error: %s", err)
+		m.Log().Errorf("SpamAssassin returned an error: %s", err)
 		return &core.MessageCheckResult{
 			Module:          ModuleName,
 			SuggestedAction: core.MessageError,
@@ -81,7 +78,7 @@ func (m *module) MessageCheck(msg *core.Message, abort chan bool) *core.MessageC
 		}
 	}
 
-	m.cg.Log.Debugf("Got SA score of %.2f for %s. Tests: [%s]",
+	m.Log().Debugf("Got SA score of %.2f for %s. Tests: [%s]",
 		report.score, msg.QueueId, strings.Join(report.factsAsString(), ","),
 	)
 
@@ -100,7 +97,7 @@ func (m *module) MessageCheck(msg *core.Message, abort chan bool) *core.MessageC
 func (m *module) getRawReply(msg *core.Message, abort chan bool) (*spamc.SpamDOut, error) {
 	bodyStr := string(msg.String())
 
-	host := m.cg.Config.SpamAssassin.Host + ":" + strconv.Itoa(m.cg.Config.SpamAssassin.Port)
+	host := m.Config().SpamAssassin.Host + ":" + strconv.Itoa(m.Config().SpamAssassin.Port)
 	sconf := msg.Session().Config().SpamAssassin
 	client := spamc.New(host, sconf.Timeout, sconf.Connect_Timeout)
 

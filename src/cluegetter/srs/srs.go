@@ -23,24 +23,20 @@ var srsMatch = regexp.MustCompile(`^(?i)SRS[0-9]+=`)
 
 type srsModule struct {
 	*core.BaseModule
-
-	cg *core.Cluegetter
 }
 
 func init() {
-	core.ModuleRegister(&srsModule{})
+	core.ModuleRegister(&srsModule{
+		BaseModule: core.NewBaseModule(nil),
+	})
 }
 
 func (m *srsModule) Name() string {
 	return ModuleName
 }
 
-func (m *srsModule) SetCluegetter(cg *core.Cluegetter) {
-	m.cg = cg
-}
-
 func (m *srsModule) Enable() bool {
-	return m.cg.Config.Srs.Enabled
+	return m.Config().Srs.Enabled
 }
 
 func (m *srsModule) MessageCheck(msg *core.Message, done chan bool) *core.MessageCheckResult {
@@ -48,7 +44,7 @@ func (m *srsModule) MessageCheck(msg *core.Message, done chan bool) *core.Messag
 	srsIn := m.getInboundSrsAddresses(msg)
 
 	if len(srsIn) > 0 && len(msg.Rcpt) > 1 {
-		m.cg.Log.Noticef("More than 1 recipient including an SRS recipient, that's weird?")
+		m.Log().Noticef("More than 1 recipient including an SRS recipient, that's weird?")
 	}
 
 	var mapped map[string]string
@@ -104,14 +100,14 @@ func (m *srsModule) swapRecipients(msg *core.Message, srsAddresses []address.Add
 
 func (m *srsModule) lookupAddress(address *address.Address) string {
 	key := strings.ToLower(fmt.Sprintf("cluegetter--srs-entry-%s", address.String()))
-	out, _ := m.cg.Redis.Get(key).Result()
+	out, _ := m.Redis().Get(key).Result()
 	return out
 }
 
 // Todo: Also persist in DB?
 func (m *srsModule) persist(msg *core.Message, from string) {
 	key := strings.ToLower(fmt.Sprintf("cluegetter--srs-entry-%s", from))
-	m.cg.Redis.Set(key, msg.From.String(), 7*24*time.Hour)
+	m.Redis().Set(key, msg.From.String(), 7*24*time.Hour)
 }
 
 func (m *srsModule) isSrsAddress(address *address.Address) bool {
@@ -144,7 +140,7 @@ func (m *srsModule) getFromAddress(msg *core.Message) string {
 
 	domain := m.getRewriteDomain(msg)
 	if domain == "" {
-		m.cg.Log.Debugf("Could not determine SRS domain for %s", msg.QueueId)
+		m.Log().Debugf("Could not determine SRS domain for %s", msg.QueueId)
 		return ""
 	}
 
@@ -155,7 +151,7 @@ func (m *srsModule) getFromAddress(msg *core.Message) string {
 func (m *srsModule) getRewriteDomain(msg *core.Message) string {
 	domains := make([]string, 0)
 	for _, hdr := range msg.Headers {
-		if strings.EqualFold(hdr.Key, m.cg.Config.Srs.Recipient_Header) {
+		if strings.EqualFold(hdr.Key, m.Config().Srs.Recipient_Header) {
 			address := address.FromString(strings.ToLower(hdr.Value))
 			domains = append(domains, address.Domain())
 		}
@@ -171,7 +167,7 @@ func (m *srsModule) getRewriteDomain(msg *core.Message) string {
 	}
 
 	if len(domains) > 1 {
-		m.cg.Log.Debugf("Multiple SRS domains to choose from for message '%s': %s",
+		m.Log().Debugf("Multiple SRS domains to choose from for message '%s': %s",
 			msg.QueueId, domains,
 		)
 	}
@@ -192,7 +188,7 @@ func (m *srsModule) isForwarded(msg *core.Message) bool {
 		match := false
 		count := 0
 		for _, hdr := range msg.Headers {
-			if strings.EqualFold(hdr.Key, m.cg.Config.Srs.Recipient_Header) {
+			if strings.EqualFold(hdr.Key, m.Config().Srs.Recipient_Header) {
 				count++
 				if strings.EqualFold(hdr.Value, rcpt.String()) {
 					match = true

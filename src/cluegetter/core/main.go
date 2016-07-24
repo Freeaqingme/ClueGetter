@@ -3,9 +3,10 @@ package core
 import (
 	"database/sql"
 	"fmt"
-	"github.com/Freeaqingme/GoDaemonSkeleton/log"
 	"os"
 	"sync"
+
+	"github.com/Freeaqingme/GoDaemonSkeleton/log"
 )
 
 var (
@@ -16,9 +17,9 @@ var (
 )
 
 type Cluegetter struct {
-	Config config
-	Log    *log.Logger
-	Redis  RedisClient
+	config config
+	log    *log.Logger
+	redis  RedisClient
 
 	instance   uint
 	instanceMu sync.Mutex
@@ -27,22 +28,34 @@ type Cluegetter struct {
 	modules   []Module
 }
 
+func (cg *Cluegetter) Config() config {
+	return cg.config
+}
+
+func (cg *Cluegetter) Log() *log.Logger {
+	return cg.log
+}
+
+func (cg *Cluegetter) Redis() RedisClient {
+	return cg.redis
+}
+
 func (cg *Cluegetter) Instance() uint {
 	cg.instanceMu.Lock()
 	defer cg.instanceMu.Unlock()
 	if cg.instance == 0 {
-		if cg.Config.ClueGetter.Instance == "" {
-			cg.Log.Fatalf("No instance was set")
+		if cg.config.ClueGetter.Instance == "" {
+			cg.log.Fatalf("No instance was set")
 		}
 
-		err := cg.Rdbms().QueryRow("SELECT id from instance WHERE name = ?", cg.Config.ClueGetter.Instance).
+		err := cg.Rdbms().QueryRow("SELECT id from instance WHERE name = ?", cg.config.ClueGetter.Instance).
 			Scan(&instance)
 		if err != nil {
-			cg.Log.Fatalf(fmt.Sprintf("Could not retrieve instance '%s' from database: %s",
-				cg.Config.ClueGetter.Instance, err))
+			cg.log.Fatalf(fmt.Sprintf("Could not retrieve instance '%s' from database: %s",
+				cg.config.ClueGetter.Instance, err))
 		}
 
-		Log.Noticef("Instance name: %s. Id: %d", cg.Config.ClueGetter.Instance, instance)
+		Log.Noticef("Instance name: %s. Id: %d", cg.config.ClueGetter.Instance, instance)
 		cg.instance = instance
 	}
 
@@ -53,6 +66,7 @@ func (cg *Cluegetter) Hostname() string {
 	return hostname
 }
 
+// TODO: This will become the persistence layer
 func (cg *Cluegetter) Rdbms() *sql.DB {
 	if Rdbms == nil {
 		rdbmsStart()
@@ -73,8 +87,8 @@ func CluegetterRecover(funcName string) {
 }
 
 func InitCg() *Cluegetter {
-	cg.Config = Config
-	cg.Log = Log
+	cg.config = Config
+	cg.log = Log
 	cg.instance = instance
 
 	for _, module := range cg.modules {

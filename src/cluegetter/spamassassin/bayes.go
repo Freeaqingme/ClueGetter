@@ -18,7 +18,7 @@ import (
 func (m *module) BayesLearn(msg *core.Message, isSpam bool) {
 	bodyStr := string(msg.String())
 
-	host := m.cg.Config.SpamAssassin.Host + ":" + strconv.Itoa(m.cg.Config.SpamAssassin.Port)
+	host := m.Config().SpamAssassin.Host + ":" + strconv.Itoa(m.Config().SpamAssassin.Port)
 	sconf := msg.Session().Config().SpamAssassin
 	client := spamc.New(host, sconf.Timeout, sconf.Connect_Timeout)
 

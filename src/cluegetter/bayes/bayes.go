@@ -19,26 +19,26 @@ const ModuleName = "bayes"
 type module struct {
 	*core.BaseModule
 
-	cg *core.Cluegetter
-
 	reportMessageIdRpcChan chan string
 	learnMessageRpcChan    chan string
 }
 
 func init() {
-	core.ModuleRegister(&module{})
+	core.ModuleRegister(&module{
+		BaseModule: core.NewBaseModule(nil),
+	})
 }
 
 func (m *module) Name() string {
 	return ModuleName
 }
 
-func (m *module) SetCluegetter(cg *core.Cluegetter) {
-	m.cg = cg
+func (m *module) config() core.ConfigBayes {
+	return m.Config().Bayes
 }
 
 func (m *module) Enable() bool {
-	return m.cg.Config.Bayes.Enabled
+	return m.config().Enabled
 }
 
 func (m *module) Init() {
@@ -77,26 +77,26 @@ func (m *module) handleReportMessageIdQueueItem(item string) {
 	rpc := &core.Rpc{}
 	err := rpc.Unmarshal([]byte(item))
 	if err != nil {
-		m.cg.Log.Errorf("Could not unmarshal RPC Message Bayes_Learn_Message_Id:", err.Error())
+		m.Log().Errorf("Could not unmarshal RPC Message Bayes_Learn_Message_Id:", err.Error())
 		return
 	}
 
 	if rpc.Name != "Bayes_Learn_Message_Id" || rpc.Bayes_Learn_Message_Id == nil {
-		m.cg.Log.Errorf("Invalid RPC Message Bayes_Learn_Message_Id")
+		m.Log().Errorf("Invalid RPC Message Bayes_Learn_Message_Id")
 		return
 	}
 	rpcMsg := rpc.Bayes_Learn_Message_Id
 
 	msgBytes := core.MessagePersistCache.GetByMessageId(rpcMsg.MessageId)
 	if len(msgBytes) == 0 {
-		m.cg.Log.Errorf("Could not retrieve message from cache with message-id %s",
+		m.Log().Errorf("Could not retrieve message from cache with message-id %s",
 			rpcMsg.MessageId)
 		return
 	}
 
 	msg, err := core.MessagePersistUnmarshalProto(msgBytes)
 	if err != nil {
-		m.cg.Log.Errorf("Could not unmarshal message from cache: %s", err.Error())
+		m.Log().Errorf("Could not unmarshal message from cache: %s", err.Error())
 		return
 	}
 	rpcName := "Bayes_Learn_Message"
@@ -119,13 +119,13 @@ func (m *module) handleReportMessageIdQueueItem(item string) {
 
 	payload, err := rpcOut.Marshal()
 	if err != nil {
-		m.cg.Log.Errorf("Could not marshal data-object to json: %s", err.Error())
+		m.Log().Errorf("Could not marshal data-object to json: %s", err.Error())
 		return
 	}
 	// TODO: redis := m.cg.Module("redis", "")
 	err = core.RedisPublish(fmt.Sprintf("cluegetter!!bayes!learn"), payload)
 	if err != nil {
-		m.cg.Log.Errorf("Error while reporting bayes message id: %s", err.Error())
+		m.Log().Errorf("Error while reporting bayes message id: %s", err.Error())
 	}
 }
 
@@ -135,7 +135,7 @@ func bayesAddToCorpus(spam bool, msg *core.Proto_Message, messageId, host, repor
 
 func (m *module) ReportMessageId(spam bool, messageId, host, reporter, reason string) {
 	core.CluegetterRecover("bayes.reportMessageId")
-	if !m.cg.Config.Bayes.Enabled {
+	if !m.config().Enabled {
 		return
 	}
 
@@ -151,12 +151,12 @@ func (m *module) ReportMessageId(spam bool, messageId, host, reporter, reason st
 		},
 	}
 
-	key := fmt.Sprintf("cluegetter!%d!bayes!reportMessageId", m.cg.Instance())
+	key := fmt.Sprintf("cluegetter!%d!bayes!reportMessageId", m.Instance())
 	payloadBytes, _ := payload.Marshal()
 	err := core.RedisPublish(key, payloadBytes)
 
 	if err != nil {
-		m.cg.Log.Errorf("Error while reporting bayes message id: %s", err.Error())
+		m.Log().Errorf("Error while reporting bayes message id: %s", err.Error())
 	}
 }
 
@@ -164,17 +164,17 @@ func (m *module) learn(item string) {
 	rpc := &core.Rpc{}
 	err := rpc.Unmarshal([]byte(item))
 	if err != nil {
-		m.cg.Log.Errorf("Could not unmarshal RPC Message Bayes_Learn_Message:", err.Error())
+		m.Log().Errorf("Could not unmarshal RPC Message Bayes_Learn_Message:", err.Error())
 		return
 	}
 
 	if rpc.Name != "Bayes_Learn_Message" || rpc.Bayes_Learn_Message == nil {
-		m.cg.Log.Errorf("Invalid RPC Message Bayes_Learn_Message")
+		m.Log().Errorf("Invalid RPC Message Bayes_Learn_Message")
 		return
 	}
 
 	msg := rpc.Bayes_Learn_Message.Message.GetAsMessage()
-	for _, module := range m.cg.Modules() {
+	for _, module := range m.Modules() {
 		go func(m core.Module, msg *core.Message, isSpam bool) {
 			core.CluegetterRecover("bayesLearn." + m.Name())
 			module.BayesLearn(msg, isSpam)
