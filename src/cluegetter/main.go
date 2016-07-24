@@ -19,6 +19,8 @@ import (
 )
 
 import (
+	_ "cluegetter/persistence"
+
 	_ "cluegetter/dkim"
 	_ "cluegetter/elasticsearch"
 	_ "cluegetter/greylisting"
