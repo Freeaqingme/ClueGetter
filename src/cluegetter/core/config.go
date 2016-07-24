@@ -56,7 +56,8 @@ type config struct {
 		Sniff   bool
 		Url     []string
 	}
-	Http struct {
+	Cockroach_Db map[string]*ConfigCockroachDb
+	Http         struct {
 		Enabled          bool
 		Listen_Port      string
 		Listen_Host      string
@@ -151,6 +152,16 @@ type ConfigLuaModule struct {
 	Enabled        bool
 	Script         string
 	ScriptContents string
+}
+
+type ConfigCockroachDb struct {
+	Enabled  bool
+	Database string
+	User     string
+	Password string
+	Host     string
+	Port     int
+	SslMode  string
 }
 
 type SessionConfig struct {

@@ -151,6 +151,21 @@ url = "http://127.0.0.1:9200"
 # and use those as well.
 sniff = true
 
+[cockroach-db "main"]
+
+# Use Cockroachdb for persistence. This is part of the new persistence
+# abstraction layer, does not do anything yet.
+
+enabled  = true
+database = cluegetter
+user     = cluegetter
+password = cluegetter
+host     = localhost
+port     = 26257
+
+# Must be one of: 'require', 'verify-ca', 'verify-full', 'disable'
+sslmode  = require
+
 [http]
 # Cluegetter can provide an HTTP interface that displays some runtime
 # statistics and errors, and allows to search for processed messages.
