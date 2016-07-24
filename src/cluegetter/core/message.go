@@ -716,7 +716,7 @@ func messageParseAddress(address string, singleIsUser bool) (local, domain strin
 	return
 }
 
-func (msg *Proto_Message) getAsMessage() *Message {
+func (msg *Proto_Message) GetAsMessage() *Message {
 	out := NewMessage()
 	//	out.session TODO
 	out.QueueId = msg.Id

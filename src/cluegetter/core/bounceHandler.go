@@ -44,6 +44,10 @@ type bounceHandlerRcptReport struct {
 	diagCode       string
 }
 
+type bayesModule interface {
+	ReportMessageId(spam bool, messageId, host, reporter, reason string)
+}
+
 var BounceHandlerSaveBounceStmt = *new(*sql.Stmt)
 var BounceHandlerSaveBounceReportStmt = *new(*sql.Stmt)
 
@@ -204,7 +208,10 @@ func bounceHandlerParseReport(body []byte, remoteAddr string) {
 
 	bounceHandlerSaveBounce(bounce)
 	if bayesReason != "" {
-		go bayesReportMessageId(true, bounce.messageId, bounce.mta, "__MTA", bayesReason)
+		bayes := (*cg.Module("bayes", "")).(bayesModule)
+		if bayes != nil {
+			go bayes.ReportMessageId(true, bounce.messageId, bounce.mta, "__MTA", bayesReason)
+		}
 
 		queueId := bounceHandlerGetHeaderFromBytes(deliveryReports, "X-Postfix-Queue-ID")
 		mailQueueDeleteItems([]string{queueId})

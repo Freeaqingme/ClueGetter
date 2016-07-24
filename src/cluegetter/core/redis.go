@@ -258,7 +258,7 @@ func redisGetServices() []*service {
 	return out
 }
 
-func redisPublish(key string, msg []byte) error {
+func RedisPublish(key string, msg []byte) error {
 	var logMsg string
 	if len(logMsg) > 128 {
 		logMsg = string(logMsg[:128]) + "..."

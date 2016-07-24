@@ -408,7 +408,7 @@ func mailQueueHttpDelete(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		err := redisPublish("cluegetter!!mailQueue!delete", []byte(strings.Join(v, " ")))
+		err := RedisPublish("cluegetter!!mailQueue!delete", []byte(strings.Join(v, " ")))
 		if err != nil {
 			panic(err)
 		}

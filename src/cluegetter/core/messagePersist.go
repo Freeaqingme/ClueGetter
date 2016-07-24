@@ -48,7 +48,7 @@ func messagePersistStart() {
 	ticker := time.NewTicker(time.Second * 30)
 	go func() {
 		for range ticker.C {
-			messagePersistCache.prune()
+			MessagePersistCache.prune()
 		}
 	}()
 }
@@ -74,7 +74,7 @@ func messagePersistProtoBuf(protoBuf []byte) {
 		return
 	}()
 
-	msg, err := messagePersistUnmarshalProto(protoBuf)
+	msg, err := MessagePersistUnmarshalProto(protoBuf)
 	if err != nil {
 		panic("unmarshaling error: " + err.Error())
 	}
@@ -82,7 +82,7 @@ func messagePersistProtoBuf(protoBuf []byte) {
 	messagePersist(msg)
 }
 
-func messagePersistUnmarshalProto(protoBuf []byte) (*Proto_Message, error) {
+func MessagePersistUnmarshalProto(protoBuf []byte) (*Proto_Message, error) {
 	msg := &Proto_Message{}
 	err := msg.Unmarshal(protoBuf)
 	if err != nil {
@@ -416,7 +416,7 @@ func messageSaveRecipients(recipients []string, msgId string) {
 }
 
 func messagePersistInCache(queueId string, msgId string, msg []byte) {
-	if ok, err := messagePersistCache.Set(queueId, msgId, msg); !ok {
+	if ok, err := MessagePersistCache.Set(queueId, msgId, msg); !ok {
 		Log.Noticef("Could not add message %s to message cache: %s",
 			queueId, err.Error())
 	}
@@ -426,7 +426,7 @@ func messagePersistInCache(queueId string, msgId string, msg []byte) {
 // Message Cache //
 ///////////////////
 
-var messagePersistCache = messageCacheNew(5*1024*1024, 512*1024*1024)
+var MessagePersistCache = messageCacheNew(5*1024*1024, 512*1024*1024)
 
 type messageCache struct {
 	sync.RWMutex
@@ -458,7 +458,7 @@ func (c *messageCache) getByQueueId(queueId string) []byte {
 	return c.cache[queueId]
 }
 
-func (c *messageCache) getByMessageId(msgId string) []byte {
+func (c *messageCache) GetByMessageId(msgId string) []byte {
 	c.RLock()
 	queueId := c.msgIdIdx[msgId]
 	protoBuf := c.cache[queueId]
