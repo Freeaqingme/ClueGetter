@@ -87,7 +87,7 @@ func LuaMilterCheck(luaModuleName string, msg *Message, done chan bool) *Message
 	}
 
 	callback := L.GetField(L.Get(-1), "milterCheck")
-	if callback == nil {
+	if callback == nil || callback.Type() == lua.LTNil {
 		return nil
 	}
 
@@ -128,7 +128,7 @@ func luaSessionConfigure(luaModuleName string, sess *MilterSession) {
 	}
 
 	callback := L.GetField(L.Get(-1), "sessionConfigure")
-	if callback == nil {
+	if callback == nil || callback.Type() == lua.LTNil {
 		return
 	}
 
