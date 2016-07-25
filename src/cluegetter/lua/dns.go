@@ -14,7 +14,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"strings"
 )
 
 func DnsLoader(L *lua.LState) int {
@@ -69,9 +68,7 @@ func dnsQueryCname(L *lua.LState) int {
 }
 
 func dnsQueryTxt(L *lua.LState) int {
-	query := L.ToString(1)
-
-	res, err := dnsQuery(L, query, dns.TypeTXT)
+	res, err := net.LookupTXT(L.ToString(1))
 	if err != nil {
 		L.Push(lua.LNil)
 		L.Push(lua.LString(err.Error()))
@@ -79,10 +76,11 @@ func dnsQueryTxt(L *lua.LState) int {
 	}
 
 	ret := L.NewTable()
-	for _, a := range res {
-		ret.Append(lua.LString(strings.Join(a.(*dns.TXT).Txt, "")))
+	for _, record := range res {
+		ret.Append(lua.LString(record))
 	}
 
 	L.Push(ret)
+
 	return 1
 }
