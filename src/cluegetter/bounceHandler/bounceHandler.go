@@ -2,13 +2,12 @@
 //
 // Copyright 2016 Dolf Schimmel, Freeaqingme.
 //
-// This Source Code Form is subject to the terms of the two-clause BSD license.
+// This Source Code Form is subject to the terms of the Apache License, Version 2.0.
 // For its contents, please refer to the LICENSE file.
 //
-package core
+package bounceHandler
 
 import (
-	"bufio"
 	"database/sql"
 	"encoding/base64"
 	"fmt"
@@ -18,12 +17,20 @@ import (
 	"mime/multipart"
 	"net"
 	"net/mail"
-	"os"
 	"strings"
 	"time"
 
-	"github.com/Freeaqingme/GoDaemonSkeleton"
+	"cluegetter/core"
 )
+
+const ModuleName = "bouncehandler"
+
+type module struct {
+	*core.BaseModule
+
+	bounceHandlerSaveBounceStmt       *sql.Stmt
+	bounceHandlerSaveBounceReportStmt *sql.Stmt
+}
 
 type bounceHandlerBounce struct {
 	id          uint64
@@ -44,105 +51,83 @@ type bounceHandlerRcptReport struct {
 	diagCode       string
 }
 
-var BounceHandlerSaveBounceStmt = *new(*sql.Stmt)
-var BounceHandlerSaveBounceReportStmt = *new(*sql.Stmt)
+type bayesModule interface {
+	ReportMessageId(spam bool, messageId, host, reporter, reason string)
+}
 
 func init() {
-	enable := func() bool { return Config.BounceHandler.Enabled }
-	init := bounceHandlerStart
-	stop := bounceHandlerStop
-	handleIpc := bounceHandlerHandleIpc
-
-	ModuleRegister(&ModuleOld{
-		name:   "bouncehandler",
-		enable: &enable,
-		init:   &init,
-		stop:   &stop,
-		ipc: map[string]func(string){
-			"bouncehandler!submit": handleIpc,
-		},
-	})
-
-	submitCli := bounceHandlerSubmitCli
-	GoDaemonSkeleton.AppRegister(&GoDaemonSkeleton.App{
-		Name:     "bouncehandler",
-		Handover: &submitCli,
+	core.ModuleRegister(&module{
+		BaseModule: core.NewBaseModule(nil),
 	})
 }
 
-func bounceHandlerStart() {
-	bounceHandlerPrepStmt()
-	go bounceHandlerListen()
+func (m *module) Name() string {
+	return ModuleName
 }
 
-func bounceHandlerStop() {
-	Log.Infof("BounceHandler module stopped successfully")
+func (m *module) config() core.ConfigBounceHandler {
+	return m.Config().BounceHandler
 }
 
-// Submit a new report to the bounce handler through the CLI.
-func bounceHandlerSubmitCli() {
-	if len(os.Args) < 2 || os.Args[1] != "submit" {
-		Log.Fatalf("Missing argument for 'bouncehandler'. Must be one of: submit")
+func (m *module) Enable() bool {
+	return m.config().Enabled
+}
+
+func (m *module) Init() {
+	m.prepStmt()
+
+	go m.listen()
+}
+
+func (m *module) Ipc() map[string]func(string) {
+	return map[string]func(string){
+		"bouncehandler!submit": m.handleIpc,
 	}
-
-	reader := bufio.NewReader(os.Stdin)
-	body := make([]byte, 0)
-	for {
-		buf := make([]byte, 512)
-		nr, err := reader.Read(buf)
-		if err != nil {
-			break
-		}
-		body = append(body, buf[:nr]...)
-	}
-
-	bodyB64 := base64.StdEncoding.EncodeToString(body)
-	daemonIpcSend("bouncehandler!submit", bodyB64)
 }
 
-func bounceHandlerPrepStmt() {
-	stmt, err := Rdbms.Prepare(
+func (m *module) prepStmt() {
+	stmt, err := m.Rdbms().Prepare(
 		"INSERT INTO bounce (cluegetter_instance, date, mta, queueId, messageId, sender) VALUES (?, ?, ?, ?, ?, ?)")
 	if err != nil {
-		Log.Fatalf("%s", err)
+		m.Log().Fatalf("%s", err)
 	}
-	BounceHandlerSaveBounceStmt = stmt
+	m.bounceHandlerSaveBounceStmt = stmt
 
-	stmt, err = Rdbms.Prepare(`
+	stmt, err = m.Rdbms().Prepare(`
 		INSERT INTO bounce_report (bounce, status, orig_rcpt, final_rcpt, remote_mta, diag_code)
 			VALUES (?, ?, ?, ?, ?, ?)
 	`)
 	if err != nil {
-		Log.Fatalf("%s", err)
+		m.Log().Fatalf("%s", err)
 	}
-	BounceHandlerSaveBounceReportStmt = stmt
+	m.bounceHandlerSaveBounceReportStmt = stmt
 }
 
-func bounceHandlerListen() {
-	listenStr := Config.BounceHandler.Listen_Host + ":" + Config.BounceHandler.Listen_Port
+func (m *module) listen() {
+	listenStr := m.config().Listen_Host + ":" + m.config().Listen_Port
 	l, err := net.Listen("tcp", listenStr)
 	if err != nil {
-		Log.Fatalf(fmt.Sprintf("Cannot bind on tcp/%s: %s", listenStr, err.Error()))
+		m.Log().Fatalf(fmt.Sprintf("Cannot bind on tcp/%s: %s", listenStr, err.Error()))
 	}
 
 	defer l.Close()
-	Log.Infof("Now listening on tcp/%s", listenStr)
+	m.Log().Infof("Now listening on tcp/%s", listenStr)
 
 	for {
 		conn, err := l.Accept()
 		if err != nil {
-			Log.Errorf("Could not accept new connection: ", err.Error())
+			m.Log().Errorf("Could not accept new connection: ", err.Error())
 			continue
 		}
-		go bounceHandlerHandleConn(conn)
+		go m.handleConn(conn)
 	}
 }
 
-func bounceHandlerHandleConn(conn net.Conn) {
-	defer CluegetterRecover("bounceHandlerParseReport")
+func (m *module) handleConn(conn net.Conn) {
+	defer core.CluegetterRecover("bounceHandler.ParseReport")
 	defer conn.Close()
 
-	Log.Debugf("Handling new connection from %s", conn.RemoteAddr())
+	m.Log().Debugf("Handling new connection from %s", conn.RemoteAddr())
 	body := make([]byte, 0)
 	for {
 		buf := make([]byte, 512)
@@ -154,23 +139,23 @@ func bounceHandlerHandleConn(conn net.Conn) {
 		body = append(body, buf[:nr]...)
 	}
 
-	bounceHandlerParseReport(body, conn.RemoteAddr().String())
+	m.parseReport(body, conn.RemoteAddr().String())
 }
 
-func bounceHandlerHandleIpc(bodyB64 string) {
-	Log.Debugf("Received new report through IPC")
+func (m *module) handleIpc(bodyB64 string) {
+	m.Log().Debugf("Received new report through IPC")
 
 	body, err := base64.StdEncoding.DecodeString(bodyB64)
 	if err != nil {
-		Log.Errorf("Could not base64 decode report received over IPC: %s", err.Error())
+		m.Log().Errorf("Could not base64 decode report received over IPC: %s", err.Error())
 		return
 	}
 
-	bounceHandlerParseReport(body, "IPC")
+	m.parseReport(body, "IPC")
 }
 
-func bounceHandlerParseReport(body []byte, remoteAddr string) {
-	bounceHandlerPersistRawCopy(body)
+func (m *module) parseReport(body []byte, remoteAddr string) {
+	m.persistRawCopy(body)
 
 	hdrs, deliveryReports, _, msgHdrs := bounceHandlerParseReportMime(string(body))
 	bounceReasons, rcptReportsHdrs := bounceHandlerGetBounceReasons(deliveryReports)
@@ -193,36 +178,39 @@ func bounceHandlerParseReport(body []byte, remoteAddr string) {
 
 	date, _ := hdrs.Date()
 	bounce := &bounceHandlerBounce{
-		instance:    instance,
+		instance:    m.Instance(),
 		date:        &date,
 		mta:         bounceReasons.Get("Reporting-MTA"),
 		queueId:     bounceReasons.Get("X-Postfix-Queue-Id"),
 		sender:      bounceReasons.Get("X-Postfix-Sender"),
-		messageId:   bounceHandlerGetMessageId(msgHdrs, bounceReasons.Get("X-Postfix-Queue-Id")),
+		messageId:   m.getMessageId(msgHdrs, bounceReasons.Get("X-Postfix-Queue-Id")),
 		rcptReports: rcptReports,
 	}
 
-	bounceHandlerSaveBounce(bounce)
+	m.saveBounce(bounce)
 	if bayesReason != "" {
-		go bayesReportMessageId(true, bounce.messageId, bounce.mta, "__MTA", bayesReason)
+		bayes := (*m.Module("bayes", "")).(bayesModule)
+		if bayes != nil {
+			go bayes.ReportMessageId(true, bounce.messageId, bounce.mta, "__MTA", bayesReason)
+		}
 
 		queueId := bounceHandlerGetHeaderFromBytes(deliveryReports, "X-Postfix-Queue-ID")
-		mailQueueDeleteItems([]string{queueId})
+		core.MailQueueDeleteItems([]string{queueId}) // TODO: Once this becomes a module...
 	}
-	Log.Infof("Successfully saved %d reports from %s", len(rcptReports), remoteAddr)
+	m.Log().Infof("Successfully saved %d reports from %s", len(rcptReports), remoteAddr)
 }
 
-func bounceHandlerGetMessageId(msg []byte, queueId string) string {
-	r := strings.NewReader(string(msg) + "\r\n\r\n")
-	m, err := mail.ReadMessage(r)
+func (m *module) getMessageId(msgBytes []byte, queueId string) string {
+	r := strings.NewReader(string(msgBytes) + "\r\n\r\n")
+	msg, err := mail.ReadMessage(r)
 	if err != nil {
 		return ""
 	}
 
-	if id := m.Header.Get("Message-Id"); id != "" {
+	if id := msg.Header.Get("Message-Id"); id != "" {
 		return id
 	}
-	return messageGenerateMessageId(queueId, "")
+	return core.MessageGenerateMessageId(queueId, "")
 }
 
 func bounceHandlerGetHeaderFromBytes(msg []byte, header string) string {
@@ -308,9 +296,8 @@ func bounceHandlerParseReportMime(msg string) (bounceHdrs mail.Header, deliveryR
 	}
 }
 
-func bounceHandlerSaveBounce(bounce *bounceHandlerBounce) {
-	StatsCounters["RdbmsQueries"].increase(1)
-	res, err := BounceHandlerSaveBounceStmt.Exec(
+func (m *module) saveBounce(bounce *bounceHandlerBounce) {
+	res, err := m.bounceHandlerSaveBounceStmt.Exec(
 		bounce.instance, bounce.date, bounce.mta, bounce.queueId, bounce.messageId, bounce.sender,
 	)
 	if err != nil {
@@ -323,8 +310,7 @@ func bounceHandlerSaveBounce(bounce *bounceHandlerBounce) {
 	}
 
 	for _, report := range bounce.rcptReports {
-		StatsCounters["RdbmsQueries"].increase(1)
-		_, err := BounceHandlerSaveBounceReportStmt.Exec(
+		_, err := m.bounceHandlerSaveBounceReportStmt.Exec(
 			id, report.status, report.origRecipient, report.finalRecipient, report.remoteMta, report.diagCode,
 		)
 		if err != nil {
@@ -333,27 +319,27 @@ func bounceHandlerSaveBounce(bounce *bounceHandlerBounce) {
 	}
 }
 
-func bounceHandlerPersistRawCopy(body []byte) {
-	defer CluegetterRecover("bounceHandlerPersistRawCopy")
+func (m *module) persistRawCopy(body []byte) {
+	defer core.CluegetterRecover("bounceHandlerPersistRawCopy")
 
-	if Config.BounceHandler.Dump_Dir == "" {
+	if m.config().Dump_Dir == "" {
 		return
 	}
 
-	f, err := ioutil.TempFile(Config.BounceHandler.Dump_Dir, "cluegetter-deliveryreport-")
+	f, err := ioutil.TempFile(m.config().Dump_Dir, "cluegetter-deliveryreport-")
 	if err != nil {
-		Log.Errorf("Could not open file for delivery report: %s", err.Error())
+		m.Log().Errorf("Could not open file for delivery report: %s", err.Error())
 		return
 	}
 
 	defer f.Close()
 	count, err := f.Write(body)
 	if err != nil {
-		Log.Errorf("Wrote %d bytes to %s, then got error: %s", count, f.Name(), err.Error())
+		m.Log().Errorf("Wrote %d bytes to %s, then got error: %s", count, f.Name(), err.Error())
 		return
 	}
 
-	Log.Debugf("Wrote %d bytes to %s", count, f.Name())
+	m.Log().Debugf("Wrote %d bytes to %s", count, f.Name())
 }
 
 // We only want to add emails to our bayes corpus if the remote
@@ -365,7 +351,7 @@ func bounceHandlerShouldReportBayes(diagCode string) bool {
 		"unsolicited",
 		"contained unsafe content",
 
-		"x-unix", // DEBUG
+		// "x-unix", // DEBUG
 	}
 
 	for _, match := range matches {

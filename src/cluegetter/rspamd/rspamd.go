@@ -2,7 +2,7 @@
 //
 // Copyright 2016 Dolf Schimmel, Freeaqingme.
 //
-// This Source Code Form is subject to the terms of the two-clause BSD license.
+// This Source Code Form is subject to the terms of the Apache License, Version 2.0.
 // For its contents, please refer to the LICENSE file.
 //
 package rspamd
@@ -22,8 +22,6 @@ const ModuleName = "rspamd"
 
 type module struct {
 	*core.BaseModule
-
-	cg *core.Cluegetter
 }
 
 type rspamdResponseCheckResult struct {
@@ -48,19 +46,17 @@ type rspamdResponse struct {
 }
 
 func init() {
-	core.ModuleRegister(&module{})
+	core.ModuleRegister(&module{
+		BaseModule: core.NewBaseModule(nil),
+	})
 }
 
 func (m *module) Name() string {
 	return ModuleName
 }
 
-func (m *module) SetCluegetter(cg *core.Cluegetter) {
-	m.cg = cg
-}
-
 func (m *module) Enable() bool {
-	return m.cg.Config.Rspamd.Enabled
+	return m.Config().Rspamd.Enabled
 }
 
 func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCheckResult {
@@ -91,7 +87,7 @@ func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCh
 		Score: score,
 		Determinants: map[string]interface{}{
 			"response":   parsedResponse,
-			"multiplier": m.cg.Config.Rspamd.Multiplier,
+			"multiplier": m.Config().Rspamd.Multiplier,
 		},
 	}
 }
@@ -121,7 +117,7 @@ func (m *module) parseRawResult(rawResult interface{}) *rspamdResponse {
 					res.Default.Action = vv.(string)
 				default:
 					if strings.ToUpper(kk) != kk {
-						m.cg.Log.Noticef("Received unknown key in 'default' from Rspamd: ", kk)
+						m.Log().Noticef("Received unknown key in 'default' from Rspamd: ", kk)
 						continue
 					}
 
@@ -164,7 +160,7 @@ func (m *module) getRawResult(msg *core.Message) (interface{}, error) {
 	sess := *msg.Session()
 	var reqBody = msg.String()
 
-	url := fmt.Sprintf("http://%s:%d/check", m.cg.Config.Rspamd.Host, m.cg.Config.Rspamd.Port)
+	url := fmt.Sprintf("http://%s:%d/check", m.Config().Rspamd.Host, m.Config().Rspamd.Port)
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, bytes.NewBuffer(reqBody))
 	if err != nil {

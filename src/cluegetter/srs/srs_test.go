@@ -129,10 +129,10 @@ func testGetSrsModule() *srsModule {
 	module := &srsModule{
 		cg: &core.Cluegetter{},
 	}
-	core.DefaultConfig(&module.cg.Config)
-	module.cg.Config.Srs.Enabled = true
+	core.DefaultConfig(&module.cg.config)
+	module.cg.config.Srs.Enabled = true
 
-	module.cg.Log = logging.Open("testing", "DEBUG")
+	module.cg.log = logging.Open("testing", "DEBUG")
 
 	return module
 }

@@ -2,7 +2,7 @@
 //
 // Copyright 2016 Dolf Schimmel, Freeaqingme.
 //
-// This Source Code Form is subject to the terms of the two-clause BSD license.
+// This Source Code Form is subject to the terms of the Apache License, Version 2.0.
 // For its contents, please refer to the LICENSE file.
 //
 package elasticsearch
@@ -16,14 +16,17 @@ import (
 	"cluegetter/core"
 
 	"gopkg.in/olivere/elastic.v3"
+	"strings"
 )
 
 const ModuleName = "elasticsearch"
 
+// Needs updating with every significant mapping update
+const mappingVersion = "1"
+
 type module struct {
 	*core.BaseModule
 
-	cg       *core.Cluegetter
 	esClient *elastic.Client
 }
 
@@ -32,38 +35,49 @@ type session struct {
 }
 
 func init() {
-	core.ModuleRegister(&module{})
+	core.ModuleRegister(&module{
+		BaseModule: core.NewBaseModule(nil),
+	})
 }
 
 func (m *module) Name() string {
 	return ModuleName
 }
 
-func (m *module) SetCluegetter(cg *core.Cluegetter) {
-	m.cg = cg
-}
-
 func (m *module) Enable() bool {
-	return m.cg.Config.Elasticsearch.Enabled
+	return m.Config().Elasticsearch.Enabled
 }
 
 func (m *module) Init() {
 	var err error
 	m.esClient, err = elastic.NewClient(
-		elastic.SetSniff(m.cg.Config.Elasticsearch.Sniff),
-		elastic.SetURL(m.cg.Config.Elasticsearch.Url...),
+		elastic.SetSniff(m.Config().Elasticsearch.Sniff),
+		elastic.SetURL(m.Config().Elasticsearch.Url...),
 	)
 	if err != nil {
-		m.cg.Log.Fatalf("Could not connect to ElasticSearch: %s", err.Error())
+		m.Log().Fatalf("Could not connect to ElasticSearch: %s", err.Error())
 	}
 
 	template := `{
-  "template": "cluegetter-*",
+  "template": "cluegetter-*-%%MAPPING_VERSION%%",
   "settings": {
     "number_of_shards": 5
   },
   "aliases" : {
     "cluegetter-sessions" : {}
+  },
+  "settings":{
+    "analysis": {
+      "analyzer": {
+        "lowercase": {
+          "type": "custom",
+          "tokenizer": "keyword",
+          "filter": [
+            "lowercase"
+          ]
+        }
+      }
+    }
   },
   "mappings": {
     "session": {
@@ -75,12 +89,12 @@ func (m *module) Init() {
         "DateConnect":    { "type": "date"    },
         "DateDisconnect": { "type": "date"    },
         "SaslUsername":   {
-          "type":  "string",
-          "index": "not_analyzed"
+          "type":     "string",
+          "analyzer": "lowercase"
         },
         "SaslSender":     {
-          "type":  "string",
-          "index": "not_analyzed"
+          "type":     "string",
+          "analyzer": "lowercase"
         },
         "SaslMethod":     {
           "type":  "string",
@@ -94,8 +108,8 @@ func (m *module) Init() {
           "index": "not_analyzed"
         },
         "Ip":             {
-          "type":  "string",
-          "index": "not_analyzed"
+          "type":     "string",
+          "analyzer": "lowercase"
         },
         "ReverseDns":     { "type": "string"  },
         "Hostname":       { "type": "string"  },
@@ -114,11 +128,11 @@ func (m *module) Init() {
               "properties": {
                 "Local": {
                   "type":     "string",
-                  "analyzer": "simple"
+                  "analyzer": "lowercase"
                 },
                 "Domain": {
                   "type":     "string",
-                  "analyzer": "simple"
+                  "analyzer": "lowercase"
                 }
               }
             },
@@ -127,11 +141,11 @@ func (m *module) Init() {
               "properties": {
                 "Local":  {
                   "type":     "string",
-                  "analyzer": "simple"
+                  "analyzer": "lowercase"
                 },
                 "Domain": {
                   "type":     "string",
-                  "analyzer": "simple"
+                  "analyzer": "lowercase"
                 }
               }
             },
@@ -148,8 +162,8 @@ func (m *module) Init() {
             "BodyHash":               { "type": "string"  },
             "Verdict":                { "type": "integer" },
             "VerdictMsg":             {
-              "type":  "string",
-              "index": "not_analyzed"
+              "type":     "string",
+              "analyzer": "simple"
             },
             "RejectScore":            { "type": "float"   },
             "RejectScoreThreshold":   { "type": "float"   },
@@ -180,9 +194,11 @@ func (m *module) Init() {
 }
 	`
 
-	_, err = m.esClient.IndexPutTemplate("cluegetter").BodyString(template).Do()
+	template = strings.Replace(template, "%%MAPPING_VERSION%%", mappingVersion, -1)
+
+	_, err = m.esClient.IndexPutTemplate("cluegetter-" + mappingVersion).BodyString(template).Do()
 	if err != nil {
-		m.cg.Log.Fatalf("Could not create ES template: %s", err.Error())
+		m.Log().Fatalf("Could not create ES template: %s", err.Error())
 	}
 }
 
@@ -202,14 +218,14 @@ func (m *module) persistSession(coreSess *core.MilterSession) {
 	id := hex.EncodeToString(sess.Id())
 
 	_, err := m.esClient.Index().
-		Index("cluegetter-" + sess.DateConnect.Format("20060102")).
+		Index("cluegetter-" + sess.DateConnect.Format("20060102") + "-" + mappingVersion).
 		Type("session").
 		Id(id).
 		BodyString(string(str)).
 		Do()
 
 	if err != nil {
-		m.cg.Log.Errorf("Could not index session '%s', error: %s", id, err.Error())
+		m.Log().Errorf("Could not index session '%s', error: %s", id, err.Error())
 		return
 	}
 	//fmt.Printf("Indexed tweet %s to index %s, type %s\n", put1.Id, put1.Index, put1.Type)
@@ -229,7 +245,7 @@ func (s *session) esMarshalJSON(m *module) ([]byte, error) {
 		*Alias
 		EsMessages []*esMessage `json:"Messages"`
 	}{
-		InstanceId: m.cg.Instance(),
+		InstanceId: m.Instance(),
 		Alias:      (*Alias)(s),
 		EsMessages: esMessages,
 	}

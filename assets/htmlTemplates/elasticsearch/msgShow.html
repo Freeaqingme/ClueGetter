@@ -10,25 +10,53 @@
     <dt>MTA</dt>
     <dd>{{printf "%s" $sess.MtaHostName}} ({{printf "%s" $sess.MtaDaemonName}})</dd>
 
-
     <dt>IP</dt>
-    <dd>{{printf "%s" $sess.Ip}}
+    <dd><a href="/message/search/?clientAddress={{printf "%s" $sess.Ip}}">{{printf "%s" $sess.Ip}}</a>
         (RDNS: <i>{{printf "%s" $sess.ReverseDns}}</i>,
         HELO: <i>{{printf "%s" $sess.Helo}}</i>)</dd>
     <dt>Sasl Username</dt>
-    <dd>{{printf "%s" $sess.SaslUsername}} ({{printf "%s" $sess.SaslMethod}})</dd>
+    {{ if ne $sess.SaslUsername "" }}
+        <dd><a href="/message/search/?saslUser={{printf "%s" $sess.SaslUsername}}"
+            >{{printf "%s" $sess.SaslUsername}}</a> ({{printf "%s" $sess.SaslMethod}})
+        </dd>
+    {{ else }}
+        <dd>&nbsp;</dd>
+    {{ end }}
     <dt>Certificate</dt>
-    <dd title="Issued by: {{printf "%s" $sess.CertIssuer}}">{{printf "%s" $sess.CertSubject}}</dd>
-
+    {{ if ne $sess.CertIssuer "" }}
+        <dd title="Issued by: {{printf "%s" $sess.CertIssuer}}">{{printf "%s" $sess.CertSubject}}</dd>
+    {{ else }}
+        <dd>&nbsp;</dd>
+    {{ end }}
     <dt>Cipher</dt>
-    <dd>{{printf "%s" $sess.TlsVersion}} {{printf "%d" $sess.CipherBits}} {{printf "%s" $sess.Cipher}}</dd>
+    {{ if ne $sess.TlsVersion "" }}
+        <dd>{{printf "%s" $sess.TlsVersion}} {{printf "%d" $sess.CipherBits}} {{printf "%s" $sess.Cipher}}</dd>
+    {{ else }}
+        <dd>&nbsp;</dd>
+    {{ end }}
     <dt>Sender</dt>
-    <dd>{{printf "%s" $msg.From.String}}</dd>
+    {{ if ne $msg.From.String "" }}
+        <dd>
+            {{ if eq $msg.From.Domain "" }}
+                <a href="/message/search/?from={{printf "%s" $msg.From.Local}}@">{{printf "%s" $msg.From.String}}</a>
+            {{ else }}
+                <a href="/message/search/?from={{printf "%s" $msg.From.String}}">{{printf "%s" $msg.From.String}}</a>
+            {{ end }}
+        </dd>
+    {{ else }}
+        <dd><i>Null Sender</i></dd>
+    {{ end }}
     <dt>Recipient Count</dt>
     <dd>{{ len $msg.Rcpt }}</dd>
     <dt>Recipients</dt>
     {{ range $key, $value := $msg.Rcpt }}
-        <dd>{{ $value.String }}</dd>
+    <dd>
+        {{ if eq $value.Domain "" }}
+            <a href="/message/search/?to={{ $value.String }}@">{{ $value.String }}</a>
+        {{ else }}
+            <a href="/message/search/?to={{ $value.String }}">{{ $value.String }}</a>
+        {{ end }}
+    </dd>
     {{ end }}
     <dt>Verdict</dt>
     <dd>

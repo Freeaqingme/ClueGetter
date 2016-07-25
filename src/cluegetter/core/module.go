@@ -2,7 +2,7 @@
 //
 // Copyright 2016 Dolf Schimmel, Freeaqingme.
 //
-// This Source Code Form is subject to the terms of the two-clause BSD license.
+// This Source Code Form is subject to the terms of the Apache License, Version 2.0.
 // For its contents, please refer to the LICENSE file.
 //
 package core
@@ -96,9 +96,15 @@ func (cg *Cluegetter) Module(name, caller string) *Module {
 //
 // Name() string
 // Enable() bool
-// SetCluegetter(cg *Cluegetter)
 //
-type BaseModule struct{}
+type BaseModule struct {
+	*Cluegetter
+}
+
+// Arg can be nil
+func NewBaseModule(cg *Cluegetter) *BaseModule {
+	return &BaseModule{cg}
+}
 
 func (m *BaseModule) Init() {}
 
@@ -127,6 +133,10 @@ func (m *BaseModule) Rpc() map[string]chan string {
 
 func (m *BaseModule) HttpHandlers() map[string]HttpCallback {
 	return make(map[string]HttpCallback, 0)
+}
+
+func (m *BaseModule) SetCluegetter(cg *Cluegetter) {
+	m.Cluegetter = cg
 }
 
 //

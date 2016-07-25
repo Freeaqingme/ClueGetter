@@ -2,7 +2,7 @@
 //
 // Copyright 2016 Dolf Schimmel, Freeaqingme.
 //
-// This Source Code Form is subject to the terms of the two-clause BSD license.
+// This Source Code Form is subject to the terms of the Apache License, Version 2.0.
 // For its contents, please refer to the LICENSE file.
 //
 package dkim
@@ -30,7 +30,6 @@ const (
 type module struct {
 	*core.BaseModule
 
-	cg      *core.Cluegetter
 	backend backend
 }
 
@@ -42,35 +41,33 @@ type backend interface {
 }
 
 func init() {
-	core.ModuleRegister(&module{})
+	core.ModuleRegister(&module{
+		BaseModule: core.NewBaseModule(nil),
+	})
 }
 
 func (m *module) Name() string {
 	return ModuleName
 }
 
-func (m *module) SetCluegetter(cg *core.Cluegetter) {
-	m.cg = cg
-}
-
 func (m *module) Enable() bool {
-	return m.cg.Config.Dkim.Enabled
+	return m.Config().Dkim.Enabled
 }
 
 func (m *module) Init() {
-	switch m.cg.Config.Dkim.Backend {
+	switch m.Config().Dkim.Backend {
 	case "file":
 		m.initFileBackend()
 	default:
-		m.cg.Log.Fatalf("Invalid backend specified: %s", m.cg.Config.Dkim.Backend)
+		m.Log().Fatalf("Invalid backend specified: %s", m.Config().Dkim.Backend)
 	}
 }
 
 func (m *module) initFileBackend() {
 	var err error
-	m.backend, err = fileBackend.NewFileBackend(m.cg.Config.Dkim_FileBackend.Key_Path)
+	m.backend, err = fileBackend.NewFileBackend(m.Config().Dkim_FileBackend.Key_Path)
 	if err != nil {
-		m.cg.Log.Fatalf("Could not instantiate DKIM Key Store: %s", err.Error())
+		m.Log().Fatalf("Could not instantiate DKIM Key Store: %s", err.Error())
 	}
 }
 
@@ -165,7 +162,7 @@ func (m *module) signMessage(msg *core.Message) (string, error) {
 		}
 	}
 
-	conf := m.cg.Config.Dkim
+	conf := m.Config().Dkim
 	dkim := dkim.NewDkim()
 	options := dkim.NewSigOptions()
 	options.Domain = domain
@@ -201,7 +198,7 @@ func (m *module) getDkimKeys(msg *core.Message) []*dkim.PubKey {
 	for _, selector := range msg.Session().Config().Dkim.Selector {
 		res, err := dkim.PubKeyFromDns(selector, domain)
 		if err != nil {
-			m.cg.Log.Debug("Could not get DKIM record '%s._domainkey.%s': %s", selector, domain, err.Error())
+			m.Log().Debug("Could not get DKIM record '%s._domainkey.%s': %s", selector, domain, err.Error())
 			continue
 		}
 

@@ -2,7 +2,7 @@
 //
 // Copyright 2016 Dolf Schimmel, Freeaqingme.
 //
-// This Source Code Form is subject to the terms of the two-clause BSD license.
+// This Source Code Form is subject to the terms of the Apache License, Version 2.0.
 // For its contents, please refer to the LICENSE file.
 //
 package core
@@ -92,11 +92,11 @@ func mailQueueStart(deleteQueue chan string) {
 func mailQueueHandleDeleteChannel(deleteQueue chan string) {
 	for queueString := range deleteQueue {
 		queueIds := strings.Split(queueString, " ")
-		go mailQueueDeleteItems(queueIds)
+		go MailQueueDeleteItems(queueIds)
 	}
 }
 
-func mailQueueDeleteItems(queueIds []string) {
+func MailQueueDeleteItems(queueIds []string) {
 	if !Config.MailQueue.Enabled {
 		return
 	}
@@ -408,7 +408,7 @@ func mailQueueHttpDelete(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		err := redisPublish("cluegetter!!mailQueue!delete", []byte(strings.Join(v, " ")))
+		err := RedisPublish("cluegetter!!mailQueue!delete", []byte(strings.Join(v, " ")))
 		if err != nil {
 			panic(err)
 		}

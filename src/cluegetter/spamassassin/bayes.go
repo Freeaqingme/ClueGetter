@@ -2,7 +2,7 @@
 //
 // Copyright 2016 Dolf Schimmel, Freeaqingme.
 //
-// This Source Code Form is subject to the terms of the two-clause BSD license.
+// This Source Code Form is subject to the terms of the Apache License, Version 2.0.
 // For its contents, please refer to the LICENSE file.
 //
 package spamassassin
@@ -18,7 +18,7 @@ import (
 func (m *module) BayesLearn(msg *core.Message, isSpam bool) {
 	bodyStr := string(msg.String())
 
-	host := m.cg.Config.SpamAssassin.Host + ":" + strconv.Itoa(m.cg.Config.SpamAssassin.Port)
+	host := m.Config().SpamAssassin.Host + ":" + strconv.Itoa(m.Config().SpamAssassin.Port)
 	sconf := msg.Session().Config().SpamAssassin
 	client := spamc.New(host, sconf.Timeout, sconf.Connect_Timeout)
 

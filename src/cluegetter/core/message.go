@@ -2,7 +2,7 @@
 //
 // Copyright 2016 Dolf Schimmel, Freeaqingme.
 //
-// This Source Code Form is subject to the terms of the two-clause BSD license.
+// This Source Code Form is subject to the terms of the Apache License, Version 2.0.
 // For its contents, please refer to the LICENSE file.
 //
 package core
@@ -665,7 +665,7 @@ func messageGetMessageId(msg *Message) string {
 	}
 
 	if msg.injectMessageId == "" {
-		messageIdHdr = messageGenerateMessageId(msg.QueueId, sess.getMtaHostName())
+		messageIdHdr = MessageGenerateMessageId(msg.QueueId, sess.getMtaHostName())
 		msg.injectMessageId = messageIdHdr
 	}
 
@@ -691,7 +691,7 @@ func messageAcceptRecipient(rcpt *address.Address) (finalVerdict int, finalMsg s
 	return
 }
 
-func messageGenerateMessageId(queueId, host string) string {
+func MessageGenerateMessageId(queueId, host string) string {
 	if host != "" {
 		host = hostname
 	}
@@ -716,7 +716,7 @@ func messageParseAddress(address string, singleIsUser bool) (local, domain strin
 	return
 }
 
-func (msg *Proto_Message) getAsMessage() *Message {
+func (msg *Proto_Message) GetAsMessage() *Message {
 	out := NewMessage()
 	//	out.session TODO
 	out.QueueId = msg.Id

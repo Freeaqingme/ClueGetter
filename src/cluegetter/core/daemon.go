@@ -2,7 +2,7 @@
 //
 // Copyright 2016 Dolf Schimmel, Freeaqingme.
 //
-// This Source Code Form is subject to the terms of the two-clause BSD license.
+// This Source Code Form is subject to the terms of the Apache License, Version 2.0.
 // For its contents, please refer to the LICENSE file.
 //
 package core
@@ -148,7 +148,7 @@ func daemonIpcHandleConn(conn *net.UnixConn) {
 	}
 }
 
-func daemonIpcSend(handle string, message string) {
+func DaemonIpcSend(handle string, message string) {
 	c, err := net.Dial("unix", Config.ClueGetter.IPC_Socket)
 	if err != nil {
 		// TODO: Why does log.fatal not write to stderr?

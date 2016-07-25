@@ -2,7 +2,7 @@
 //
 // Copyright 2016 Dolf Schimmel, Freeaqingme.
 //
-// This Source Code Form is subject to the terms of the two-clause BSD license.
+// This Source Code Form is subject to the terms of the Apache License, Version 2.0.
 // For its contents, please refer to the LICENSE file.
 //
 package core
@@ -94,7 +94,7 @@ func redisStart() {
 
 	RedisLPushChan = make(chan *RedisKeyValue, 255)
 	redisClient = redisNewClient()
-	cg.Redis = redisClient
+	cg.redis = redisClient
 
 	go redisChannelListener()
 
@@ -258,7 +258,7 @@ func redisGetServices() []*service {
 	return out
 }
 
-func redisPublish(key string, msg []byte) error {
+func RedisPublish(key string, msg []byte) error {
 	var logMsg string
 	if len(logMsg) > 128 {
 		logMsg = string(logMsg[:128]) + "..."

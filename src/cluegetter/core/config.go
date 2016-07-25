@@ -2,7 +2,7 @@
 //
 // Copyright 2016 Dolf Schimmel, Freeaqingme.
 //
-// This Source Code Form is subject to the terms of the two-clause BSD license.
+// This Source Code Form is subject to the terms of the Apache License, Version 2.0.
 // For its contents, please refer to the LICENSE file.
 //
 package core
@@ -64,16 +64,9 @@ type config struct {
 	}
 	HttpFrontend  map[string]*ConfigHttpFrontend
 	LuaModule     map[string]*ConfigLuaModule
-	BounceHandler struct {
-		Enabled     bool
-		Listen_Port string
-		Listen_Host string
-		Dump_Dir    string
-	}
-	Bayes struct {
-		Enabled bool
-	}
-	MailQueue struct {
+	BounceHandler ConfigBounceHandler
+	Bayes         ConfigBayes
+	MailQueue     struct {
 		Enabled             bool
 		Spool_Dir           string
 		Update_Interval     int
@@ -138,6 +131,17 @@ type config struct {
 		Max_Size        int
 		Verdict_Msg     []string
 	}
+}
+
+type ConfigBayes struct {
+	Enabled bool
+}
+
+type ConfigBounceHandler struct {
+	Enabled     bool
+	Listen_Port string
+	Listen_Host string
+	Dump_Dir    string
 }
 
 type ConfigHttpFrontend struct {

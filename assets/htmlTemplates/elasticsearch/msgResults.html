@@ -13,6 +13,7 @@
     </tr>
     {{ range $sessid, $session := .Results.Sessions }}
         {{ range $msgId, $msg := .Messages }}
+        {{ if ne $msg.QueueId "" }}
         <tr>
             <td><a href="/message/{{ $msg.QueueId }}">{{ $msg.QueueId }}</a></td>
             <td>{{ $msg.Date.Format "2006-01-02 15:04:05 -0700 MST" }}</td>
@@ -37,7 +38,7 @@
                 {{ end }}
             </td>
         </tr>
-        {{ end }}
+        {{ end }}{{ end }}
     {{ end }}
 </table>
 
