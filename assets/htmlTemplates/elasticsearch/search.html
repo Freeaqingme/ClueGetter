@@ -208,6 +208,34 @@
                         {{ end }}
                     </li>
 
+                    <li>
+                        <label>Verdict</label><br />
+                        <label for="input-verdict-0" title="">
+                            <input type="checkbox" name="verdict" value="0"
+                                   id="input-verdict-0"
+                                   {{ range $k, $v := .Finder.Verdicts }}{{ if eq $v 0 }}checked="checked"{{end}}{{end}}
+                            /> Permit
+                        </label>
+                        <label for="input-verdict-1" title="">
+                            <input type="checkbox" name="verdict" value="1"
+                                   id="input-verdict-1"
+                                   {{ range $k, $v := .Finder.Verdicts }}{{ if eq $v 0 }}checked="checked"{{end}}{{end}}
+                            /> Tempfail
+                        </label><br/>
+                        <label for="input-verdict-2" title="">
+                            <input type="checkbox" name="verdict" value="2"
+                                   id="input-verdict-2"
+                                   {{ range $k, $v := .Finder.Verdicts }}{{ if eq $v 0 }}checked="checked"{{end}}{{end}}
+                            /> Reject
+                        </label>
+                        <label for="input-verdict-3" title="">
+                            <input type="checkbox" name="verdict" value="3"
+                                   id="input-verdict-3"
+                                   {{ range $k, $v := .Finder.Verdicts }}{{ if eq $v 0 }}checked="checked"{{end}}{{end}}
+                            /> Error
+                        </label>
+                    </li>
+
                 </ul>
             </form>
         </div>

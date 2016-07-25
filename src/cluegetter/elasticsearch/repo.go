@@ -70,6 +70,7 @@ type Finder struct {
 	dateStart     *time.Time
 	dateEnd       *time.Time
 	instances     []string
+	verdicts      []int
 }
 
 type FinderResponse struct {
@@ -87,6 +88,8 @@ func (m *module) NewFinder() *Finder {
 
 		from: &address.Address{},
 		to:   &address.Address{},
+
+		verdicts: []int{0, 1, 2, 3},
 	}
 }
 
@@ -122,6 +125,10 @@ func (f *Finder) Instances() []string {
 	return f.instances
 }
 
+func (f *Finder) Verdicts() []int {
+	return f.verdicts
+}
+
 func (f *Finder) SetFrom(from *address.Address) *Finder {
 	f.from = from
 	return f
@@ -154,6 +161,11 @@ func (f *Finder) SetDateEnd(end *time.Time) *Finder {
 
 func (f *Finder) SetInstances(instances []string) *Finder {
 	f.instances = instances
+	return f
+}
+
+func (f *Finder) SetVerdicts(verdicts []int) *Finder {
+	f.verdicts = verdicts
 	return f
 }
 
@@ -245,6 +257,14 @@ func (f *Finder) query(service *elastic.SearchService) *elastic.SearchService {
 	}
 	if f.queueId != "" {
 		qMsg.Must(elastic.NewMatchQuery("Messages.QueueId", f.queueId))
+		searchMessages = true
+	}
+	if len(f.verdicts) != 0 {
+		qVerdict := elastic.NewBoolQuery()
+		for _, verdict := range f.verdicts {
+			qVerdict.Should(elastic.NewTermQuery("Messages.Verdict", verdict))
+		}
+		qMsg.Must(qVerdict)
 		searchMessages = true
 	}
 

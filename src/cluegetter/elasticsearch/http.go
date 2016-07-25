@@ -101,6 +101,19 @@ func (m *module) httpHandlerMessageSearch(w http.ResponseWriter, r *http.Request
 		f = f.SetQueueId(r.FormValue("queueId"))
 		f = f.SetInstances(instances)
 
+		if len(r.Form["verdict"]) > 0 {
+			verdicts := make([]int, 0)
+			for _, v := range r.Form["verdict"] {
+				var verdict int
+				if verdict, err = strconv.Atoi(v); err != nil {
+					http.Error(w, "Invalid verdict specified", http.StatusBadRequest)
+					return
+				}
+				verdicts = append(verdicts, verdict)
+			}
+			f.SetVerdicts(verdicts)
+		}
+
 		viewData.Results, err = f.Find()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
