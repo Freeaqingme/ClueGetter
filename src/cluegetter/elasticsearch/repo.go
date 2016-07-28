@@ -11,53 +11,11 @@ import (
 	"encoding/json"
 
 	"cluegetter/address"
+	"cluegetter/core"
 
 	"gopkg.in/olivere/elastic.v3"
 	"time"
 )
-
-func (m *module) getSessionsByAddress(instances []string, address *address.Address) ([]*session, error) {
-	query := elastic.NewBoolQuery().Must(
-		elastic.NewTermsQuery("InstanceId", stringSliceToIface(instances)...),
-		elastic.NewNestedQuery("Messages",
-			elastic.NewBoolQuery().Should(
-				addressQuery("Messages.From", address),
-				elastic.NewNestedQuery("Messages.Rcpt",
-					addressQuery("Messages.Rcpt", address),
-				),
-			),
-		),
-	)
-
-	sr, err := m.esClient.Search().
-		Index("cluegetter-sessions").
-		Query(query).
-		Sort("DateConnect", false).
-		From(0).Size(250).
-		//Pretty(true).
-		Do()
-	if err != nil {
-		return nil, err
-	}
-
-	sessions := make([]*session, 0)
-	if sr == nil || sr.TotalHits() == 0 {
-		return sessions, nil
-	}
-
-	for _, hit := range sr.Hits.Hits {
-		session := &session{}
-		if err := json.Unmarshal(*hit.Source, session); err != nil {
-			return nil, err
-		}
-		for _, msg := range session.Messages {
-			msg.SetSession(session.MilterSession)
-		}
-		sessions = append(sessions, session)
-	}
-
-	return sessions, nil
-}
 
 type Finder struct {
 	module *module
@@ -239,7 +197,7 @@ func (f *Finder) aggs(service *elastic.SearchService) *elastic.SearchService {
 
 func (f *Finder) query(service *elastic.SearchService) *elastic.SearchService {
 	q := elastic.NewBoolQuery()
-	if len(f.instances) > 0 {
+	if len(f.instances) > 0 && len(f.instances) != len(core.HttpGetInstances()) {
 		q.Must(elastic.NewTermsQuery("InstanceId", stringSliceToIface(f.instances)...))
 	}
 
@@ -259,7 +217,7 @@ func (f *Finder) query(service *elastic.SearchService) *elastic.SearchService {
 		qMsg.Must(elastic.NewMatchQuery("Messages.QueueId", f.queueId))
 		searchMessages = true
 	}
-	if len(f.verdicts) != 0 {
+	if len(f.verdicts) != 0 && len(f.verdicts) != 4 {
 		qVerdict := elastic.NewBoolQuery()
 		for _, verdict := range f.verdicts {
 			qVerdict.Should(elastic.NewTermQuery("Messages.Verdict", verdict))
