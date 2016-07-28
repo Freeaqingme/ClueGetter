@@ -49,6 +49,10 @@
 
 {{ define "script_footer" }}
 <script type="text/javascript">
+/* This needs some work:
+- Make sure there's a spinning cog showing that we're still fetching results
+- Make sure that after 10 searches this snippet of code is not loaded 10 times
+  (and each search is also executed that many times, quadratically)
 
     $("#form-search").submit(function (e) {
         e.preventDefault();
@@ -59,6 +63,8 @@
             $( "#searchResults" ).html( data );
         });
     });
+
+*/
 
     var drawGraph = function(chartId, data, title) {
         var dataPoints = []
