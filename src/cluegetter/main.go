@@ -26,6 +26,7 @@ import (
 	_ "cluegetter/elasticsearch"
 	_ "cluegetter/greylisting"
 	_ "cluegetter/lua"
+	_ "cluegetter/quotas"
 	_ "cluegetter/rspamd"
 	_ "cluegetter/spamassassin"
 	_ "cluegetter/srs"
