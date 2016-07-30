@@ -9,6 +9,8 @@ package core
 
 import (
 	"cluegetter/address"
+
+	logging "github.com/Freeaqingme/GoDaemonSkeleton/log"
 )
 
 type Module interface {
@@ -104,6 +106,20 @@ type BaseModule struct {
 // Arg can be nil
 func NewBaseModule(cg *Cluegetter) *BaseModule {
 	return &BaseModule{cg}
+}
+
+func NewBaseModuleForTesting(configuration *config) (*BaseModule, *config) {
+	if configuration == nil {
+		configuration = &config{}
+		DefaultConfig(configuration)
+	}
+
+	return &BaseModule{
+		Cluegetter: &Cluegetter{
+			config: configuration,
+			log:    logging.Open("testing", "DEBUG"),
+		},
+	}, configuration
 }
 
 func (m *BaseModule) Init() {}

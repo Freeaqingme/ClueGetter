@@ -17,7 +17,7 @@ var (
 )
 
 type Cluegetter struct {
-	config config
+	config *config
 	log    *log.Logger
 	redis  RedisClient
 
@@ -29,7 +29,7 @@ type Cluegetter struct {
 }
 
 func (cg *Cluegetter) Config() config {
-	return cg.config
+	return *cg.config
 }
 
 func (cg *Cluegetter) Log() *log.Logger {
@@ -87,7 +87,7 @@ func CluegetterRecover(funcName string) {
 }
 
 func InitCg() *Cluegetter {
-	cg.config = Config
+	cg.config = &Config
 	cg.log = Log
 	cg.instance = instance
 
