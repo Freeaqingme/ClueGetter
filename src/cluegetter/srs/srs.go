@@ -138,6 +138,10 @@ func (m *srsModule) getFromAddress(msg *core.Message) string {
 		return ""
 	}
 
+	if msg.From.String() == "" {
+		return "" // Null Sender
+	}
+
 	domain := m.getRewriteDomain(msg)
 	if domain == "" {
 		m.Log().Debugf("Could not determine SRS domain for %s", msg.QueueId)

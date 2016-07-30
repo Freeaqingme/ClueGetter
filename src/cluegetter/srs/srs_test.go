@@ -5,8 +5,6 @@ import (
 
 	"cluegetter/address"
 	"cluegetter/core"
-
-	logging "github.com/Freeaqingme/GoDaemonSkeleton/log"
 )
 
 func TestIsForwardedWithoutOrigHeader(t *testing.T) {
@@ -15,10 +13,7 @@ func TestIsForwardedWithoutOrigHeader(t *testing.T) {
 		Rcpt: append(rcpt, address.FromString("srs@example.com")),
 	}
 
-	module := &srsModule{
-		cg: &core.Cluegetter{},
-	}
-
+	module := testGetSrsModule()
 	if module.isForwarded(msg) {
 		t.Fatal("Message without X-Orig-To header was said to be forwarded")
 	}
@@ -125,14 +120,29 @@ func TestGetFromAddress(t *testing.T) {
 	}
 }
 
-func testGetSrsModule() *srsModule {
-	module := &srsModule{
-		cg: &core.Cluegetter{},
+func TestGetFromAddressNullSender(t *testing.T) {
+	rcpt := []*address.Address{
+		address.FromString("bob@example.com"),
 	}
-	core.DefaultConfig(&module.cg.config)
-	module.cg.config.Srs.Enabled = true
+	msg := &core.Message{
+		QueueId: "1337",
+		From:    address.FromString(""),
+		Rcpt:    rcpt,
+	}
+	msg.Headers = append(msg.Headers, core.MessageHeader{Key: "X-Original-To", Value: "carol@example.org"})
 
-	module.cg.log = logging.Open("testing", "DEBUG")
+	if res := testGetSrsModule().getFromAddress(msg); res != "" {
+		t.Fatalf("Expected From Address '' (Null Sender) but got '%s'", res)
+	}
+}
+
+func testGetSrsModule() *srsModule {
+	baseMod, config := core.NewBaseModuleForTesting(nil)
+
+	module := &srsModule{
+		BaseModule: baseMod,
+	}
+	config.Srs.Enabled = true
 
 	return module
 }
