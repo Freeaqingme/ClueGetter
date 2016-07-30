@@ -21,6 +21,7 @@ import (
 import (
 	_ "cluegetter/bayes"
 	_ "cluegetter/bounceHandler"
+	_ "cluegetter/clamav"
 	_ "cluegetter/dkim"
 	_ "cluegetter/elasticsearch"
 	_ "cluegetter/greylisting"
