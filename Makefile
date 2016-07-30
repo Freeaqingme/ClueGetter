@@ -51,6 +51,10 @@ clean:
 	rm -rf src/cluegetter/assets/
 	go clean -i -r cluegetter
 
+.PHONY: test
+test:
+	go test -tags '$(BUILDTAGS)' -ldflags '$(LDFLAGS)' cluegetter/...
+
 .PHONY: deb
 deb: release
 	rm -rf pkg_root/
@@ -93,23 +97,3 @@ deb: release
 		--config-files /etc/cluegetter/cluegetter.conf \
 		--directories /var/run/cluegetter \
 		.
-
-
-
-.PHONY: check
-check:
-	@echo "checking for forbidden imports"
-	@echo "vet"
-	@! $(GO) tool vet $(PKG) 2>&1 | \
-	  grep -vE '^vet: cannot process directory .git'
-	@echo "vet --shadow"
-	@! $(GO) tool vet --shadow $(PKG) 2>&1
-	@echo "golint"
-	@! golint $(PKG)
-	@echo "varcheck"
-	@! varcheck -e $(PKG) | \
-	  grep -vE '(_string.go|sql/parser/(yacctab|sql\.y))'
-	@echo "gofmt (simplify)"
-	@! gofmt -s -d -l . 2>&1 | grep -vE '^\.git/'
-	@echo "goimports"
-	@! goimports -l . | grep -vF 'No Exceptions'

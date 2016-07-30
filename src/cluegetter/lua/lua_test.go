@@ -1,7 +1,9 @@
-package core
+package lua
 
 import (
 	"testing"
+
+	"cluegetter/core"
 )
 
 func TestLuaMilterCheckPermit(t *testing.T) {
@@ -61,20 +63,22 @@ return module
 }
 
 func testLuaMilterCheck(t *testing.T, luaScript, message string, action int, score float64) {
-	config := GetNewConfig()
-	config.LuaModule = make(map[string]*ConfigLuaModule)
-	config.LuaModule["test"] = &ConfigLuaModule{
+	core.DaemonReset()
+
+	module, config := getTestModule()
+
+	config["test"] = &core.ConfigLuaModule{
 		Enabled:        true,
 		ScriptContents: luaScript,
 	}
 
-	SetConfig(config)
-	LuaStart()
-
+	module.Init()
 	done := make(chan bool)
-	res := LuaMilterCheck("test", &Message{}, done)
-	LuaReset()
-	DaemonReset()
+	res := module.modules["test"].MessageCheck(&core.Message{}, done)
+
+	if res == nil {
+		t.Fatal("Expected an instance of MessageCheckResult, but got <nil>")
+	}
 
 	if res.Module != "lua-test" {
 		t.Fatal("Expected module name 'lua-test', but got:", res.Module)
@@ -91,4 +95,14 @@ func testLuaMilterCheck(t *testing.T, luaScript, message string, action int, sco
 	if res.Score != score {
 		t.Fatalf("Expected score '%f', but got: %f", score, res.Score)
 	}
+}
+
+func getTestModule() (*module, map[string]*core.ConfigLuaModule) {
+	baseMod, config := core.NewBaseModuleForTesting(nil)
+
+	module := &module{
+		BaseModule: baseMod,
+	}
+
+	return module, config.LuaModule
 }

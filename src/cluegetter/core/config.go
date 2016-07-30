@@ -340,6 +340,8 @@ func DefaultConfig(cfg *config) {
 	cfg.SpamAssassin.Connect_Timeout = 0.1
 	cfg.SpamAssassin.Max_Size = 500000 // Default SA max file size: 512 KB
 	cfg.SpamAssassin.Verdict_Msg = []string{}
+
+	cfg.LuaModule = make(map[string]*ConfigLuaModule)
 }
 
 func GetNewConfig() *config {

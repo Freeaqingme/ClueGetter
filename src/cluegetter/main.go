@@ -24,6 +24,7 @@ import (
 	_ "cluegetter/dkim"
 	_ "cluegetter/elasticsearch"
 	_ "cluegetter/greylisting"
+	_ "cluegetter/lua"
 	_ "cluegetter/rspamd"
 	_ "cluegetter/spamassassin"
 	_ "cluegetter/srs"
