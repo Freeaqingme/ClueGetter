@@ -422,7 +422,7 @@ func (m *module) quotasRedisAddMsg(quotasKey *string, count int) func(*core.Mess
 	localCount := count
 
 	return func(msg *core.Message, verdict int) {
-		if verdict != 0 { // TODO: Verify what to do with other statuses!?
+		if verdict != int(core.Proto_Message_PERMIT) && verdict != int(core.Proto_Message_REJECT) {
 			return
 		}
 
