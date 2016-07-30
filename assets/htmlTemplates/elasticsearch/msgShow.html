@@ -102,7 +102,20 @@
     {{ range $key, $value := $msg.CheckResults }}
     <tr>
         <td>{{ $value.Module }}</td>
-        <td>{{ $value.SuggestedAction }}</td>
+        <td>
+            {{ if eq $value.SuggestedAction 0 }}
+            permit
+            {{ end }}
+            {{ if eq $value.SuggestedAction 1 }}
+            tempfail
+            {{ end }}
+            {{ if eq $value.SuggestedAction 2 }}
+            reject
+            {{ end }}
+            {{ if eq $value.SuggestedAction 3 }}
+            error
+            {{ end }}
+        </td>
         <td>{{ printf "%.3f" $value.Duration.Seconds }} s</td>
         <td>{{ printf "%.2f" $value.Score }}
             {{ if ne $value.WeightedScore $value.Score }}
