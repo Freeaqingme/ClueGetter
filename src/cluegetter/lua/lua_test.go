@@ -56,10 +56,54 @@ module.milterCheck = function(message)
     return "ERROR", "", -25.4
 end
 
+module.sessionConfigure = function(session)
+    session:config("Greylisting.Enabled", true)
+end
+
 return module
 	`
 
 	testLuaMilterCheck(t, luaScript, "", 3, -25.4)
+}
+
+func TestSessionConfigure(t *testing.T) {
+	luaScript := `
+local module = {}
+
+module.milterCheck = function(message)
+    return "ERROR", "", -25.4
+end
+
+module.sessionConfigure = function(session)
+    session:config("Greylisting.Enabled", true)
+    session:config("DkIm.sIgn", "foobar")
+end
+
+return module
+	`
+
+	core.DaemonReset()
+
+	module, config := getTestModule()
+
+	config["test"] = &core.ConfigLuaModule{
+		Enabled:        true,
+		ScriptContents: luaScript,
+	}
+
+	module.Init()
+
+	cg := core.NewCluegetter()
+	sess := cg.NewMilterSession()
+	module.modules["test"].SessionConfigure(sess)
+
+	if !sess.Config().Greylisting.Enabled {
+		t.Fatal("Greylisting should have been Enabled, but wasn't")
+	}
+
+	if sess.Config().Dkim.Sign != "foobar" {
+		t.Fatalf("Expected Dkim.Sign to be 'foobar', but got: %s", sess.Config().Dkim.Sign)
+	}
 }
 
 func testLuaMilterCheck(t *testing.T, luaScript, message string, action int, score float64) {

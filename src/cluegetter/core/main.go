@@ -75,6 +75,19 @@ func (cg *Cluegetter) Rdbms() *sql.DB {
 	return Rdbms
 }
 
+func (cg *Cluegetter) NewMilterSession() *MilterSession {
+	return &MilterSession{
+		config: (*cg.config).sessionConfig(),
+	}
+}
+
+func NewCluegetter() *Cluegetter {
+	return &Cluegetter{
+		modules: make([]Module, 0),
+		config:  GetNewConfig(),
+	}
+}
+
 func CluegetterRecover(funcName string) {
 	if Config.ClueGetter.Exit_On_Panic {
 		return
