@@ -180,7 +180,7 @@ func (m *module) quotasRedisUpdateFromRdbms() {
 	if err != nil {
 		m.Log().Errorf("Could not update quotasRedisUpdateFromRdbms schedule: %s", err.Error())
 	} else if !set {
-		m.Log().Debugf("Update Quotas From Rdbms was run recently. Sipping")
+		m.Log().Debugf("Update Quotas From Rdbms was run recently. Skipping")
 		return
 	}
 
