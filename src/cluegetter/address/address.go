@@ -10,11 +10,17 @@ package address
 import (
 	"encoding/json"
 	"strings"
+	"sync"
+
+	"github.com/weppos/publicsuffix-go/publicsuffix"
 )
 
 type Address struct {
 	local  string
 	domain string
+
+	sld   string // Second Level Domain
+	sldMu sync.RWMutex
 }
 
 func (a *Address) Local() string {
@@ -23,6 +29,33 @@ func (a *Address) Local() string {
 
 func (a *Address) Domain() string {
 	return a.domain
+}
+
+// Second Level Domain
+func (a *Address) Sld() string {
+	a.sldMu.RLock()
+
+	if a.sld != "" {
+		a.sldMu.RUnlock()
+		return a.sld
+	}
+
+	if a.Domain() == "" {
+		a.sldMu.RUnlock()
+		return ""
+	}
+
+	a.sldMu.RUnlock()
+	a.sldMu.Lock() // Acquire RWLock instead of RLock
+	defer a.sldMu.Unlock()
+
+	a.sld, _ = publicsuffix.DomainFromListWithOptions(
+		publicsuffix.DefaultList,
+		a.Domain(),
+		&publicsuffix.FindOptions{IgnorePrivate: true},
+	)
+
+	return a.sld
 }
 
 func (a *Address) String() string {
@@ -36,13 +69,13 @@ func (a *Address) String() string {
 func (a *Address) MarshalJSON() ([]byte, error) {
 	type Alias Address
 	return json.Marshal(&struct {
-		Local   string
-		Domain  string
-		Address string
+		Local  string
+		Domain string
+		Sld    string
 	}{
 		a.Local(),
 		a.Domain(),
-		a.String(),
+		a.Sld(),
 	})
 }
 

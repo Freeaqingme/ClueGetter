@@ -135,6 +135,10 @@ func (m *module) Init() {
                 "Domain": {
                   "type":     "string",
                   "analyzer": "lowercase"
+                },
+                "Sld": {
+                  "type":     "string",
+                  "analyzer": "lowercase"
                 }
               }
             },
@@ -148,7 +152,12 @@ func (m *module) Init() {
                 "Domain": {
                   "type":     "string",
                   "analyzer": "lowercase"
+                },
+                "Sld": {
+                  "type":     "string",
+                  "analyzer": "lowercase"
                 }
+
               }
             },
             "Headers": {
