@@ -231,6 +231,7 @@ func (m *module) persistSession(coreSess *core.MilterSession) {
 	for {
 		sess := &session{coreSess, msgId}
 		str, _ := sess.esMarshalJSON(m)
+		fmt.Println(string(str))
 		sessId := fmt.Sprintf("%s-%d", hex.EncodeToString(sess.Id()), msgId)
 
 		_, err := m.esClient.Index().

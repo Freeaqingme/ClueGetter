@@ -25,6 +25,7 @@ import (
 	_ "cluegetter/dkim"
 	_ "cluegetter/elasticsearch"
 	_ "cluegetter/greylisting"
+	_ "cluegetter/ipinfo"
 	_ "cluegetter/lua"
 	_ "cluegetter/quotas"
 	_ "cluegetter/rspamd"

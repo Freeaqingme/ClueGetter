@@ -312,7 +312,7 @@ func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCh
 
 	if rejectMsg != "" {
 		return &core.MessageCheckResult{
-			Module:          "quotas",
+			Module:          ModuleName,
 			SuggestedAction: core.MessageTempFail,
 			Message:         rejectMsg,
 			Score:           100,
@@ -322,7 +322,7 @@ func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCh
 	}
 
 	return &core.MessageCheckResult{
-		Module:          "quotas",
+		Module:          ModuleName,
 		SuggestedAction: core.MessagePermit,
 		Message:         "",
 		Score:           1,
