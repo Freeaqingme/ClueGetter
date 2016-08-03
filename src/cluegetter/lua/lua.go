@@ -5,49 +5,52 @@
 // This Source Code Form is subject to the terms of the Apache License, Version 2.0.
 // For its contents, please refer to the LICENSE file.
 //
-package core
+package lua
 
 import (
 	"io/ioutil"
 	"strings"
 
-	cg_lua "cluegetter/lua"
+	"cluegetter/core"
 
 	"github.com/yuin/gopher-lua"
 )
 
-var luaModules = make(map[string]string, 0)
+const ModuleName = "lua"
+
+type module struct {
+	*core.BaseModule
+
+	modules map[string]*luaModule
+}
 
 func init() {
-	init := LuaStart
-	enable := func() bool { return true }
-
-	ModuleRegister(&ModuleOld{
-		name:   "lua",
-		enable: &enable,
-		init:   &init,
+	core.ModuleRegister(&module{
+		BaseModule: core.NewBaseModule(nil),
 	})
 }
 
-func LuaStart() {
-	for name, conf := range Config.LuaModule {
-		luaStartModule(name, conf)
+func (m *module) Name() string {
+	return ModuleName
+}
+
+func (m *module) Enable() bool {
+	return true
+}
+
+func (m *module) Config() map[string]*core.ConfigLuaModule {
+	return m.BaseModule.Config().LuaModule
+}
+
+func (m *module) Init() {
+	m.modules = make(map[string]*luaModule, 0)
+
+	for name, conf := range m.Config() {
+		m.startModule(name, conf)
 	}
 }
 
-func LuaReset() {
-	luaModules = make(map[string]string, 0)
-}
-
-func luaStartModule(name string, conf *ConfigLuaModule) {
-	enable := func() bool { return conf.Enabled }
-	milterCheck := func(msg *Message, done chan bool) *MessageCheckResult {
-		return LuaMilterCheck(name, msg, done)
-	}
-	sessConf := func(sess *MilterSession) {
-		luaSessionConfigure(name, sess)
-	}
-
+func (m *module) startModule(name string, conf *core.ConfigLuaModule) {
 	if conf.Script != "" && conf.ScriptContents != "" {
 		panic("Cannot specify both Script as well as scriptContents in " + name)
 	} else if conf.Script == "" && conf.ScriptContents == "" {
@@ -68,22 +71,43 @@ func luaStartModule(name string, conf *ConfigLuaModule) {
 	if _, err := luaCanParse(string(scriptContents)); err != nil {
 		panic("Could not parse LUA module '" + name + "': " + err.Error())
 	}
-	luaModules[name] = string(scriptContents)
 
-	Log.Infof("Registered LUA module " + name)
-	ModuleRegister(&ModuleOld{
-		name:        "lua-" + name,
-		enable:      &enable,
-		milterCheck: &milterCheck,
-		sessConfig:  &sessConf,
-	})
+	m.Log().Infof("Registered LUA module " + name)
+
+	module := &luaModule{
+		module: m,
+
+		name:     name,
+		contents: string(scriptContents),
+	}
+	core.ModuleRegister(module)
+	m.modules[name] = module
 }
 
-func LuaMilterCheck(luaModuleName string, msg *Message, done chan bool) *MessageCheckResult {
+type luaModule struct {
+	*module
+
+	name     string
+	contents string
+}
+
+func (m *luaModule) Enable() bool {
+	return m.config().Enabled
+}
+
+func (m *luaModule) config() *core.ConfigLuaModule {
+	return m.BaseModule.Config().LuaModule[m.name]
+}
+
+func (m *luaModule) Name() string {
+	return "lua-" + m.name
+}
+
+func (m *luaModule) MessageCheck(msg *core.Message, done chan bool) *core.MessageCheckResult {
 	L := luaGetState()
 
-	if err := L.DoString(luaModules[luaModuleName]); err != nil {
-		panic("Could not execute lua module " + luaModuleName + ": " + err.Error())
+	if err := L.DoString(m.contents); err != nil {
+		panic("Could not execute lua module " + m.name + ": " + err.Error())
 	}
 
 	callback := L.GetField(L.Get(-1), "milterCheck")
@@ -97,7 +121,7 @@ func LuaMilterCheck(luaModuleName string, msg *Message, done chan bool) *Message
 		Protect: true,
 	}, luaGetMessage(L, msg))
 	if err != nil {
-		panic("Error in lua module '" + luaModuleName + "': " + err.Error())
+		panic("Error in lua module '" + m.name + "': " + err.Error())
 	}
 	resScore := L.Get(-1)
 	L.Pop(1)
@@ -108,23 +132,23 @@ func LuaMilterCheck(luaModuleName string, msg *Message, done chan bool) *Message
 
 	var suggestedAction int32
 	var ok bool
-	if suggestedAction, ok = Proto_Message_Verdict_value[suggestedActionStr.String()]; !ok {
-		panic("Invalid suggested action from lua module '" + luaModuleName + "': " + suggestedActionStr.String())
+	if suggestedAction, ok = core.Proto_Message_Verdict_value[suggestedActionStr.String()]; !ok {
+		panic("Invalid suggested action from lua module '" + m.name + "': " + suggestedActionStr.String())
 	}
 
-	return &MessageCheckResult{
-		Module:          "lua-" + luaModuleName,
+	return &core.MessageCheckResult{
+		Module:          m.Name(),
 		SuggestedAction: int(suggestedAction),
 		Message:         resMsg.String(),
 		Score:           float64(lua.LVAsNumber(resScore)),
 	}
 }
 
-func luaSessionConfigure(luaModuleName string, sess *MilterSession) {
+func (m *luaModule) SessionConfigure(sess *core.MilterSession) {
 	L := luaGetState()
 
-	if err := L.DoString(luaModules[luaModuleName]); err != nil {
-		panic("Could not execute lua module " + luaModuleName + ": " + err.Error())
+	if err := L.DoString(m.contents); err != nil {
+		panic("Could not execute lua module " + m.name + ": " + err.Error())
 	}
 
 	callback := L.GetField(L.Get(-1), "sessionConfigure")
@@ -138,7 +162,7 @@ func luaSessionConfigure(luaModuleName string, sess *MilterSession) {
 		Protect: true,
 	}, luaGetSession(L, sess))
 	if err != nil {
-		panic("Error in lua module '" + luaModuleName + "': " + err.Error())
+		panic("Error in lua module '" + m.name + "': " + err.Error())
 	}
 }
 
@@ -148,9 +172,9 @@ func luaGetState() *lua.LState {
 	})
 	defer L.Close()
 
-	L.PreloadModule("crypto", cg_lua.CryptoLoader)
-	L.PreloadModule("dns", cg_lua.DnsLoader)
-	L.PreloadModule("spf", cg_lua.SpfLoader)
+	L.PreloadModule("crypto", CryptoLoader)
+	L.PreloadModule("dns", DnsLoader)
+	L.PreloadModule("spf", SpfLoader)
 
 	luaSessionRegisterType(L)
 	luaMessageRegisterType(L)
@@ -173,7 +197,7 @@ func luaCanParse(script string) (bool, error) {
 
 /* Session */
 
-func luaGetSession(L *lua.LState, sess *MilterSession) lua.LValue {
+func luaGetSession(L *lua.LState, sess *core.MilterSession) lua.LValue {
 	ud := L.NewUserData()
 	ud.Value = sess
 	L.SetMetatable(ud, L.GetTypeMetatable("session"))
@@ -206,33 +230,33 @@ var luaSessionMethods = map[string]lua.LGFunction{
 	"getMtaDaemonName": luaSessionFuncMtaDaemonName,
 }
 
-func luaSessionGetFromVM(L *lua.LState) *MilterSession {
+func luaSessionGetFromVM(L *lua.LState) *core.MilterSession {
 	ud := L.CheckUserData(1)
-	if v, ok := ud.Value.(*MilterSession); ok {
+	if v, ok := ud.Value.(*core.MilterSession); ok {
 		return v
 	}
 	L.ArgError(1, "Session expected")
 	return nil
 }
 
-var sessionConfigSetters = map[string]func(*SessionConfig, *lua.LState){
-	"dkim.sign": func(c *SessionConfig, L *lua.LState) {
+var sessionConfigSetters = map[string]func(*core.SessionConfig, *lua.LState){
+	"dkim.sign": func(c *core.SessionConfig, L *lua.LState) {
 		c.Dkim.Sign = L.CheckString(3)
 	},
 
 	// Greylisting
-	"greylisting.enabled": func(c *SessionConfig, L *lua.LState) {
+	"greylisting.enabled": func(c *core.SessionConfig, L *lua.LState) {
 		c.Greylisting.Enabled = L.CheckBool(3)
 	},
 }
 
-var sessionConfigGetters = map[string]func(*SessionConfig) lua.LValue{
-	"dkim.sign": func(c *SessionConfig) lua.LValue {
+var sessionConfigGetters = map[string]func(*core.SessionConfig) lua.LValue{
+	"dkim.sign": func(c *core.SessionConfig) lua.LValue {
 		return lua.LString(c.Dkim.Sign)
 	},
 
 	// Greylisting
-	"greylisting.enabled": func(c *SessionConfig) lua.LValue {
+	"greylisting.enabled": func(c *core.SessionConfig) lua.LValue {
 		return lua.LBool(c.Greylisting.Enabled)
 	},
 }
@@ -337,7 +361,7 @@ func luaSessionFuncMtaDaemonName(L *lua.LState) int {
 
 /* Message */
 
-func luaGetMessage(L *lua.LState, msg *Message) lua.LValue {
+func luaGetMessage(L *lua.LState, msg *core.Message) lua.LValue {
 	ud := L.NewUserData()
 	ud.Value = msg
 	L.SetMetatable(ud, L.GetTypeMetatable("message"))
@@ -361,9 +385,9 @@ var luaMessageMethods = map[string]lua.LGFunction{
 	"getHeaders": luaMessageFuncHeaders,
 }
 
-func luaMessageGetFromVM(L *lua.LState) *Message {
+func luaMessageGetFromVM(L *lua.LState) *core.Message {
 	ud := L.CheckUserData(1)
-	if v, ok := ud.Value.(*Message); ok {
+	if v, ok := ud.Value.(*core.Message); ok {
 		return v
 	}
 	L.ArgError(1, "Message expected")
@@ -434,9 +458,9 @@ var luaMessageHeaderMethods = map[string]lua.LGFunction{
 	"getValue": luaMessageHeaderFuncValue,
 }
 
-func luaMessageHeaderGetFromVM(L *lua.LState) *MessageHeader {
+func luaMessageHeaderGetFromVM(L *lua.LState) *core.MessageHeader {
 	ud := L.CheckUserData(1)
-	if v, ok := ud.Value.(*MessageHeader); ok {
+	if v, ok := ud.Value.(*core.MessageHeader); ok {
 		return v
 	}
 	L.ArgError(1, "MessageHeader expected")

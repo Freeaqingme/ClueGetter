@@ -322,6 +322,15 @@ whitelist-spf = outlook.com
 whitelist-spf = skynet.be
 whitelist-spf = servers.mcsv.net  # MailChimp & Mandrill
 
+
+[ipinfo]
+
+// Needs access to whois.cymru.com:43
+
+enabled = false
+
+geolite-db = "/var/lib/cluegetter/GeoLite2-City.mmdb"
+
 [quotas]
 # Enable the Quota module
 enabled = false

@@ -21,9 +21,13 @@ import (
 import (
 	_ "cluegetter/bayes"
 	_ "cluegetter/bounceHandler"
+	_ "cluegetter/clamav"
 	_ "cluegetter/dkim"
 	_ "cluegetter/elasticsearch"
 	_ "cluegetter/greylisting"
+	_ "cluegetter/ipinfo"
+	_ "cluegetter/lua"
+	_ "cluegetter/quotas"
 	_ "cluegetter/rspamd"
 	_ "cluegetter/spamassassin"
 	_ "cluegetter/srs"

@@ -17,7 +17,7 @@ var (
 )
 
 type Cluegetter struct {
-	config config
+	config *config
 	log    *log.Logger
 	redis  RedisClient
 
@@ -29,7 +29,7 @@ type Cluegetter struct {
 }
 
 func (cg *Cluegetter) Config() config {
-	return cg.config
+	return *cg.config
 }
 
 func (cg *Cluegetter) Log() *log.Logger {
@@ -75,6 +75,19 @@ func (cg *Cluegetter) Rdbms() *sql.DB {
 	return Rdbms
 }
 
+func (cg *Cluegetter) NewMilterSession() *MilterSession {
+	return &MilterSession{
+		config: (*cg.config).sessionConfig(),
+	}
+}
+
+func NewCluegetter() *Cluegetter {
+	return &Cluegetter{
+		modules: make([]Module, 0),
+		config:  GetNewConfig(),
+	}
+}
+
 func CluegetterRecover(funcName string) {
 	if Config.ClueGetter.Exit_On_Panic {
 		return
@@ -87,7 +100,7 @@ func CluegetterRecover(funcName string) {
 }
 
 func InitCg() *Cluegetter {
-	cg.config = Config
+	cg.config = &Config
 	cg.log = Log
 	cg.instance = instance
 

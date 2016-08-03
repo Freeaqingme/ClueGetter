@@ -355,16 +355,7 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 	for _, result := range flatResults {
 		for _, callback := range result.Callbacks {
 			go func(callback *func(*Message, int), msg *Message, verdict int) {
-				defer func() {
-					if Config.ClueGetter.Exit_On_Panic {
-						return
-					}
-					r := recover()
-					if r == nil {
-						return
-					}
-					Log.Errorf("Panic caught in callback in messageGetVerdict(). Recovering. Error: %s", r)
-				}()
+				CluegetterRecover("messagesGetVerdict.Callback")
 				(*callback)(msg, verdict)
 			}(callback, msg, verdict)
 		}

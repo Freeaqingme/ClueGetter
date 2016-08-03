@@ -107,6 +107,10 @@ type config struct {
 		Initial_Period uint16
 		Whitelist_Spf  []string
 	}
+	Ipinfo struct {
+		Enabled    bool
+		Geolite_Db string
+	}
 	Quotas struct {
 		Enabled                  bool
 		Account_Sender           bool
@@ -323,6 +327,8 @@ func DefaultConfig(cfg *config) {
 	cfg.Greylisting.Initial_Period = 5
 	cfg.Greylisting.Whitelist_Spf = []string{}
 
+	cfg.Ipinfo.Geolite_Db = "/var/lib/cluegetter/GeoLite2-City.mmdb"
+
 	cfg.Quotas.Account_Client_Address = true
 	cfg.Quotas.Account_Sender = false
 	cfg.Quotas.Account_Sender_Domain = false
@@ -340,6 +346,8 @@ func DefaultConfig(cfg *config) {
 	cfg.SpamAssassin.Connect_Timeout = 0.1
 	cfg.SpamAssassin.Max_Size = 500000 // Default SA max file size: 512 KB
 	cfg.SpamAssassin.Verdict_Msg = []string{}
+
+	cfg.LuaModule = make(map[string]*ConfigLuaModule)
 }
 
 func GetNewConfig() *config {

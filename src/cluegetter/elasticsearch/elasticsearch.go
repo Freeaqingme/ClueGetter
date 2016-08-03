@@ -10,19 +10,20 @@ package elasticsearch
 import (
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"strings"
 	"time"
 
 	"cluegetter/address"
 	"cluegetter/core"
 
 	"gopkg.in/olivere/elastic.v3"
-	"strings"
 )
 
 const ModuleName = "elasticsearch"
 
 // Needs updating with every significant mapping update
-const mappingVersion = "1"
+const mappingVersion = "2"
 
 type module struct {
 	*core.BaseModule
@@ -32,6 +33,8 @@ type module struct {
 
 type session struct {
 	*core.MilterSession
+
+	jsonMarshalMsgId int
 }
 
 func init() {
@@ -118,7 +121,6 @@ func (m *module) Init() {
         "MtaDaemonName":  { "type": "string"  },
 
         "Messages": {
-          "type": "nested",
           "properties": {
             "QueueId": {
               "type":  "string",
@@ -131,6 +133,10 @@ func (m *module) Init() {
                   "analyzer": "lowercase"
                 },
                 "Domain": {
+                  "type":     "string",
+                  "analyzer": "lowercase"
+                },
+                "Sld": {
                   "type":     "string",
                   "analyzer": "lowercase"
                 }
@@ -146,7 +152,12 @@ func (m *module) Init() {
                 "Domain": {
                   "type":     "string",
                   "analyzer": "lowercase"
+                },
+                "Sld": {
+                  "type":     "string",
+                  "analyzer": "lowercase"
                 }
+
               }
             },
             "Headers": {
@@ -185,8 +196,8 @@ func (m *module) Init() {
                 "Determinants":   { "type": "string" }
               }
             }
-
           }
+
         }
       }
     }
@@ -207,37 +218,48 @@ func (m *module) SessionDisconnect(sess *core.MilterSession) {
 }
 
 // TODO: Check what happens if we added a message-id header ourselves
+//
+// Because aggregations don't work too nicely on nested documents we
+// denormalize our sessions, so we store 1 session per message.
+// That way we don't need nested documents for messages.
 func (m *module) persistSession(coreSess *core.MilterSession) {
 	if coreSess.ClientIsMonitorHost() && len(coreSess.Messages) == 0 {
 		return
 	}
 
-	sess := &session{coreSess}
+	msgId := 0
+	for {
+		sess := &session{coreSess, msgId}
+		str, _ := sess.esMarshalJSON(m)
+		fmt.Println(string(str))
+		sessId := fmt.Sprintf("%s-%d", hex.EncodeToString(sess.Id()), msgId)
 
-	str, _ := sess.esMarshalJSON(m)
-	id := hex.EncodeToString(sess.Id())
+		_, err := m.esClient.Index().
+			Index("cluegetter-" + sess.DateConnect.Format("20060102") + "-" + mappingVersion).
+			Type("session").
+			Id(sessId).
+			BodyString(string(str)).
+			Do()
 
-	_, err := m.esClient.Index().
-		Index("cluegetter-" + sess.DateConnect.Format("20060102") + "-" + mappingVersion).
-		Type("session").
-		Id(id).
-		BodyString(string(str)).
-		Do()
+		if err != nil {
+			m.Log().Errorf("Could not index session '%s', error: %s", sessId, err.Error())
+		}
 
-	if err != nil {
-		m.Log().Errorf("Could not index session '%s', error: %s", id, err.Error())
-		return
+		msgId++
+		if msgId >= len(sess.Messages) {
+			break
+		}
 	}
 	//fmt.Printf("Indexed tweet %s to index %s, type %s\n", put1.Id, put1.Index, put1.Type)
-
 }
 
 func (s *session) esMarshalJSON(m *module) ([]byte, error) {
 	type Alias session
 
 	esMessages := []*esMessage{}
-	for _, v := range s.Messages {
-		esMessages = append(esMessages, &esMessage{v})
+	if s.jsonMarshalMsgId < len(s.Messages) {
+		msg := s.Messages[s.jsonMarshalMsgId]
+		esMessages = append(esMessages, &esMessage{msg})
 	}
 
 	out := &struct {
