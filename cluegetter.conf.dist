@@ -324,9 +324,9 @@ whitelist-spf = servers.mcsv.net  # MailChimp & Mandrill
 
 
 [ipinfo]
-
-// Needs access to whois.cymru.com:43
-
+# Look up and store the ISP, AS and location data for each connecting IP.
+# You'll need to ensure whois.cymru.com TCP/443 works, and that the
+# MaxMind GeoLite2-city database is present.
 enabled = false
 
 geolite-db = "/var/lib/cluegetter/GeoLite2-City.mmdb"

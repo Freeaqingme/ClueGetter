@@ -8,15 +8,14 @@
 package ipinfo
 
 import (
-	"fmt"
 	"net"
+	"sync"
 	"time"
 
 	"cluegetter/core"
 
-	"github.com/ammario/ipisp"
+	"github.com/Freeaqingme/ipisp"
 	"github.com/oschwald/geoip2-golang"
-	"sync"
 )
 
 const ModuleName = "ipinfo"
@@ -65,18 +64,21 @@ func (m *module) Stop() {
 // TODO: We don't need to do this in the MessageCheck step, we could also do it earlier
 // as some connect hook. If only we had one.
 func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCheckResult {
-	ip := net.ParseIP("149.210.181.20") ///////////////// TODO
-	info:= &core.IpInfo{}
+	ip := net.ParseIP(msg.Session().Ip)
+	info := &core.IpInfo{Location: struct {
+		Lat float64
+		Lon float64
+	}{}}
 
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
 	go func() {
-		info.ASN, info.ISP, info.IpRange, info.AllocationDate= m.ipisp(ip)
+		info.ASN, info.ISP, info.IpRange, info.AllocationDate = m.ipisp(ip)
 		wg.Done()
 	}()
 
 	go func() {
-		info.Country, info.Continent, info.Lat, info.Long = m.geoip(ip)
+		info.Country, info.Continent, info.Location.Lat, info.Location.Lon = m.geoip(ip)
 		wg.Done()
 	}()
 
@@ -100,7 +102,8 @@ func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCh
 func (m *module) geoip(ip net.IP) (country, continent string, lat, long float64) {
 	r, err := m.geoliteDb.City(ip)
 	if err != nil {
-		m.Log().Fatal(err.Error())
+		m.Log().Errorf("Could not lookup Geoip info: %s", err.Error())
+		return "", "", 0.0, 0.0
 	}
 
 	return r.Country.IsoCode, r.Continent.Code, r.Location.Latitude, r.Location.Longitude
@@ -109,7 +112,12 @@ func (m *module) geoip(ip net.IP) (country, continent string, lat, long float64)
 func (m *module) ipisp(ip net.IP) (asn, isp, ipRange string, allocationDate *time.Time) {
 	resp, err := m.ipispClient.LookupIP(ip)
 	if err != nil {
-		fmt.Println(err.Error())
+		m.Log().Errorf("Could not lookup ipisp info: %s", err.Error())
+		return "", "", "", nil
+	}
+
+	if resp == nil {
+		return "", "", "", nil
 	}
 
 	return resp.ASN.String(), resp.Name.Raw, resp.Range.String(), &resp.Allocated

@@ -37,7 +37,7 @@ type MilterSession struct {
 	Cipher        string
 	TlsVersion    string
 	Ip            string
-	IpInfo *IpInfo
+	IpInfo        *IpInfo
 	ReverseDns    string
 	Hostname      string
 	Helo          string
@@ -49,14 +49,16 @@ type MilterSession struct {
 }
 
 type IpInfo struct {
-	ASN string
-	IpRange string
-	Country string
-	Continent string
-	ISP string
+	ASN            string
+	IpRange        string
+	Country        string
+	Continent      string
+	ISP            string
 	AllocationDate *time.Time
-	Lat float64
-	Long float64
+	Location       struct {
+		Lat float64
+		Lon float64
+	}
 }
 
 func (m *MilterSession) Config() *SessionConfig {

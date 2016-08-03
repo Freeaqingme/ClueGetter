@@ -114,6 +114,32 @@ func (m *module) Init() {
           "type":     "string",
           "analyzer": "lowercase"
         },
+        "IpInfo": {
+          "properties": {
+            "ASN": {
+              "type":     "string",
+              "analyzer": "lowercase"
+            },
+            "ISP": {
+              "type":     "string",
+              "analyzer": "lowercase"
+            },
+            "IpRange": {
+              "type":     "string",
+          	  "analyzer": "lowercase"
+            },
+            "AllocationDate": { "type": "date" },
+            "Country": {
+          	  "type":     "string",
+              "analyzer": "lowercase"
+            },
+            "Continent": {
+          	  "type":     "string",
+          	  "analyzer": "lowercase"
+            },
+            "location": { "type": "geo_point" }
+          }
+        },
         "ReverseDns":     { "type": "string"  },
         "Hostname":       { "type": "string"  },
         "Helo":           { "type": "string"  },
@@ -231,7 +257,6 @@ func (m *module) persistSession(coreSess *core.MilterSession) {
 	for {
 		sess := &session{coreSess, msgId}
 		str, _ := sess.esMarshalJSON(m)
-		fmt.Println(string(str))
 		sessId := fmt.Sprintf("%s-%d", hex.EncodeToString(sess.Id()), msgId)
 
 		_, err := m.esClient.Index().
@@ -331,7 +356,7 @@ func (m *esMessage) UnmarshalJSON(data []byte) error {
 		}
 		CheckResults []struct {
 			Module          string
-			SuggestedAction int
+			SuggestedAction int `json:"Verdict"`
 			Message         string
 			Score           float64
 			Determinants    string

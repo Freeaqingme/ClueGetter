@@ -13,7 +13,20 @@
     <dt>IP</dt>
     <dd><a href="/message/search/?clientAddress={{printf "%s" $sess.Ip}}">{{printf "%s" $sess.Ip}}</a>
         (RDNS: <i>{{printf "%s" $sess.ReverseDns}}</i>,
-        HELO: <i>{{printf "%s" $sess.Helo}}</i>)</dd>
+        HELO: <i>{{printf "%s" $sess.Helo}}
+            {{if $sess.IpInfo }}
+                {{ if ne $sess.IpInfo.ASN "" }}
+                , <span title="{{ $sess.IpInfo.ISP }}">{{ $sess.IpInfo.ASN }}</span>
+                {{ end }}
+            {{ end }}
+            </i>)</dd>
+    {{if $sess.IpInfo }}
+        {{ if ne $sess.IpInfo.Country "" }}
+            <dt>Location</dt>
+            <dd title="Lat: {{ $sess.IpInfo.Location.Lat}}, Lon: {{ $sess.IpInfo.Location.Lon}}"
+                >{{ $sess.IpInfo.Country }} &mdash; {{ $sess.IpInfo.Continent }}</dd>
+        {{ end }}
+    {{ end }}
     <dt>Sasl Username</dt>
     {{ if ne $sess.SaslUsername "" }}
         <dd><a href="/message/search/?saslUser={{printf "%s" $sess.SaslUsername}}"
