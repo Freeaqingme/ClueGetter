@@ -126,16 +126,16 @@ func (m *module) Init() {
             },
             "IpRange": {
               "type":     "string",
-          	  "analyzer": "lowercase"
+              "analyzer": "lowercase"
             },
             "AllocationDate": { "type": "date" },
             "Country": {
-          	  "type":     "string",
+              "type":     "string",
               "analyzer": "lowercase"
             },
             "Continent": {
-          	  "type":     "string",
-          	  "analyzer": "lowercase"
+              "type":     "string",
+              "analyzer": "lowercase"
             },
             "location": { "type": "geo_point" }
           }

@@ -115,8 +115,10 @@ type config struct {
 		Enabled                  bool
 		Account_Sender           bool
 		Account_Sender_Domain    bool
+		Account_Sender_Sld       bool
 		Account_Recipient        bool
 		Account_Recipient_Domain bool
+		Account_Recipient_Sld    bool
 		Account_Client_Address   bool
 		Account_Sasl_Username    bool
 	}

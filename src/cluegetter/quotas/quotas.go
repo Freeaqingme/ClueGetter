@@ -78,15 +78,17 @@ type quotasRegex struct {
 const (
 	QUOTA_FACTOR_SENDER           = "sender"
 	QUOTA_FACTOR_SENDER_DOMAIN    = "sender_domain"
+	QUOTA_FACTOR_SENDER_SLD       = "sender_sld"
 	QUOTA_FACTOR_RECIPIENT        = "recipient"
 	QUOTA_FACTOR_RECIPIENT_DOMAIN = "recipient_domain"
+	QUOTA_FACTOR_RECIPIENT_SLD    = "recipient_sld"
 	QUOTA_FACTOR_CLIENT_ADDRESS   = "client_address"
 	QUOTA_FACTOR_SASL_USERNAME    = "sasl_username"
 )
 
 func (m *module) Init() {
 	m.quotasPrepStmt()
-	//m.Module("redis", "quotas") // TODO: redis is not amodule, yet
+	//m.Module("redis", "quotas") // TODO: redis is not a module, yet
 
 	m.quotasRedisStart()
 	m.quotasRegexesStart()
@@ -440,8 +442,11 @@ func (m *module) quotasGetMsgFactors(msg *core.Message) map[string][]string {
 	if conf.Account_Sender && msg.From.String() != "" {
 		factors[QUOTA_FACTOR_SENDER] = []string{msg.From.String()}
 	}
-	if conf.Account_Sender_Domain {
+	if conf.Account_Sender_Domain && msg.From.String() != "" {
 		factors[QUOTA_FACTOR_SENDER_DOMAIN] = []string{msg.From.Domain()}
+	}
+	if conf.Account_Sender_Sld && msg.From.String() != "" {
+		factors[QUOTA_FACTOR_SENDER_SLD] = []string{msg.From.Sld()}
 	}
 	if conf.Account_Recipient {
 		rcpts := make([]string, len(msg.Rcpt))
@@ -456,6 +461,13 @@ func (m *module) quotasGetMsgFactors(msg *core.Message) map[string][]string {
 			rcptDomains[k] = v.Domain()
 		}
 		factors[QUOTA_FACTOR_RECIPIENT_DOMAIN] = rcptDomains
+	}
+	if conf.Account_Recipient_Sld {
+		rcptDomains := make([]string, len(msg.Rcpt))
+		for k, v := range msg.Rcpt {
+			rcptDomains[k] = v.Sld()
+		}
+		factors[QUOTA_FACTOR_RECIPIENT_SLD] = rcptDomains
 	}
 	if conf.Account_Client_Address {
 		factors[QUOTA_FACTOR_CLIENT_ADDRESS] = []string{sess.Ip}

@@ -331,16 +331,24 @@ enabled = false
 geolite-db = "/var/lib/cluegetter/GeoLite2-City.mmdb"
 
 [quotas]
+# For more info about the quota module, see also;
+# https://github.com/Freeaqingme/ClueGetter/wiki/Quotas
+
 # Enable the Quota module
 enabled = false
 
 # Factors to account for. For each factor that's enabled there should
 # be at least one row in the 'quota' table in the database. Furthermore,
 # at least one quota_profile and quota_profile_period should be configured.
+#
+# SLD = Second-Level Domain - foo.bar.example.org becomes example.org
+#
 account-client-address = true
 account-sender = false
 account-sender-domain = false
+account-sender-sld = false
 account-recipient-domain = false
+account-recipient-sld = false
 account-sasl-username = false
 
 [rspamd]

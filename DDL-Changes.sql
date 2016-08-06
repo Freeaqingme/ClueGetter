@@ -1,3 +1,6 @@
+-- v0.6.2
+ALTER TABLE quota CHANGE selector selector enum('sender','recipient','client_address','sasl_username','sender_domain','recipient_domain', 'sender_sld', 'recipient_sld') NOT NULL;
+
 -- v0.5.5
 ALTER TABLE quota CHANGE selector selector enum('sender','recipient','client_address','sasl_username','sender_domain','recipient_domain') NOT NULL;
 ALTER TABLE message ADD INDEX message_senderdomain_date(sender_domain, date);
