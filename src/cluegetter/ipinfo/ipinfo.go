@@ -23,7 +23,7 @@ const ModuleName = "ipinfo"
 type module struct {
 	*core.BaseModule
 
-	ipispClient *ipisp.Client
+	ipispClient ipisp.Client
 
 	geoliteDb *geoip2.Reader
 }
@@ -44,7 +44,7 @@ func (m *module) Enable() bool {
 
 func (m *module) Init() {
 	var err error
-	m.ipispClient, err = ipisp.NewClient()
+	m.ipispClient, err = ipisp.NewDnsClient()
 	if err != nil {
 		m.Log().Fatal("Could not initiate ipisp client: " + err.Error())
 	}
