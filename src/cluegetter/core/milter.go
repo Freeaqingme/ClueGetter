@@ -157,6 +157,18 @@ func (milter *milter) Connect(ctx uintptr, hostname string, ip net.IP) (sfsistat
 	} else {
 		Log.Debugf("%s Milter.Connect() called: ip = %s, hostname = %s", sess.milterGetDisplayId(), ip, sess.ReverseDns)
 	}
+
+	wg := sync.WaitGroup{}
+	for _, module := range cg.Modules() {
+		wg.Add(1)
+		go func(module Module) {
+			CluegetterRecover(module.Name() + ".SessionConnect()")
+			module.SessionConnect(sess)
+			wg.Done()
+		}(module)
+	}
+	wg.Wait()
+
 	return m.Continue
 }
 

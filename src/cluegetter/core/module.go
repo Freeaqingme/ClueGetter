@@ -22,6 +22,7 @@ type Module interface {
 	BayesLearn(msg *Message, isSpam bool)
 	MessageCheck(msg *Message, done chan bool) *MessageCheckResult
 	RecipientCheck(rcpt *address.Address) (verdict int, msg string)
+	SessionConnect(s *MilterSession)
 	SessionConfigure(s *MilterSession)
 	SessionDisconnect(s *MilterSession)
 	Ipc() map[string]func(string)
@@ -136,6 +137,7 @@ func (m *BaseModule) RecipientCheck(rcpt *address.Address) (verdict int, msg str
 	return MessagePermit, ""
 }
 
+func (m *BaseModule) SessionConnect(s *MilterSession)    {}
 func (m *BaseModule) SessionConfigure(s *MilterSession)  {}
 func (m *BaseModule) SessionDisconnect(s *MilterSession) {}
 

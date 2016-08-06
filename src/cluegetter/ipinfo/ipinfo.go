@@ -28,6 +28,12 @@ type module struct {
 	geoliteDb *geoip2.Reader
 }
 
+type lookupJob struct {
+	done      bool
+	timeStart time.Time
+	ipInfo    *core.IpInfo
+}
+
 func init() {
 	core.ModuleRegister(&module{
 		BaseModule: core.NewBaseModule(nil),
@@ -61,10 +67,15 @@ func (m *module) Stop() {
 
 }
 
-// TODO: We don't need to do this in the MessageCheck step, we could also do it earlier
-// as some connect hook. If only we had one.
-func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCheckResult {
-	ip := net.ParseIP(msg.Session().Ip)
+func (m *module) SessionConnect(sess *core.MilterSession) {
+	job := &lookupJob{timeStart: time.Now()}
+
+	go m.lookupIpInfo(job, sess)
+	//sess.RegisterModuleData(job)
+}
+
+func (m *module) lookupIpInfo(job *lookupJob, sess *core.MilterSession) {
+	ip := net.ParseIP(sess.Ip)
 	info := &core.IpInfo{Location: struct {
 		Lat float64
 		Lon float64
@@ -84,19 +95,10 @@ func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCh
 
 	wg.Wait()
 
-	msg.Session().IpInfo = info
-
-	determinants := map[string]interface{}{
-		"info": info,
-	}
-
-	return &core.MessageCheckResult{
-		Module:          ModuleName,
-		SuggestedAction: core.MessagePermit,
-		Message:         "",
-		Score:           0,
-		Determinants:    determinants,
-	}
+	sess.IpInfo = info
+	job.ipInfo = info
+	job.done = true
+	m.Log().Debugf("Lookuped up Ip Info for %s in %s", sess.Ip, time.Now().Sub(job.timeStart))
 }
 
 func (m *module) geoip(ip net.IP) (country, continent string, lat, long float64) {
