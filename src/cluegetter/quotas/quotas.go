@@ -437,7 +437,7 @@ func (m *module) quotasGetMsgFactors(msg *core.Message) map[string][]string {
 	conf := m.Config().Quotas
 	factors := make(map[string][]string)
 
-	if conf.Account_Sender {
+	if conf.Account_Sender && msg.From.String() != "" {
 		factors[QUOTA_FACTOR_SENDER] = []string{msg.From.String()}
 	}
 	if conf.Account_Sender_Domain {
