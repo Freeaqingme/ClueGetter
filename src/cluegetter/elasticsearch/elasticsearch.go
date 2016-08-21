@@ -115,7 +115,7 @@ func (m *module) persistSession(coreSess *core.MilterSession) {
 	//fmt.Printf("Indexed tweet %s to index %s, type %s\n", put1.Id, put1.Index, put1.Type)
 }
 
-func (m *module) PersistDmarcReport(report *dmarc.FeedbackReport) {
+func (m *module) DmarcReportPersist(report *dmarc.FeedbackReport) {
 	str, _ := json.Marshal(report)
 
 	_, err := m.esClient.Index().

@@ -16,7 +16,7 @@ import (
 	"github.com/Freeaqingme/dmarcaggparser/dmarc"
 )
 
-func (m *module) parseDmarcMessage(msg *mail.Message) bool {
+func (m *module) parseAndStoreDmarcMessage(msg *mail.Message) bool {
 	mediaType, params, err := mime.ParseMediaType(msg.Header.Get("Content-Type"))
 	if err != nil {
 		m.Log().Error("Could not parse Content Type: %s", err)

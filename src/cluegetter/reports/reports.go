@@ -114,7 +114,7 @@ func (m *module) fetchAndParseReportFromSource(source string, client *pop3.Clien
 		return fmt.Errorf("Could not read message '%s': %s", mi.Uid, err.Error())
 	}
 
-	res := m.parseDmarcMessage(msg)
+	res := m.parseAndStoreDmarcMessage(msg)
 	if !res {
 		return fmt.Errorf("Could not parse '%s' as DMARC", mi.Uid)
 	} else {

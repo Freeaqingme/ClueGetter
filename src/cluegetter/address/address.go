@@ -12,7 +12,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/weppos/publicsuffix-go/publicsuffix"
+	"github.com/Freeaqingme/publicsuffix-go/publicsuffix"
 )
 
 type Address struct {
