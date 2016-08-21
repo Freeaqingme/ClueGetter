@@ -28,6 +28,7 @@ import (
 	_ "cluegetter/ipinfo"
 	_ "cluegetter/lua"
 	_ "cluegetter/quotas"
+	_ "cluegetter/reports"
 	_ "cluegetter/rspamd"
 	_ "cluegetter/spamassassin"
 	_ "cluegetter/srs"

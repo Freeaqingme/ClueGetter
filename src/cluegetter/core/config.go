@@ -122,7 +122,11 @@ type config struct {
 		Account_Client_Address   bool
 		Account_Sasl_Username    bool
 	}
-	Rspamd struct {
+	Reports struct {
+		Enabled bool
+	}
+	Reports_Source map[string]*ConfigReportsSource
+	Rspamd         struct {
 		Enabled    bool
 		Host       string
 		Port       int
@@ -161,6 +165,14 @@ type ConfigLuaModule struct {
 	Enabled        bool
 	Script         string
 	ScriptContents string
+}
+
+type ConfigReportsSource struct {
+	Type     string
+	Host     string
+	User     string
+	Password string
+	Dump_Dir string
 }
 
 type SessionConfig struct {

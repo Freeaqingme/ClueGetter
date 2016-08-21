@@ -4,14 +4,12 @@ package elasticsearch
 const mappingVersion = "2"
 
 var mappingTemplate = `{
-  "template": "cluegetter-*-%%MAPPING_VERSION%%",
-  "settings": {
-    "number_of_shards": 5
-  },
+  "template": "cluegetter-session-*-%%MAPPING_VERSION%%",
   "aliases" : {
     "cluegetter-sessions" : {}
   },
   "settings":{
+    "number_of_shards": 5,
     "analysis": {
       "analyzer": {
         "lowercase": {
@@ -169,7 +167,149 @@ var mappingTemplate = `{
         }
       }
     }
+  }
+}
+	`
 
+// Needs updating with every significant mapping update
+const mappingVersionDmarcReport = "1"
+
+var mappingTemplateDmarcReport = `{
+  "template": "cluegetter-dmarcreport-*-%%MAPPING_VERSION%%",
+  "aliases" : {
+    "cluegetter-dmarcreports" : {}
+  },
+  "settings":{
+    "number_of_shards": 1,
+    "analysis": {
+      "analyzer": {
+        "lowercase": {
+          "type": "custom",
+          "tokenizer": "keyword",
+          "filter": [
+            "lowercase"
+          ]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "dmarcReport": {
+      "_all": {
+        "enabled": false
+      },
+      "properties": {
+        "Metadata": {
+          "properties": {
+            "OrgName": {
+              "type":    "string",
+              "analyzer": "lowercase"
+            },
+            "Email": {
+              "type":     "string" ,
+              "analyzer": "lowercase"
+            },
+            "ExtraContact": {
+              "type":  "string",
+              "index": "not_analyzed"
+            },
+            "ReportId": {
+              "type":  "string",
+              "index": "not_analyzed"
+            },
+            "dateRange": {
+              "properties": {
+                "Begin": { "type": "date" },
+                "End":   { "type": "date" }
+              }
+            }
+          }
+        },
+        "PolicyPublished": {
+          "properties": {
+            "Domain": {
+              "type":  "string",
+              "index": "not_analyzed"
+            },
+            "Adkim": {
+              "type":    "string",
+              "analyzer": "lowercase"
+            },
+            "Aspf": {
+              "type":    "string",
+              "analyzer": "lowercase"
+            },
+            "Policy": {
+              "type":    "string",
+              "analyzer": "lowercase"
+            },
+            "SubdomainPolicy": {
+              "type":    "string",
+              "analyzer": "lowercase"
+            },
+            "Percentage": {
+              "type":    "byte"
+            }
+          }
+        },
+
+        "Record": {
+          "type": "nested",
+          "properties": {
+            "Row": {
+              "properties": {
+                "SourceIp": {
+                  "type":     "string",
+                  "analyzer": "lowercase"
+                },
+                "Count": {    "type": "integer" },
+                "PolicyEvaluated": {
+                  "properties": {
+                    "Disposition": {
+                      "type":     "string",
+                      "analyzer": "lowercase"
+                    },
+                    "Dkim": { ` /* 'pass' or 'fail' */ + `
+                      "type":     "string",
+                      "analyzer": "lowercase"
+                    },
+                    "Spf": { ` /* 'pass' or 'fail' */ + `
+                      "type":     "string",
+                      "analyzer": "lowercase"
+                    }
+                  }
+                }
+              }
+            },
+            "Identifiers": {
+              "properties": {
+                "HeaderFrom": {
+                  "type":  "string",
+                  "index": "not_analyzed"
+                }
+              }
+            },
+            "AuthResults": {
+              "properties": {
+                "Type": { ` /* 'SPF' or 'DKIM' */ + `
+                  "type":     "string",
+                  "analyzer": "lowercase"
+                },
+                "Domain": {
+                  "type":     "string",
+                  "analyzer": "lowercase"
+                },
+                "Result": {
+                  "type":     "string",
+                  "analyzer": "lowercase"
+                }
+              }
+            }
+          }
+        }
+
+      }
+    }
   }
 }
 	`

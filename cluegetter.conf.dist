@@ -351,6 +351,21 @@ account-recipient-domain = false
 account-recipient-sld = false
 account-sasl-username = false
 
+[reports]
+# Parses various types of reports (currently only DMARC. AFRF & ARF to
+# follow soon) and indexes them. Can be used for reputation tracking purposes.
+enabled = true
+
+[reports-source "default"]
+type     = pop3
+
+host     = hostname:110
+user     = user
+password = pass
+
+# Carbon Copy a copy of each report in this directory
+dump-dir = "/var/cache/cluegetter/reports/"
+
 [rspamd]
 enabled    = false
 host       = 127.0.0.1

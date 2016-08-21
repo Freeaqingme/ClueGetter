@@ -11,9 +11,11 @@ import (
 	"cluegetter/address"
 
 	logging "github.com/Freeaqingme/GoDaemonSkeleton/log"
+	"github.com/Freeaqingme/dmarcaggparser/dmarc"
 )
 
 type Module interface {
+	DmarcReportPersist(*dmarc.FeedbackReport)
 	SetCluegetter(*Cluegetter)
 	Name() string
 	Enable() bool
@@ -22,9 +24,9 @@ type Module interface {
 	BayesLearn(msg *Message, isSpam bool)
 	MessageCheck(msg *Message, done chan bool) *MessageCheckResult
 	RecipientCheck(rcpt *address.Address) (verdict int, msg string)
-	SessionConnect(s *MilterSession)
-	SessionConfigure(s *MilterSession)
-	SessionDisconnect(s *MilterSession)
+	SessionConnect(*MilterSession)
+	SessionConfigure(*MilterSession)
+	SessionDisconnect(*MilterSession)
 	Ipc() map[string]func(string)
 	Rpc() map[string]chan string
 	HttpHandlers() map[string]HttpCallback
@@ -123,6 +125,8 @@ func NewBaseModuleForTesting(configuration *config) (*BaseModule, *config) {
 	}, configuration
 }
 
+func (m *BaseModule) DmarcReportPersist(*dmarc.FeedbackReport) {}
+
 func (m *BaseModule) Init() {}
 
 func (m *BaseModule) Stop() {}
@@ -137,9 +141,9 @@ func (m *BaseModule) RecipientCheck(rcpt *address.Address) (verdict int, msg str
 	return MessagePermit, ""
 }
 
-func (m *BaseModule) SessionConnect(s *MilterSession)    {}
-func (m *BaseModule) SessionConfigure(s *MilterSession)  {}
-func (m *BaseModule) SessionDisconnect(s *MilterSession) {}
+func (m *BaseModule) SessionConnect(*MilterSession)    {}
+func (m *BaseModule) SessionConfigure(*MilterSession)  {}
+func (m *BaseModule) SessionDisconnect(*MilterSession) {}
 
 func (m *BaseModule) Ipc() map[string]func(string) {
 	return make(map[string]func(string), 0)

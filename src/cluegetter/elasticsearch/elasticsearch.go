@@ -17,6 +17,7 @@ import (
 	"cluegetter/address"
 	"cluegetter/core"
 
+	"github.com/Freeaqingme/dmarcaggparser/dmarc"
 	"gopkg.in/olivere/elastic.v3"
 )
 
@@ -60,9 +61,16 @@ func (m *module) Init() {
 
 	template := strings.Replace(mappingTemplate, "%%MAPPING_VERSION%%", mappingVersion, -1)
 
-	_, err = m.esClient.IndexPutTemplate("cluegetter-" + mappingVersion).BodyString(template).Do()
+	_, err = m.esClient.IndexPutTemplate("cluegetter-session" + mappingVersion).BodyString(template).Do()
 	if err != nil {
-		m.Log().Fatalf("Could not create ES template: %s", err.Error())
+		m.Log().Fatalf("Could not create ES session template: %s", err.Error())
+	}
+
+	template = strings.Replace(mappingTemplateDmarcReport, "%%MAPPING_VERSION%%", mappingVersionDmarcReport, -1)
+
+	_, err = m.esClient.IndexPutTemplate("cluegetter-session" + mappingVersionDmarcReport).BodyString(template).Do()
+	if err != nil {
+		m.Log().Fatalf("Could not create ES dmarc report template: %s", err.Error())
 	}
 }
 
@@ -87,7 +95,9 @@ func (m *module) persistSession(coreSess *core.MilterSession) {
 		sessId := fmt.Sprintf("%s-%d", hex.EncodeToString(sess.Id()), msgId)
 
 		_, err := m.esClient.Index().
-			Index("cluegetter-" + sess.DateConnect.Format("20060102") + "-" + mappingVersion).
+			Index(fmt.Sprintf("cluegetter-session-%s-%s",
+				sess.DateConnect.Format("20060102"),
+				mappingVersion)).
 			Type("session").
 			Id(sessId).
 			BodyString(string(str)).
@@ -103,6 +113,23 @@ func (m *module) persistSession(coreSess *core.MilterSession) {
 		}
 	}
 	//fmt.Printf("Indexed tweet %s to index %s, type %s\n", put1.Id, put1.Index, put1.Type)
+}
+
+func (m *module) PersistDmarcReport(report *dmarc.FeedbackReport) {
+	str, _ := json.Marshal(report)
+
+	_, err := m.esClient.Index().
+		Index(fmt.Sprintf("cluegetter-dmarcreport-%s-%s",
+			report.Metadata.DateRange.Begin.Format("20060102"),
+			mappingVersionDmarcReport)).
+		Type("dmarcReport").
+		Id(report.Metadata.ReportId + "@" + report.Metadata.OrgName).
+		BodyString(string(str)).
+		Do()
+
+	if err != nil {
+		m.Log().Errorf("Could not index DMARC Report, error: %s", err.Error())
+	}
 }
 
 func (s *session) esMarshalJSON(m *module) ([]byte, error) {

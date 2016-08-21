@@ -105,7 +105,7 @@ func (m *module) updateWhitelist() {
 	if err != nil {
 		m.Log().Errorf("Could not update greylist whitelist schedule: %s", err.Error())
 	} else if !set {
-		m.Log().Debugf("Greylist whitelist update was run recently. Sipping")
+		m.Log().Debugf("Greylist whitelist update was run recently. Skipping")
 		return
 	}
 
