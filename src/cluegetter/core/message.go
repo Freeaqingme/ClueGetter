@@ -614,13 +614,16 @@ func (msg *Message) String() []byte {
 
 	body := make([]string, 0)
 
-	body = append(body, fmt.Sprintf("Received: from %s (%s [%s])\r\n\tby %s with SMTP id %s; %s\r\n",
+	hdrTpl := "Received: from %s (%s [%s])\r\n\tby %s with SMTP id %s; %s\r\n\t(envelope-from <%s>)\r\n"
+	body = append(body, fmt.Sprintf(hdrTpl,
 		sess.getHelo(),
 		revdnsStr,
 		sess.getIp(),
 		fqdn,
 		msg.QueueId,
-		time.Now().Format(time.RFC1123Z)))
+		time.Now().Format(time.RFC1123Z),
+		msg.From.String(),
+	))
 
 	for _, header := range msg.Headers {
 		body = append(body, (header).getKey()+": "+(header).getValue()+"\r\n")
