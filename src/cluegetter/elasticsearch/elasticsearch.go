@@ -66,11 +66,13 @@ func (m *module) Init() {
 		m.Log().Fatalf("Could not create ES session template: %s", err.Error())
 	}
 
-	template = strings.Replace(mappingTemplateDmarcReport, "%%MAPPING_VERSION%%", mappingVersionDmarcReport, -1)
+	if reportsModule := m.Module("reports", ""); reportsModule != nil {
+		template = strings.Replace(mappingTemplateDmarcReport, "%%MAPPING_VERSION%%", mappingVersionDmarcReport, -1)
 
-	_, err = m.esClient.IndexPutTemplate("cluegetter-session" + mappingVersionDmarcReport).BodyString(template).Do()
-	if err != nil {
-		m.Log().Fatalf("Could not create ES dmarc report template: %s", err.Error())
+		_, err = m.esClient.IndexPutTemplate("cluegetter-session" + mappingVersionDmarcReport).BodyString(template).Do()
+		if err != nil {
+			m.Log().Fatalf("Could not create ES dmarc report template: %s", err.Error())
+		}
 	}
 }
 
