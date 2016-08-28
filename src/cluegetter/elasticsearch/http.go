@@ -17,7 +17,7 @@ import (
 	"cluegetter/core"
 )
 
-func (m *module) HttpHandlers() map[string]core.HttpCallback {
+func (m *Module) HttpHandlers() map[string]core.HttpCallback {
 	return map[string]core.HttpCallback{
 		"/message/": func(w http.ResponseWriter, r *http.Request) {
 			m.httpHandlerMessageShow(w, r)
@@ -28,12 +28,12 @@ func (m *module) HttpHandlers() map[string]core.HttpCallback {
 	}
 }
 
-func (m *module) httpHandlerMessageShow(w http.ResponseWriter, r *http.Request) {
+func (m *Module) httpHandlerMessageShow(w http.ResponseWriter, r *http.Request) {
 	queueId := r.URL.Path[len("/message/"):]
 
 	f := m.NewFinder()
 	f.SetQueueId(queueId)
-	res, err := f.Find()
+	res, err := f.FindWithDateHistogram()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -61,7 +61,7 @@ func (m *module) httpHandlerMessageShow(w http.ResponseWriter, r *http.Request) 
 	core.HttpRenderOutput(w, r, "elasticsearch/msgShow.html", viewData, viewData.Results)
 }
 
-func (m *module) httpHandlerMessageSearch(w http.ResponseWriter, r *http.Request) {
+func (m *Module) httpHandlerMessageSearch(w http.ResponseWriter, r *http.Request) {
 	viewData := struct {
 		*core.HttpViewData
 		Instances []*core.HttpInstance
@@ -114,7 +114,7 @@ func (m *module) httpHandlerMessageSearch(w http.ResponseWriter, r *http.Request
 			f.SetVerdicts(verdicts)
 		}
 
-		viewData.Results, err = f.Find()
+		viewData.Results, err = f.FindWithDateHistogram()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

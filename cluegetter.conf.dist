@@ -366,6 +366,35 @@ password = pass
 # Carbon Copy a copy of each report in this directory
 dump-dir = "/var/cache/cluegetter/reports/"
 
+[reputation-volume "client-address"]
+# The reputation-volume plugin is used to act on anomalies in volume.
+# E.g. if a sender sends 10 messages per 24 hours and all of a sudden
+# he sends 1000, that's suspicious and can contribute to the reject score.
+
+# Currently, the following factors are supported.
+# This list will be expanded shortly:
+# - client-address
+
+enabled = true
+
+# Run the plugin and log its results, but don't actually include
+# it in the reject score.
+noop = false
+
+# If there are less messages than this value received over the past year,
+# don't report anything as an anomaly
+minimum-samples-yr = 50
+
+# Number of standard deviations allowed compared to the difference between
+# Exponential Moving Average and today's count
+no-stddev = 5.0
+
+# The influence a new measurement has on the moving average
+volatility = 0.1
+
+# If a message is considered an anomaly, what score to add to the reject score.
+reject-score = 1.5
+
 [rspamd]
 enabled    = false
 host       = 127.0.0.1

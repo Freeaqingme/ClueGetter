@@ -43,19 +43,19 @@ func subApp() {
 	notAfter := flag.Int64("notAfter", 2147483648, "Unix Timestamp. Don't index from after this time. Defaults to 2038")
 	flag.Parse()
 
-	module := &module{BaseModule: core.NewBaseModule(core.InitCg())}
+	module := &Module{BaseModule: core.NewBaseModule(core.InitCg())}
 	module.Init()
 
 	module.index(time.Unix(*notBefore, 0), time.Unix(*notAfter, 0))
 }
 
-func (m *module) persistSessionChan(sessions <-chan *core.MilterSession) {
+func (m *Module) persistSessionChan(sessions <-chan *core.MilterSession) {
 	for sess := range sessions {
 		m.persistSession(sess)
 	}
 }
 
-func (m *module) index(notBefore, notAfter time.Time) {
+func (m *Module) index(notBefore, notAfter time.Time) {
 	var id []byte
 	err := m.Rdbms().QueryRow(`
 			SELECT SQL_NO_CACHE id FROM session ORDER BY id DESC LIMIT 1`,
@@ -120,7 +120,7 @@ func (m *module) index(notBefore, notAfter time.Time) {
 	wg.Wait()
 }
 
-func indexSessionsFromDb(m *module, id []byte, rawSessions chan map[[16]byte]*core.MilterSession,
+func indexSessionsFromDb(m *Module, id []byte, rawSessions chan map[[16]byte]*core.MilterSession,
 	notBefore, notAfter time.Time) {
 	bar := pb.StartNew(core.RdbmsRowsInTable("session"))
 	t0 := time.Now()
@@ -136,7 +136,7 @@ func indexSessionsFromDb(m *module, id []byte, rawSessions chan map[[16]byte]*co
 	}
 }
 
-func indexFetchSessionsFromDb(m *module, rawSessions chan map[[16]byte]*core.MilterSession, startAtId []byte, before time.Time,
+func indexFetchSessionsFromDb(m *Module, rawSessions chan map[[16]byte]*core.MilterSession, startAtId []byte, before time.Time,
 	includeId bool, notBefore, notAfter time.Time) ([]byte, int) {
 	var compare = "<"
 	if includeId {
@@ -195,7 +195,7 @@ func indexFetchSessionsFromDb(m *module, rawSessions chan map[[16]byte]*core.Mil
 	return lastId[:], count
 }
 
-func indexHydrateMessagesFromDb(m *module, sessions map[[16]byte]*core.MilterSession, msgChan chan map[string]*core.Message) {
+func indexHydrateMessagesFromDb(m *Module, sessions map[[16]byte]*core.MilterSession, msgChan chan map[string]*core.Message) {
 	sessionIds := make([]interface{}, 0)
 	for sessId := range sessions {
 		sessionIds = append(sessionIds, string(sessId[:]))
@@ -244,7 +244,7 @@ func indexHydrateMessagesFromDb(m *module, sessions map[[16]byte]*core.MilterSes
 	}
 }
 
-func indexHydrateRecipientsFromDb(m *module, messages map[string]*core.Message) {
+func indexHydrateRecipientsFromDb(m *Module, messages map[string]*core.Message) {
 	msgIds := make([]interface{}, 0)
 	for msgId := range messages {
 		msgIds = append(msgIds, msgId)
@@ -278,7 +278,7 @@ func indexHydrateRecipientsFromDb(m *module, messages map[string]*core.Message) 
 	}
 }
 
-func indexHydrateHeadersFromDb(m *module, messages map[string]*core.Message) {
+func indexHydrateHeadersFromDb(m *Module, messages map[string]*core.Message) {
 	msgIds := make([]interface{}, 0)
 	for msgId := range messages {
 		msgIds = append(msgIds, msgId)
@@ -306,7 +306,7 @@ func indexHydrateHeadersFromDb(m *module, messages map[string]*core.Message) {
 	}
 }
 
-func indexHydrateCheckResultsFromDb(m *module, messages map[string]*core.Message) {
+func indexHydrateCheckResultsFromDb(m *Module, messages map[string]*core.Message) {
 	msgIds := make([]interface{}, 0)
 	for msgId := range messages {
 		msgIds = append(msgIds, msgId)

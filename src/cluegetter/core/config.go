@@ -125,8 +125,9 @@ type config struct {
 	Reports struct {
 		Enabled bool
 	}
-	Reports_Source map[string]*ConfigReportsSource
-	Rspamd         struct {
+	Reports_Source    map[string]*ConfigReportsSource
+	Reputation_Volume map[string]*ConfigReputationVolume
+	Rspamd            struct {
 		Enabled    bool
 		Host       string
 		Port       int
@@ -173,6 +174,15 @@ type ConfigReportsSource struct {
 	User     string
 	Password string
 	Dump_Dir string
+}
+
+type ConfigReputationVolume struct {
+	Enabled            bool
+	Noop               bool
+	Minimum_Samples_Yr int
+	No_Stddev          float64
+	Volatility         float64
+	Reject_Score       float64
 }
 
 type SessionConfig struct {

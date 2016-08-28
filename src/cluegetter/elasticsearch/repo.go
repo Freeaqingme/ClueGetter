@@ -18,7 +18,8 @@ import (
 )
 
 type Finder struct {
-	module *module
+	module *Module
+	limit  int
 
 	queueId       string
 	from          *address.Address
@@ -40,15 +41,20 @@ type FinderResponse struct {
 	DateHistogram1Yrs   map[int64]int64
 }
 
-func (m *module) NewFinder() *Finder {
+func (m *Module) NewFinder() *Finder {
 	return &Finder{
 		module: m,
+		limit:  250,
 
 		from: &address.Address{},
 		to:   &address.Address{},
 
 		verdicts: []int{0, 1, 2, 3},
 	}
+}
+
+func (f *Finder) Limit() int {
+	return f.limit
 }
 
 func (f *Finder) From() *address.Address {
@@ -85,6 +91,11 @@ func (f *Finder) Instances() []string {
 
 func (f *Finder) Verdicts() []int {
 	return f.verdicts
+}
+
+func (f *Finder) SetLimit(limit int) *Finder {
+	f.limit = limit
+	return f
 }
 
 func (f *Finder) SetFrom(from *address.Address) *Finder {
@@ -132,28 +143,40 @@ func (f *Finder) SetQueueId(id string) *Finder {
 	return f
 }
 
-func (f *Finder) Find() (*FinderResponse, error) {
+func (f *Finder) find(resp *FinderResponse, supplementSearch func(*elastic.SearchService)) (*elastic.SearchResult, error) {
+	search := f.module.esClient.Search().
+		Index("cluegetter-sessions").
+		Sort("DateConnect", false).
+		From(0).
+		Size(f.Limit())
+	f.query(search)
+	supplementSearch(search)
+
+	sr, err := search.Do()
+	if err != nil {
+		return sr, err
+	}
+
+	resp.Total = sr.Hits.TotalHits
+	resp.Sessions, err = f.decodeSessions(sr)
+	if err != nil {
+		return sr, err
+	}
+
+	return sr, nil
+}
+
+func (f *Finder) FindWithDateHistogram() (*FinderResponse, error) {
 	resp := &FinderResponse{
 		DateHistogram24Hrs:  make(map[int64]int64, 0),
 		DateHistogram30Days: make(map[int64]int64, 0),
 		DateHistogram1Yrs:   make(map[int64]int64, 0),
 	}
 
-	search := f.module.esClient.Search().
-		Index("cluegetter-sessions").
-		Sort("DateConnect", false).
-		From(0).
-		Size(250)
-	f.query(search)
-	f.aggs(search)
+	sr, err := f.find(resp, func(search *elastic.SearchService) {
+		f.aggs(search)
+	})
 
-	sr, err := search.Do()
-	if err != nil {
-		return resp, err
-	}
-
-	resp.Total = sr.Hits.TotalHits
-	resp.Sessions, err = f.decodeSessions(sr)
 	if err != nil {
 		return resp, err
 	}

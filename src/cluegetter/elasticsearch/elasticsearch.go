@@ -23,7 +23,7 @@ import (
 
 const ModuleName = "elasticsearch"
 
-type module struct {
+type Module struct {
 	*core.BaseModule
 
 	esClient *elastic.Client
@@ -36,20 +36,20 @@ type session struct {
 }
 
 func init() {
-	core.ModuleRegister(&module{
+	core.ModuleRegister(&Module{
 		BaseModule: core.NewBaseModule(nil),
 	})
 }
 
-func (m *module) Name() string {
+func (m *Module) Name() string {
 	return ModuleName
 }
 
-func (m *module) Enable() bool {
+func (m *Module) Enable() bool {
 	return m.Config().Elasticsearch.Enabled
 }
 
-func (m *module) Init() {
+func (m *Module) Init() {
 	var err error
 	m.esClient, err = elastic.NewClient(
 		elastic.SetSniff(m.Config().Elasticsearch.Sniff),
@@ -76,7 +76,7 @@ func (m *module) Init() {
 	}
 }
 
-func (m *module) SessionDisconnect(sess *core.MilterSession) {
+func (m *Module) SessionDisconnect(sess *core.MilterSession) {
 	m.persistSession(sess)
 }
 
@@ -85,7 +85,7 @@ func (m *module) SessionDisconnect(sess *core.MilterSession) {
 // Because aggregations don't work too nicely on nested documents we
 // denormalize our sessions, so we store 1 session per message.
 // That way we don't need nested documents for messages.
-func (m *module) persistSession(coreSess *core.MilterSession) {
+func (m *Module) persistSession(coreSess *core.MilterSession) {
 	if coreSess.ClientIsMonitorHost() && len(coreSess.Messages) == 0 {
 		return
 	}
@@ -117,7 +117,7 @@ func (m *module) persistSession(coreSess *core.MilterSession) {
 	//fmt.Printf("Indexed tweet %s to index %s, type %s\n", put1.Id, put1.Index, put1.Type)
 }
 
-func (m *module) DmarcReportPersist(report *dmarc.FeedbackReport) {
+func (m *Module) DmarcReportPersist(report *dmarc.FeedbackReport) {
 	str, _ := json.Marshal(report)
 
 	_, err := m.esClient.Index().
@@ -134,7 +134,7 @@ func (m *module) DmarcReportPersist(report *dmarc.FeedbackReport) {
 	}
 }
 
-func (s *session) esMarshalJSON(m *module) ([]byte, error) {
+func (s *session) esMarshalJSON(m *Module) ([]byte, error) {
 	type Alias session
 
 	esMessages := []*esMessage{}
