@@ -215,6 +215,7 @@ func luaSessionRegisterType(L *lua.LState) {
 var luaSessionMethods = map[string]lua.LGFunction{
 	"config": luaSessionFuncGetSetSessionConfig,
 
+	"getAS":            luaSessionFuncAS,
 	"getSaslUsername":  luaSessionFuncSaslUsername,
 	"getSaslMethod":    luaSessionFuncSaslMethod,
 	"getCertIssuer":    luaSessionFuncCertIssuer,
@@ -278,6 +279,12 @@ func luaSessionFuncGetSetSessionConfig(L *lua.LState) int {
 	}
 
 	L.Push(getter(sconf))
+	return 1
+}
+
+func luaSessionFuncAS(L *lua.LState) int {
+	s := luaSessionGetFromVM(L)
+	L.Push(lua.LString(s.IpInfo.ASN))
 	return 1
 }
 

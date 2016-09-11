@@ -367,9 +367,10 @@ password = pass
 dump-dir = "/var/cache/cluegetter/reports/"
 
 [reputation-volume "client-address"]
-# The reputation-volume plugin is used to act on anomalies in volume.
-# E.g. if a sender sends 10 messages per 24 hours and all of a sudden
-# he sends 1000, that's suspicious and can contribute to the reject score.
+# The reputation-volume module is used to act on anomalies in volume.
+# E.g. if a sender sends 10 messages per 24 hours for a month and all of
+# a sudden he sends 1000, that's suspicious and can contribute to the
+# reject score.
 
 # Currently, the following factors are supported:
 # - sender
