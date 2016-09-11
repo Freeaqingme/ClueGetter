@@ -20,10 +20,22 @@ import (
 	"cluegetter/core"
 	"cluegetter/elasticsearch"
 
+	"cluegetter/address"
 	"gopkg.in/redis.v3"
 )
 
 const ModuleName = "reputation"
+
+const (
+	FACTOR_SENDER         = "sender"
+	FACTOR_SENDER_DOMAIN  = "sender_domain"
+	FACTOR_SENDER_SLD     = "sender_sld"
+	FACTOR_CLIENT_ADDRESS = "client_address"
+	FACTOR_SASL_USERNAME  = "sasl_username"
+	FACTOR_AS             = "as"
+	FACTOR_IP_RANGE       = "ip_range"
+	FACTOR_COUNTRY        = "country"
+)
 
 type module struct {
 	*core.BaseModule
@@ -71,11 +83,17 @@ func (m *module) startModule(name string, conf *core.ConfigReputationVolume) {
 	m.Module("elasticsearch", "reputation") // Mark dependency, fail if missing
 
 	for key := range m.Config().Reputation_Volume {
-		switch key {
-		case "client-address":
-		case "sender-sld":
+		switch strings.Replace(key, "-", "_", -1) {
+		case FACTOR_SENDER:
+		case FACTOR_SENDER_DOMAIN:
+		case FACTOR_SENDER_SLD:
+		case FACTOR_CLIENT_ADDRESS:
+		case FACTOR_SASL_USERNAME:
+		case FACTOR_AS:
+		case FACTOR_IP_RANGE:
+		case FACTOR_COUNTRY:
 		default:
-			m.Log().Fatal("Unknown reputation factor specified: %s", key)
+			m.Log().Fatalf("Unknown reputation factor specified: %s", key)
 		}
 	}
 
@@ -84,7 +102,7 @@ func (m *module) startModule(name string, conf *core.ConfigReputationVolume) {
 	module := &reputationVolumeModule{
 		module: m,
 
-		name: "reputation-volume-" + name,
+		name: "reputation-volume-" + strings.Replace(name, "-", "_", -1),
 		conf: conf,
 	}
 	core.ModuleRegister(module)
@@ -117,6 +135,11 @@ func (m *reputationVolumeModule) MessageCheck(msg *core.Message, done chan bool)
 		"noop":            m.Config().Noop,
 	}
 
+	factorValue := m.getFactorValue(msg)
+	if factorValue == "" {
+		return nil
+	}
+
 	callback := func(msg *core.Message, verdict int) {
 		if verdict != core.MessagePermit {
 			return
@@ -125,7 +148,7 @@ func (m *reputationVolumeModule) MessageCheck(msg *core.Message, done chan bool)
 		key := fmt.Sprintf("cluegetter-%d-reputation-volume-%s-%s-today",
 			m.Instance(),
 			m.Name(),
-			m.getFactorValue(msg),
+			factorValue,
 		)
 
 		m.Redis().Incr(key)
@@ -228,9 +251,24 @@ func (m *reputationVolumeModule) getSeriesES(msg *core.Message) ([]int, error) {
 	finder.SetVerdicts([]int{int(core.Proto_Message_PERMIT)})
 	finder.SetLimit(0)
 
-	switch m.Name() {
-	case "reputation-volume-client-address":
-		finder.SetClientAddress(m.getFactorValue(msg))
+	factorValue := m.getFactorValue(msg)
+	switch m.Name()[len("reputation-volume-"):] {
+	case FACTOR_SENDER:
+		finder.SetFrom(address.FromString(factorValue))
+	case FACTOR_SENDER_DOMAIN:
+		finder.SetFrom(address.FromAddressOrDomain(factorValue))
+	case FACTOR_SENDER_SLD:
+		finder.SetFromSld(factorValue)
+	case FACTOR_CLIENT_ADDRESS:
+		finder.SetClientAddress(factorValue)
+	case FACTOR_SASL_USERNAME:
+		finder.SetSaslUser(factorValue)
+	case FACTOR_AS:
+		finder.SetAS(factorValue)
+	case FACTOR_IP_RANGE:
+		finder.SetIpRange(factorValue)
+	case FACTOR_COUNTRY:
+		finder.SetCountry(factorValue)
 	}
 
 	esRes, err := finder.FindWithDateHistogram()
@@ -242,9 +280,23 @@ func (m *reputationVolumeModule) getSeriesES(msg *core.Message) ([]int, error) {
 }
 
 func (m *reputationVolumeModule) getFactorValue(msg *core.Message) string {
-	switch m.Name() {
-	case "reputation-volume-client-address":
+	switch m.Name()[len("reputation-volume-"):] {
+	case FACTOR_SENDER:
+		return msg.From.String()
+	case FACTOR_SENDER_DOMAIN:
+		return msg.From.Domain()
+	case FACTOR_SENDER_SLD:
+		return msg.From.Sld()
+	case FACTOR_CLIENT_ADDRESS:
 		return msg.Session().Ip
+	case FACTOR_SASL_USERNAME:
+		return msg.Session().SaslUsername
+	case FACTOR_AS:
+		return msg.Session().IpInfo.ASN
+	case FACTOR_IP_RANGE:
+		return msg.Session().IpInfo.IpRange
+	case FACTOR_COUNTRY:
+		return msg.Session().IpInfo.Country
 	}
 
 	panic("Unknown module name: " + m.Name())

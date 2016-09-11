@@ -371,9 +371,15 @@ dump-dir = "/var/cache/cluegetter/reports/"
 # E.g. if a sender sends 10 messages per 24 hours and all of a sudden
 # he sends 1000, that's suspicious and can contribute to the reject score.
 
-# Currently, the following factors are supported.
-# This list will be expanded shortly:
+# Currently, the following factors are supported:
+# - sender
+# - sender-domain
+# - sender-sld
 # - client-address
+# - sasl-username
+# - as
+# - ip-range
+# - country
 
 enabled = true
 

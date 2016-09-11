@@ -61,7 +61,7 @@
     {{ end }}
     <dt>Recipient Count</dt>
     <dd>{{ len $msg.Rcpt }}</dd>
-    <dt>Envelope Recipients</dt>
+    <dt>Envelope Rcpt</dt>
     {{ range $key, $value := $msg.Rcpt }}
     <dd>
         {{ if eq $value.Domain "" }}

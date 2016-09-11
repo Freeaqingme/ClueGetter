@@ -23,6 +23,7 @@ type Finder struct {
 
 	queueId       string
 	from          *address.Address
+	fromSld       string
 	to            *address.Address
 	saslUser      string
 	clientAddress string
@@ -30,6 +31,9 @@ type Finder struct {
 	dateEnd       *time.Time
 	instances     []string
 	verdicts      []int
+	as            string
+	ipRange       string
+	country       string
 }
 
 type FinderResponse struct {
@@ -59,6 +63,10 @@ func (f *Finder) Limit() int {
 
 func (f *Finder) From() *address.Address {
 	return f.from
+}
+
+func (f *Finder) FromSld() string {
+	return f.fromSld
 }
 
 func (f *Finder) To() *address.Address {
@@ -93,6 +101,18 @@ func (f *Finder) Verdicts() []int {
 	return f.verdicts
 }
 
+func (f *Finder) AS() string {
+	return f.as
+}
+
+func (f *Finder) IpRange() string {
+	return f.ipRange
+}
+
+func (f *Finder) Country() string {
+	return f.country
+}
+
 func (f *Finder) SetLimit(limit int) *Finder {
 	f.limit = limit
 	return f
@@ -100,6 +120,11 @@ func (f *Finder) SetLimit(limit int) *Finder {
 
 func (f *Finder) SetFrom(from *address.Address) *Finder {
 	f.from = from
+	return f
+}
+
+func (f *Finder) SetFromSld(sld string) *Finder {
+	f.fromSld = sld
 	return f
 }
 
@@ -140,6 +165,21 @@ func (f *Finder) SetVerdicts(verdicts []int) *Finder {
 
 func (f *Finder) SetQueueId(id string) *Finder {
 	f.queueId = id
+	return f
+}
+
+func (f *Finder) SetAS(as string) *Finder {
+	f.as = as
+	return f
+}
+
+func (f *Finder) SetIpRange(ipRange string) *Finder {
+	f.ipRange = ipRange
+	return f
+}
+
+func (f *Finder) SetCountry(country string) *Finder {
+	f.country = country
 	return f
 }
 
@@ -231,6 +271,10 @@ func (f *Finder) query(service *elastic.SearchService) *elastic.SearchService {
 		qMsg.Must(addressQuery("Messages.From", f.from))
 		searchMessages = true
 	}
+	if f.FromSld() != "" {
+		qMsg.Must(elastic.NewMatchQuery("Messages.From.Sld", f.FromSld()))
+		searchMessages = true
+	}
 	if f.to.String() != "" {
 		qMsg.Must(elastic.NewNestedQuery("Messages.Rcpt",
 			addressQuery("Messages.Rcpt", f.to),
@@ -259,6 +303,15 @@ func (f *Finder) query(service *elastic.SearchService) *elastic.SearchService {
 	}
 	if f.clientAddress != "" {
 		q.Must(elastic.NewTermsQuery("Ip", f.clientAddress))
+	}
+	if f.AS() != "" {
+		q.Must(elastic.NewTermsQuery("IpInfo.ASN", f.AS()))
+	}
+	if f.IpRange() != "" {
+		q.Must(elastic.NewTermsQuery("IpInfo.IpRange", f.IpRange()))
+	}
+	if f.Country() != "" {
+		q.Must(elastic.NewTermsQuery("IpInfo.Country", f.Country()))
 	}
 
 	return service.Query(q)
