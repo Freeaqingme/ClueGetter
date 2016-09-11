@@ -116,7 +116,7 @@ func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCh
 			)
 			return &core.MessageCheckResult{
 				Module:          m.Name(),
-				SuggestedAction: core.MessageReject,
+				SuggestedAction: core.MessageTempFail,
 				Message:         errMsg,
 				Score:           100,
 				Determinants:    determinants,

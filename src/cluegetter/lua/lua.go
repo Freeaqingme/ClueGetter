@@ -434,9 +434,9 @@ func luaMessageFuncHeaders(L *lua.LState) int {
 	p := luaMessageGetFromVM(L)
 
 	t := L.NewTable()
-	for _, v := range p.Headers {
+	for k := range p.Headers {
 		ud := L.NewUserData()
-		ud.Value = &v
+		ud.Value = &p.Headers[k]
 		L.SetMetatable(ud, L.GetTypeMetatable("messageHeader"))
 		t.Append(ud)
 	}
