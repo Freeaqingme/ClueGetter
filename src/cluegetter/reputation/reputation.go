@@ -10,11 +10,17 @@
 package reputation
 
 import (
-	"cluegetter/core"
-	"cluegetter/elasticsearch"
+	"fmt"
 	"math"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
+
+	"cluegetter/core"
+	"cluegetter/elasticsearch"
+
+	"gopkg.in/redis.v3"
 )
 
 const ModuleName = "reputation"
@@ -90,20 +96,7 @@ func (m *reputationVolumeModule) Config() *core.ConfigReputationVolume {
 }
 
 func (m *reputationVolumeModule) MessageCheck(msg *core.Message, done chan bool) *core.MessageCheckResult {
-	es := (*m.Module("elasticsearch", "reputation")).(*elasticsearch.Module)
-
-	start := time.Now().AddDate(-1, 0, 0) // Now - 1 year
-	finder := es.NewFinder()
-	finder.SetDateStart(&start)
-	finder.SetVerdicts([]int{int(core.Proto_Message_PERMIT)})
-	finder.SetLimit(0)
-
-	switch m.Name() {
-	case "client-address":
-		finder.SetClientAddress(msg.Session().Ip)
-	}
-
-	esRes, err := finder.FindWithDateHistogram()
+	series, err := m.getSeries(msg)
 	if err != nil {
 		determinants := map[string]interface{}{"error": err.Error()}
 		return &core.MessageCheckResult{
@@ -113,12 +106,8 @@ func (m *reputationVolumeModule) MessageCheck(msg *core.Message, done chan bool)
 		}
 	}
 
-	series := mapInt64ToSliceInt(esRes.DateHistogram1Yrs)
 	total, lastSeries := seriesStats(series)
-
-	isAnomalous := m.isAnomalous(series, m.Config().Minimum_Samples_Yr, m.Config().Volatility, m.Config().No_Stddev)
 	determinants := map[string]interface{}{
-		"is-anomalous":    isAnomalous,
 		"last-30-days":    lastSeries,
 		"total-past-year": total,
 		"minimum-samples": m.Config().Minimum_Samples_Yr,
@@ -127,6 +116,33 @@ func (m *reputationVolumeModule) MessageCheck(msg *core.Message, done chan bool)
 		"penalty":         m.Config().Reject_Score,
 		"noop":            m.Config().Noop,
 	}
+
+	callback := func(msg *core.Message, verdict int) {
+		if verdict != core.MessagePermit {
+			return
+		}
+
+		key := fmt.Sprintf("cluegetter-%d-reputation-volume-%s-%s-today",
+			m.Instance(),
+			m.Name(),
+			m.getFactorValue(msg),
+		)
+
+		m.Redis().Incr(key)
+	}
+
+	if total < m.Config().Minimum_Samples_Yr {
+		return &core.MessageCheckResult{
+			Module:          m.Name(),
+			SuggestedAction: core.MessagePermit,
+			Determinants:    determinants,
+			Score:           m.Config().Reject_Score,
+			Callbacks:       []*func(*core.Message, int){&callback},
+		}
+	}
+
+	isAnomalous := isAnomalous(series, m.Config().Volatility, m.Config().No_Stddev)
+	determinants["is-anomalous"] = isAnomalous
 
 	if m.Config().Noop {
 		m.Log().Debugf("Noop: Module %s found message %s to be anomalous: %t", m.Name(), msg.QueueId, isAnomalous)
@@ -137,6 +153,7 @@ func (m *reputationVolumeModule) MessageCheck(msg *core.Message, done chan bool)
 			SuggestedAction: core.MessageReject,
 			Determinants:    determinants,
 			Score:           m.Config().Reject_Score,
+			Callbacks:       []*func(*core.Message, int){&callback},
 		}
 	}
 
@@ -144,19 +161,97 @@ func (m *reputationVolumeModule) MessageCheck(msg *core.Message, done chan bool)
 		Module:          m.Name(),
 		SuggestedAction: core.MessagePermit,
 		Determinants:    determinants,
+		Callbacks:       []*func(*core.Message, int){&callback},
 	}
+}
+
+func (m *reputationVolumeModule) getSeries(msg *core.Message) ([]int, error) {
+	series, redisKey, err := m.getSeriesRedis(msg)
+	if err != nil {
+		m.Log().Error(err.Error())
+	}
+	if len(series) == 0 {
+		series, err = m.getSeriesES(msg)
+		if err != nil {
+			return series, err
+		}
+
+		m.seriesPersistInRedis(redisKey, series)
+	}
+
+	return series, nil
+}
+
+func (m *reputationVolumeModule) getSeriesRedis(msg *core.Message) ([]int, string, error) {
+	key := fmt.Sprintf("cluegetter-%d-reputation-volume-%s-%s-",
+		m.Instance(),
+		m.Name(),
+		m.getFactorValue(msg),
+	)
+
+	res, err := m.Redis().Get(key + "series").Result()
+	if err != nil {
+		if err == redis.Nil {
+			return []int{}, key, nil
+		}
+		return []int{}, key, fmt.Errorf("Could not get -series from Redis: %s", err.Error())
+	}
+
+	out := make([]int, 0)
+	parts := strings.Split(res, ",")
+	for _, part := range parts {
+		val, _ := strconv.Atoi(part)
+		out = append(out, val)
+	}
+
+	today := 0
+	res, err = m.Redis().Get(key + "today").Result()
+	if err != nil {
+		if err == redis.Nil {
+			return []int{}, key, nil
+		}
+		return []int{}, key, fmt.Errorf("Could not get -today from Redis: %s", err.Error())
+	} else {
+		today, _ = strconv.Atoi(res)
+	}
+
+	return append(out, today), key, nil
+}
+
+func (m *reputationVolumeModule) getSeriesES(msg *core.Message) ([]int, error) {
+	es := (*m.Module("elasticsearch", "reputation")).(*elasticsearch.Module)
+
+	start := time.Now().AddDate(-1, 0, 0) // Now - 1 year
+	finder := es.NewFinder()
+	finder.SetInstances([]string{strconv.Itoa(int(m.Instance()))})
+	finder.SetDateStart(&start)
+	finder.SetVerdicts([]int{int(core.Proto_Message_PERMIT)})
+	finder.SetLimit(0)
+
+	switch m.Name() {
+	case "reputation-volume-client-address":
+		finder.SetClientAddress(m.getFactorValue(msg))
+	}
+
+	esRes, err := finder.FindWithDateHistogram()
+	if err != nil {
+		return nil, err
+	}
+
+	return mapInt64ToSliceInt(esRes.DateHistogram1Yrs), nil
+}
+
+func (m *reputationVolumeModule) getFactorValue(msg *core.Message) string {
+	switch m.Name() {
+	case "reputation-volume-client-address":
+		return msg.Session().Ip
+	}
+
+	panic("Unknown module name: " + m.Name())
 }
 
 // Takes past volume of (accepted) mail into account to determine if the
 // current volume does not significantly deviate from past patterns.
-//
-// Exponential Moving Average (EMA)
-// EMA <- w * EMA + (1 - w) * x
-// w: influence of a new measurement to the EMA
-// x: the amount of mail for a particular time slot
-//
-// Exponential Moving Standard Deviation
-// EMS <- sqrt( w * EMS^2 + (1 - w) * (x - EMA)^2 )
 //
 // Threshold is exceeded when: (x - EMA) > (n * EMS)
 // n: Number of standard deviations compared to
@@ -173,26 +268,58 @@ func (m *reputationVolumeModule) MessageCheck(msg *core.Message, done chan bool)
 // w = (n^2 (-(EMA^2-2 EMA x+x^2-EMS^2))-sqrt(n^4 (EMA^2-2 EMA x+x^2-EMS^2)^2+4 n^2 (EMA^2-2 EMA x+x^2)^2))
 // 					/ (2 (EMA^2-2 EMA x+x^2))
 //
-func (m *module) isAnomalous(in []int, min int, w, n float64) bool {
+func isAnomalous(in []int, w, n float64) bool {
 	ema := 0.0
 	ems := 0.0
-	total := 0
-	for k, x := range in {
-		total = total + x
+	var k, x int
+
+	for k, x = range in {
 		if k == len(in)-1 {
-			// Last item in set should include the message
-			// that we're currently checking for
-			x = x + 1
+			break
 		}
 
-		ema = (w * ema) + ((1.0 - w) * float64(x))
-		if k == len(in)-1 && total > min && (float64(x)-ema) > (n*ems) {
-			return true
-		}
-		ems = math.Sqrt(w*math.Pow(ems, 2.0) + (1.0-w)*math.Pow(float64(x)-ema, 2))
+		ema = calcEma(x, ema, w)
+		ems = calcEms(x, ema, ems, w)
+	}
+
+	ema = calcEma(x, ema, w)
+	if (float64(x) - ema) > (n * ems) {
+		return true
 	}
 
 	return false
+}
+
+// Exponential Moving Average (EMA)
+// EMA <- w * EMA + (1 - w) * x
+// w: influence of a new measurement to the EMA
+// x: the amount of mail for a particular time slot
+func calcEma(x int, ema, w float64) float64 {
+	return (w * ema) + ((1.0 - w) * float64(x))
+}
+
+// Exponential Moving Standard Deviation
+// EMS <- sqrt( w * EMS^2 + (1 - w) * (x - EMA)^2 )
+//
+func calcEms(x int, ema, ems, w float64) float64 {
+	return math.Sqrt(w*math.Pow(ems, 2.0) + (1.0-w)*math.Pow(float64(x)-ema, 2))
+}
+
+func (m *reputationVolumeModule) seriesPersistInRedis(redisKey string, series []int) {
+	seriesString := make([]string, len(series))
+	for k, v := range series {
+		seriesString[k] = strconv.Itoa(v)
+	}
+
+	if len(series) == 0 {
+		m.Redis().Set(redisKey+"series", "0", 4*time.Hour)
+		m.Redis().Set(redisKey+"today", "0", 4*time.Hour)
+		return
+	}
+
+	seriesContents := strings.Join(seriesString[0:len(series)-1], ",")
+	m.Redis().Set(redisKey+"series", seriesContents, 4*time.Hour)
+	m.Redis().Set(redisKey+"today", series[len(series)-1], 4*time.Hour)
 }
 
 func mapInt64ToSliceInt(in map[int64]int64) []int {

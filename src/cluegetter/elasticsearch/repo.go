@@ -203,6 +203,7 @@ func (f *Finder) aggs(service *elastic.SearchService) *elastic.SearchService {
 			Field("DateConnect").
 			Interval(interval).
 			Format("yyyy-MM-dd HH:mm").
+			ExtendedBoundsMax("now").
 			TimeZone("CET") // Do more intelligently?
 		filter := elastic.NewRangeQuery("DateConnect").
 			Gt(period)

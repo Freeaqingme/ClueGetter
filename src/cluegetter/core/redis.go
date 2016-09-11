@@ -27,6 +27,7 @@ type RedisClientBase interface {
 	Get(key string) *redis.StringCmd
 	HSet(key, field, value string) *redis.BoolCmd
 	HGetAllMap(key string) *redis.StringStringMapCmd
+	Incr(key string) *redis.IntCmd
 	LPush(key string, values ...string) *redis.IntCmd
 	LPushX(key, value interface{}) *redis.IntCmd
 	LRange(key string, start, stop int64) *redis.StringSliceCmd
