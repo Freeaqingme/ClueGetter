@@ -134,6 +134,7 @@ func (milter *milter) Connect(ctx uintptr, hostname string, ip net.IP) (sfsistat
 		DateConnect: time.Now(),
 		Instance:    instance,
 		config:      Config.sessionConfig(),
+		ipInfoMu:    &sync.Mutex{},
 	}
 	sess.Hostname = hostname
 	sess.Ip = ip.String()

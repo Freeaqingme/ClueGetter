@@ -95,7 +95,7 @@ func (m *module) lookupIpInfo(job *lookupJob, sess *core.MilterSession) {
 
 	wg.Wait()
 
-	sess.IpInfo = info
+	sess.SetIpInfo(info)
 	job.ipInfo = info
 	job.done = true
 	m.Log().Debugf("Lookuped up Ip Info for %s in %s", sess.Ip, time.Now().Sub(job.timeStart))

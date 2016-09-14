@@ -37,12 +37,16 @@ type MilterSession struct {
 	Cipher        string
 	TlsVersion    string
 	Ip            string
-	IpInfo        *IpInfo
 	ReverseDns    string
 	Hostname      string
 	Helo          string
 	MtaHostName   string
 	MtaDaemonName string
+
+	// Use GetIpInfo() to retrieve. This should not be
+	// exported, but need to fix json encoding first.
+	IpInfo   *IpInfo
+	ipInfoMu *sync.Mutex
 
 	config    *SessionConfig
 	milterCtx uintptr
@@ -73,6 +77,20 @@ func (m *MilterSession) ClientIsMonitorHost() bool {
 	}
 
 	return false
+}
+
+func (m *MilterSession) GetIpInfo() *IpInfo {
+	m.ipInfoMu.Lock()
+	defer m.ipInfoMu.Unlock()
+
+	return m.IpInfo
+}
+
+func (m *MilterSession) SetIpInfo(ipinfo *IpInfo) {
+	m.ipInfoMu.Lock()
+	defer m.ipInfoMu.Unlock()
+
+	m.IpInfo = ipinfo
 }
 
 type milterSessionWhitelistRange struct {

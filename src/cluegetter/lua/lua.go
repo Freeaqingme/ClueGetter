@@ -284,7 +284,7 @@ func luaSessionFuncGetSetSessionConfig(L *lua.LState) int {
 
 func luaSessionFuncAS(L *lua.LState) int {
 	s := luaSessionGetFromVM(L)
-	L.Push(lua.LString(s.IpInfo.ASN))
+	L.Push(lua.LString(s.GetIpInfo().ASN))
 	return 1
 }
 
