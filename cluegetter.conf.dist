@@ -45,6 +45,10 @@ rdbms-protocol         = tcp
 rdbms-address          = localhost:3306
 rdbms-database         = cluegetter
 
+# Persist messages in Mysql. Disabling this feature will also
+# partially disable greylisting support.
+rdbms-message-persist = true
+
 # Various modules determine whether an email should be rejected. E.g.
 # when an email is determined to be spam. Rejecting an email will
 # generally result in the delivering MTA sending a bounce to the

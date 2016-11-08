@@ -518,7 +518,9 @@ func messageSave(msg *Message) {
 		panic("marshaling error: " + err.Error())
 	}
 
-	messagePersistQueue <- protoMsg
+	if Config.ClueGetter.Rdbms_Message_Persist {
+		messagePersistQueue <- protoMsg
+	}
 	go messagePersistInCache(msg.QueueId, messageGetMessageId(msg), protoMsg)
 }
 

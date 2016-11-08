@@ -35,9 +35,11 @@ func messagePersistStart() {
 	messagePersistStmtPrepare()
 
 	messagePersistQueue = make(chan []byte)
-	in := make(chan []byte)
-	redisListSubscribe("cluegetter-"+strconv.Itoa(int(instance))+"-message-persist", messagePersistQueue, in)
-	go messagePersistHandleQueue(in)
+	if Config.ClueGetter.Rdbms_Message_Persist {
+		in := make(chan []byte)
+		redisListSubscribe("cluegetter-" + strconv.Itoa(int(instance)) + "-message-persist", messagePersistQueue, in)
+		go messagePersistHandleQueue(in)
+	}
 
 	if Config.ClueGetter.Archive_Prune_Interval != 0 {
 		go messagePersistPrune()

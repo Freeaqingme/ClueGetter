@@ -273,9 +273,11 @@ func milterSessionStart() {
 	}
 
 	messagePersistQueue = make(chan []byte)
-	in := make(chan []byte)
-	redisListSubscribe("cluegetter-"+strconv.Itoa(int(instance))+"-session-persist", milterSessionPersistChan, in)
-	go milterSessionPersistHandleQueue(in)
+	if Config.ClueGetter.Rdbms_Message_Persist {
+		in := make(chan []byte)
+		redisListSubscribe("cluegetter-" + strconv.Itoa(int(instance)) + "-session-persist", milterSessionPersistChan, in)
+		go milterSessionPersistHandleQueue(in)
+	}
 
 	milterSessionPersistQueue = ring.Ring{}
 	milterSessionPersistQueue.SetCapacity(256)
@@ -399,7 +401,10 @@ func (s *MilterSession) persist() {
 		panic("marshaling error: " + err.Error())
 	}
 
-	milterSessionPersistChan <- protoMsg
+
+	if Config.ClueGetter.Rdbms_Message_Persist {
+		milterSessionPersistChan <- protoMsg
+	}
 }
 
 func (sess *MilterSession) getProtoBufStruct() *Proto_Session {
