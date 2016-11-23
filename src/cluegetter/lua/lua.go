@@ -241,6 +241,10 @@ func luaSessionGetFromVM(L *lua.LState) *core.MilterSession {
 }
 
 var sessionConfigSetters = map[string]func(*core.SessionConfig, *lua.LState){
+	"clamav.enabled": func(c *core.SessionConfig, L *lua.LState) {
+		c.Clamav.Enabled = L.CheckBool(3)
+	},
+
 	"dkim.sign": func(c *core.SessionConfig, L *lua.LState) {
 		c.Dkim.Sign = L.CheckString(3)
 	},
@@ -249,16 +253,28 @@ var sessionConfigSetters = map[string]func(*core.SessionConfig, *lua.LState){
 	"greylisting.enabled": func(c *core.SessionConfig, L *lua.LState) {
 		c.Greylisting.Enabled = L.CheckBool(3)
 	},
+
+	"spamassassin.enabled": func(c *core.SessionConfig, L *lua.LState) {
+		c.SpamAssassin.Enabled = L.CheckBool(3)
+	},
+
 }
 
 var sessionConfigGetters = map[string]func(*core.SessionConfig) lua.LValue{
+	"clamav.enabled": func(c *core.SessionConfig) lua.LValue {
+		return lua.LBool(c.Clamav.Enabled)
+	},
+
 	"dkim.sign": func(c *core.SessionConfig) lua.LValue {
 		return lua.LString(c.Dkim.Sign)
 	},
 
-	// Greylisting
 	"greylisting.enabled": func(c *core.SessionConfig) lua.LValue {
 		return lua.LBool(c.Greylisting.Enabled)
+	},
+
+	"spamassassin.enabled": func(c *core.SessionConfig) lua.LValue {
+		return lua.LBool(c.SpamAssassin.Enabled)
 	},
 }
 
