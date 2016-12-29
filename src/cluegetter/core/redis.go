@@ -34,6 +34,7 @@ type RedisClientBase interface {
 	LSet(key string, index int64, value interface{}) *redis.StatusCmd
 	Ping() *redis.StatusCmd
 	RPop(key string) *redis.StringCmd
+	Rename(string, string) *redis.StatusCmd
 	SAdd(key string, members ...string) *redis.IntCmd
 	SMembers(key string) *redis.StringSliceCmd
 	Set(key string, value interface{}, expiration time.Duration) *redis.StatusCmd

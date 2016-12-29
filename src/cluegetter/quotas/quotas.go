@@ -214,11 +214,10 @@ func (m *module) quotasRedisUpdateFromRdbms() {
 		i++
 	}
 
-	// Todo: Use some sort of scripting or pipelining here?
 	for k, v := range groupedQuotas {
 		key := fmt.Sprintf("{cluegetter-%d-quotas-%s}-definitions", m.Instance(), k)
-		m.Redis().Del(key)
-		m.Redis().LPush(key, v...)
+		m.Redis().LPush(key + "-new", v...)
+		m.Redis().Rename(key + "-new", key) // Overwrite old list atomically
 		m.Redis().Expire(key, time.Duration(24)*time.Hour)
 	}
 
