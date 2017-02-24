@@ -255,7 +255,7 @@ max-size = 10485760
 # As such, you can import address books into Redis. And depending
 # if it's in a white- or blacklist ease up or tighten down
 # acceptance of a message.
-enabled = true
+enabled = false
 
 whitelist-address-score = -2.5
 whitelist-domain-score = -0.85
@@ -358,7 +358,7 @@ account-sasl-username = false
 [reports]
 # Parses various types of reports (currently only DMARC. AFRF & ARF to
 # follow soon) and indexes them. Can be used for reputation tracking purposes.
-enabled = true
+enabled = false
 
 [reports-source "default"]
 type     = pop3
@@ -386,7 +386,7 @@ dump-dir = "/var/cache/cluegetter/reports/"
 # - ip-range
 # - country
 
-enabled = true
+enabled = false
 
 # Run the plugin and log its results, but don't actually include
 # it in the reject score.
