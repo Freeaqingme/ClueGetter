@@ -1,3 +1,6 @@
+-- next
+DROP TABLE greylist_whitelist;
+
 -- v0.6.2
 ALTER TABLE quota CHANGE selector selector enum('sender','recipient','client_address','sasl_username','sender_domain','recipient_domain', 'sender_sld', 'recipient_sld') NOT NULL;
 
