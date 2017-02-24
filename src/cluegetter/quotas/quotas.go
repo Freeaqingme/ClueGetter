@@ -216,8 +216,8 @@ func (m *module) quotasRedisUpdateFromRdbms() {
 
 	for k, v := range groupedQuotas {
 		key := fmt.Sprintf("{cluegetter-%d-quotas-%s}-definitions", m.Instance(), k)
-		m.Redis().LPush(key + "-new", v...)
-		m.Redis().Rename(key + "-new", key) // Overwrite old list atomically
+		m.Redis().LPush(key+"-new", v...)
+		m.Redis().Rename(key+"-new", key) // Overwrite old list atomically
 		m.Redis().Expire(key, time.Duration(24)*time.Hour)
 	}
 

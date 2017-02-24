@@ -7,7 +7,7 @@
 //
 package core
 
-import(
+import (
 	"os"
 
 	"github.com/Freeaqingme/GoDaemonSkeleton"
@@ -32,7 +32,7 @@ func init() {
 }
 
 func logHandover() {
-	    if len(os.Args) != 2 || os.Args[1] != "reopen" {
+	if len(os.Args) != 2 || os.Args[1] != "reopen" {
 		Log.Fatal("Missing argument for 'log'. Must be one of: reopen")
 	}
 

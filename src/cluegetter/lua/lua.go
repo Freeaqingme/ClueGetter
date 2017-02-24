@@ -257,7 +257,6 @@ var sessionConfigSetters = map[string]func(*core.SessionConfig, *lua.LState){
 	"spamassassin.enabled": func(c *core.SessionConfig, L *lua.LState) {
 		c.SpamAssassin.Enabled = L.CheckBool(3)
 	},
-
 }
 
 var sessionConfigGetters = map[string]func(*core.SessionConfig) lua.LValue{
