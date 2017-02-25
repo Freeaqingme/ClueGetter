@@ -19,8 +19,9 @@ import (
 
 const ModuleName = "greylisting"
 
-// A period of a month seems legit. And then we want to allow for cases
-// like a news letter sent every first Monday of the month
+// A period (in days) of a month seems legit. And then we
+// want to allow for cases like a news letter sent every
+// first Monday of the month
 const greylist_validity = 40
 
 var greylistSpf2 = libspf2.NewClient()
@@ -140,7 +141,7 @@ func (m *module) ipIsWhitelisted(ip *string) bool {
 
 func (m *module) updateWhitelist(msg *core.Message) {
 	key := fmt.Sprintf("cluegetter-%d-greylisting-ip-%s", m.Instance(), msg.Session().Ip)
-	m.Redis().Set(key, time.Now().Unix(), 40*24*time.Hour)
+	m.Redis().Set(key, time.Now().Unix(), greylist_validity*24*time.Hour)
 }
 
 func (m *module) ipIsSpfWhitelisted(ip net.IP, done chan bool, whitelist []string) (bool, string, error) {
