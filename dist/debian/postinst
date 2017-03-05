@@ -28,8 +28,16 @@ case "$1" in
     mkdir "/var/lib/cluegetter"
     chown cluegetter /var/lib/cluegetter
 
-      systemctl daemon-reload
-      systemctl restart cluegetter.service
+    if command -v systemctl >/dev/null; then
+        systemctl daemon-reload
+        systemctl restart cluegetter.service
+#    elif [ -x /etc/init.d/cluegetter ]; then
+#      if command -v invoke-rc.d >/dev/null; then
+#        invoke-rc.d cluegetter restart
+#      else
+#        /etc/init.d/cluegetter restart
+#      fi
+    fi
   ;;
 
   abort-upgrade|abort-remove|abort-deconfigure)
