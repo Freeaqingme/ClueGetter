@@ -9,7 +9,6 @@ package elasticsearch
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	"cluegetter/address"
@@ -39,7 +38,7 @@ type Finder struct {
 
 type FinderResponse struct {
 	Total    int64
-	Sessions []session
+	Sessions []core.SingleJsonableMsgSession
 
 	DateHistogram24Hrs  map[int64]int64
 	DateHistogram30Days map[int64]int64
@@ -307,15 +306,17 @@ func (f *Finder) query(service *elastic.SearchService) *elastic.SearchService {
 	return service.Query(q)
 }
 
-func (f *Finder) decodeSessions(sr *elastic.SearchResult) ([]session, error) {
-	sessions := make([]session, 0)
+// For the time being we return SingleJsonableMsgSession, instead of regular Session
+// because the determinants are not unmarshallable, for the time being :(
+func (f *Finder) decodeSessions(sr *elastic.SearchResult) ([]core.SingleJsonableMsgSession, error) {
+	sessions := make([]core.SingleJsonableMsgSession, 0)
 	if sr == nil || sr.TotalHits() == 0 {
 		return sessions, nil
 	}
 
 	for _, hit := range sr.Hits.Hits {
-		session := &session{}
-		if err := json.Unmarshal(*hit.Source, session); err != nil {
+		session := &core.SingleJsonableMsgSession{}
+		if err := session.UnmarshalJSON(*hit.Source); err != nil {
 			return nil, err
 		}
 		for _, msg := range session.Messages {

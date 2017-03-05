@@ -78,7 +78,7 @@ func (m *Module) httpHandlerMessageSearch(w http.ResponseWriter, r *http.Request
 
 		Finder: m.NewFinder(),
 		Results: &FinderResponse{
-			Sessions: make([]session, 0),
+			Sessions: make([]core.SingleJsonableMsgSession, 0),
 		},
 	}
 	viewData.HttpViewData.TplRendersFullBody = true

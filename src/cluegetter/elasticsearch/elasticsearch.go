@@ -13,9 +13,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
-	"cluegetter/address"
 	"cluegetter/core"
 
 	"github.com/Freeaqingme/dmarcaggparser/dmarc"
@@ -28,12 +26,6 @@ type Module struct {
 	*core.BaseModule
 
 	esClient *elastic.Client
-}
-
-type session struct {
-	*core.MilterSession
-
-	jsonMarshalMsgId int
 }
 
 func init() {
@@ -90,15 +82,13 @@ func (m *Module) SessionDisconnect(sess *core.MilterSession) {
 // Because aggregations don't work too nicely on nested documents we
 // denormalize our sessions, so we store 1 session per message.
 // That way we don't need nested documents for messages.
-func (m *Module) persistSession(coreSess *core.MilterSession) {
-	if coreSess.ClientIsMonitorHost() && len(coreSess.Messages) == 0 {
+func (m *Module) persistSession(sess *core.MilterSession) {
+	if sess.ClientIsMonitorHost() && len(sess.Messages) == 0 {
 		return
 	}
 
-	msgId := 0
-	for {
-		sess := &session{coreSess, msgId}
-		str, _ := sess.esMarshalJSON(m)
+	for msgId, msg := range sess.Messages {
+		str, _ := sess.MarshalJSONWithSingleMessage(msg, false)
 		sessId := fmt.Sprintf("%s-%d", hex.EncodeToString(sess.Id()), msgId)
 
 		_, err := m.esClient.Index().
@@ -113,12 +103,8 @@ func (m *Module) persistSession(coreSess *core.MilterSession) {
 		if err != nil {
 			m.Log().Errorf("Could not index session '%s', error: %s", sessId, err.Error())
 		}
-
-		msgId++
-		if msgId >= len(sess.Messages) {
-			break
-		}
 	}
+
 	//fmt.Printf("Indexed tweet %s to index %s, type %s\n", put1.Id, put1.Index, put1.Type)
 }
 
@@ -137,126 +123,4 @@ func (m *Module) DmarcReportPersist(report *dmarc.FeedbackReport) {
 	if err != nil {
 		m.Log().Errorf("Could not index DMARC Report, error: %s", err.Error())
 	}
-}
-
-func (s *session) esMarshalJSON(m *Module) ([]byte, error) {
-	type Alias session
-
-	esMessages := []*esMessage{}
-	if s.jsonMarshalMsgId < len(s.Messages) {
-		msg := s.Messages[s.jsonMarshalMsgId]
-		esMessages = append(esMessages, &esMessage{msg})
-	}
-
-	out := &struct {
-		InstanceId uint
-		*Alias
-		EsMessages []*esMessage `json:"Messages"`
-	}{
-		InstanceId: m.Instance(),
-		Alias:      (*Alias)(s),
-		EsMessages: esMessages,
-	}
-
-	return json.Marshal(out)
-}
-
-type esMessage struct {
-	*core.Message
-}
-
-func (m *esMessage) MarshalJSON() ([]byte, error) {
-	type Alias esMessage
-
-	out := &struct {
-		*Alias
-	}{
-		Alias: (*Alias)(m),
-	}
-
-	return json.Marshal(out)
-}
-
-func (s *session) UnmarshalJSON(data []byte) error {
-	type Alias session
-
-	aux := &struct {
-		*Alias
-		InstanceId uint
-		Messages   []esMessage
-	}{
-		Alias:    (*Alias)(s),
-		Messages: make([]esMessage, 0),
-	}
-
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
-	}
-
-	aux.Alias.Messages = make([]*core.Message, 0)
-	for _, msg := range aux.Messages {
-		aux.Alias.Messages = append(aux.Alias.Messages, (*core.Message)(msg.Message))
-	}
-
-	s.Instance = aux.InstanceId
-	return nil
-}
-
-func (m *esMessage) UnmarshalJSON(data []byte) error {
-	type Alias esMessage
-
-	aux := &struct {
-		*Alias
-		From struct {
-			Local  string
-			Domain string
-		}
-		Rcpt []struct {
-			Local  string
-			Domain string
-		}
-		CheckResults []struct {
-			Module          string
-			SuggestedAction int `json:"Verdict"`
-			Message         string
-			Score           float64
-			Determinants    string
-			Duration        time.Duration
-			WeightedScore   float64
-		}
-	}{
-		Alias: (*Alias)(m),
-	}
-
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
-	}
-
-	aux.Alias.From = address.FromString(aux.From.Local + "@" + aux.From.Domain)
-	for _, v := range aux.Rcpt {
-		aux.Alias.Rcpt = append(aux.Alias.Rcpt, address.FromString(v.Local+"@"+v.Domain))
-	}
-	for _, v := range aux.CheckResults {
-		var determinants interface{}
-		determinantsMap := make(map[string]interface{}, 0)
-		var err error
-		if err = json.Unmarshal([]byte(v.Determinants), &determinants); err != nil {
-			determinantsMap["error"] = "Could not unmarshal determinants from Elasticsearch Database: " + err.Error()
-		} else if determinants == nil {
-			determinantsMap = make(map[string]interface{}, 0)
-		} else {
-			determinantsMap = determinants.(map[string]interface{})
-		}
-
-		aux.Alias.CheckResults = append(aux.Alias.CheckResults, &core.MessageCheckResult{
-			Module:          v.Module,
-			SuggestedAction: v.SuggestedAction,
-			Score:           v.Score,
-			Duration:        v.Duration,
-			WeightedScore:   v.WeightedScore,
-			Determinants:    determinantsMap,
-		})
-	}
-
-	return nil
 }
