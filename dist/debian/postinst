@@ -22,8 +22,14 @@ set -e
 case "$1" in
 
   configure)
-    systemctl daemon-reload
-    systemctl restart cluegetter.service
+    adduser --system cluegetter
+    mkdir "/var/cache/cluegetter"
+    chown cluegetter /var/cache/cluegetter
+    mkdir "/var/lib/cluegetter"
+    chown cluegetter /var/lib/cluegetter
+
+      systemctl daemon-reload
+      systemctl restart cluegetter.service
   ;;
 
   abort-upgrade|abort-remove|abort-deconfigure)
