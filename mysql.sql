@@ -17,86 +17,6 @@ CREATE TABLE cluegetter_client (
   UNIQUE KEY client (hostname, daemon_name)
 ) ENGINE=InnoDB;
 
-CREATE TABLE session (
-  id binary(16) NOT NULL,
-  cluegetter_instance bigint(20) unsigned NOT NULL,
-  cluegetter_client bigint(20) unsigned NOT NULL,
-  date_connect datetime NOT NULL,
-  date_disconnect datetime DEFAULT NULL,
-  ip varchar(45) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT '',
-  reverse_dns varchar(255) CHARSET utf8 NOT NULL DEFAULT '',
-  helo varchar(255) charset utf8 NOT NULL DEFAULT '',
-  sasl_username varchar(255) NOT NULL DEFAULT '',
-  sasl_method varchar(32) NOT NULL DEFAULT '',
-  cert_issuer varchar(255) charset ascii NOT NULL DEFAULT '',
-  cert_subject varchar(255) charset ascii NOT NULL DEFAULT '',
-  cipher_bits smallint(5) unsigned DEFAULT NULL,
-  cipher varchar(255) charset ascii NOT NULL DEFAULT '',
-  tls_version varchar(31) charset ascii NOT NULL DEFAULT '',
-  PRIMARY KEY (id),
-  KEY sasl_username (sasl_username),
-  KEY cluegetter_instance (cluegetter_instance),
-  KEY session_date (cluegetter_instance,date_connect),
-  CONSTRAINT session_ibfk_1 FOREIGN KEY (cluegetter_instance) REFERENCES instance (id),
-  CONSTRAINT session_ibfk_2 FOREIGN KEY (cluegetter_client) REFERENCES cluegetter_client (id)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
-CREATE TABLE message (
-  id varchar(25) CHARACTER SET ascii NOT NULL,
-  session binary(16) NOT NULL,
-  date datetime NOT NULL,
-  body_size int unsigned DEFAULT NULL,
-  body_hash char(32) DEFAULT '',
-  messageId varchar(255) NOT NULL COMMENT 'Value of Message-ID header',
-  sender_local varchar(255) NOT NULL,
-  sender_domain varchar(253) NOT NULL,
-  rcpt_count int(10) unsigned NOT NULL DEFAULT 1,
-  verdict enum('permit','tempfail','reject') DEFAULT NULL,
-  verdict_msg text,
-  rejectScore float(6,2) DEFAULT NULL,
-  rejectScoreThreshold float(6,2) DEFAULT NULL,
-  tempfailScore float(6,2) DEFAULT NULL,
-  tempfailScoreThreshold float(6,2) DEFAULT NULL,
-  PRIMARY KEY (id),
-  KEY session (session),
-  KEY messageId (messageId(25)),
-  KEY message_date_session (date,session),
-  KEY message_senderdomain_date (sender_domain, date),
-  CONSTRAINT message_ibfk_1 FOREIGN KEY (session) REFERENCES session (id)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
-CREATE TABLE message_body (
-  message varchar(25) CHARACTER SET ascii NOT NULL,
-  sequence smallint(5) unsigned NOT NULL,
-  body mediumblob not null,
-  PRIMARY KEY (message, sequence),
-  CONSTRAINT message_body_ibfk_1 FOREIGN KEY (message) REFERENCES message (id)
-) ENGINE=InnoDB;
-
-CREATE TABLE message_header (
-  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  message varchar(25) CHARACTER SET ascii NOT NULL,
-  name varbinary(74) not null,
-  body blob not null,
-  PRIMARY KEY (id),
-  KEY message (message),
-  CONSTRAINT message_header_ibfk_1 FOREIGN KEY (message) REFERENCES message (id)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
-CREATE TABLE message_result (
-  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  message varchar(25) CHARACTER SET ascii NOT NULL,
-  module varchar(32) NOT NULL,
-  verdict enum('permit','tempfail','reject', 'error') NOT NULL,
-  score float(6,2) DEFAULT NULL,
-  weighted_score float(6,2) DEFAULT NULL,
-  duration float(6,3) COMMENT 'in seconds',
-  determinants text CHARACTER SET ascii COMMENT 'JSON',
-  PRIMARY KEY (id),
-  UNIQUE KEY message (message,module),
-  CONSTRAINT message_result_ibfk_1 FOREIGN KEY (message) REFERENCES message (id)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
 CREATE TABLE quota_class (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   cluegetter_instance bigint(20) unsigned NOT NULL,
@@ -130,15 +50,6 @@ CREATE TABLE quota (
   CONSTRAINT quota_ibfk_1 FOREIGN KEY (profile) REFERENCES quota_profile (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=ascii;
 
-CREATE TABLE quota_message (
-  quota bigint(20) unsigned NOT NULL,
-  message varchar(25) CHARACTER SET ascii NOT NULL,
-  PRIMARY KEY (quota,message),
-  KEY message (message),
-  CONSTRAINT quota_message_ibfk_1 FOREIGN KEY (quota) REFERENCES quota (id),
-  CONSTRAINT quota_message_ibfk_2 FOREIGN KEY (message) REFERENCES message (id)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
 CREATE TABLE quota_profile_period (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   profile bigint(20) unsigned NOT NULL,
@@ -147,23 +58,6 @@ CREATE TABLE quota_profile_period (
   PRIMARY KEY (id),
   KEY profile (profile),
   CONSTRAINT profile_id FOREIGN KEY (profile) REFERENCES quota_profile (id)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
-CREATE TABLE recipient (
-  id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  local varchar(255) NOT NULL,
-  domain varchar(253) DEFAULT NULL,
-  PRIMARY KEY (id),
-  UNIQUE KEY domain (domain,local)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-CREATE TABLE message_recipient (
-  message varchar(25) CHARACTER SET ascii NOT NULL,
-  recipient bigint(20) unsigned NOT NULL,
-  count smallint(5) unsigned NOT NULL DEFAULT 1,
-  PRIMARY KEY (message,recipient),
-  CONSTRAINT message_recipient_ibfk_1 FOREIGN KEY (message) REFERENCES message (id),
-  CONSTRAINT message_recipient_ibfk_2 FOREIGN KEY (recipient) REFERENCES recipient (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE bounce (

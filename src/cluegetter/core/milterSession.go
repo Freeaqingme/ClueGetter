@@ -116,25 +116,10 @@ var milterCluegetterClientInsertStmt = *new(*sql.Stmt)
 var milterSessionWhitelist []*milterSessionWhitelistRange
 var milterSessionClients milterSessionCluegetterClients
 
-var milterSessionPersistChan = make(chan []byte, 100)
 var milterSessionPersistQueue ring.Ring
 
 func milterSessionPrepStmt() {
 	stmt, err := Rdbms.Prepare(`
-		INSERT INTO session(id, cluegetter_instance, cluegetter_client, date_connect,
-							date_disconnect, ip, reverse_dns, helo, sasl_username,
-							sasl_method, cert_issuer, cert_subject, cipher_bits, cipher,
-							tls_version)
-			VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		ON DUPLICATE KEY UPDATE date_disconnect=?
-	`)
-	if err != nil {
-		Log.Fatalf("%s", err)
-	}
-
-	milterSessionInsertStmt = stmt
-
-	stmt, err = Rdbms.Prepare(`
 		INSERT INTO cluegetter_client (hostname, daemon_name) VALUES(?,?)
 			ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)`)
 	if err != nil {

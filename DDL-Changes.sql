@@ -1,4 +1,8 @@
 -- next
+DROP TABLE message_body, message_header, message_recipient, message_result, quota_message;
+DROP TABLE recipient;
+DROP TABLE message;
+DROP TABLE session;
 DROP TABLE greylist_whitelist;
 
 -- v0.6.2
