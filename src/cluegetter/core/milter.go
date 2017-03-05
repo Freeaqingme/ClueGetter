@@ -70,18 +70,6 @@ var MilterDataIndex milterDataIndex
 func milterStart(ctx *context.Context) {
 	MilterDataIndex = milterDataIndex{sessions: make(map[[16]byte]*MilterSession)}
 
-	statsInitCounter("MilterCallbackConnect")
-	statsInitCounter("MilterCallbackHelo")
-	statsInitCounter("MilterCallbackEnvFrom")
-	statsInitCounter("MilterCallbackEnvRcpt")
-	statsInitCounter("MilterCallbackHeader")
-	statsInitCounter("MilterCallbackEoh")
-	statsInitCounter("MilterCallbackBody")
-	statsInitCounter("MilterCallbackEom")
-	statsInitCounter("MilterCallbackAbort")
-	statsInitCounter("MilterCallbackClose")
-	statsInitCounter("MilterProtocolErrors")
-
 	milter := new(milter)
 	milter.FilterName = "ClueGetter"
 	milter.Debug = false
@@ -155,7 +143,6 @@ func (milter *milter) Connect(ctx uintptr, hostname string, ip net.IP) (sfsistat
 		panic(fmt.Sprintf("Session could not be stored in milterDataIndex"))
 	}
 
-	StatsCounters["MilterCallbackConnect"].increase(1)
 	if sess.ClientIsMonitorHost() {
 		Log.Debugf("%s Milter.Connect() called: ip = %s (monitor host), hostname = %s", sess.milterGetDisplayId(), ip, sess.ReverseDns)
 	} else {
@@ -180,7 +167,6 @@ func (milter *milter) Helo(ctx uintptr, helo string) (sfsistat int8) {
 	defer milterHandleError(ctx, &sfsistat)
 
 	sess := milterGetSession(ctx, true, true)
-	StatsCounters["MilterCallbackHelo"].increase(1)
 	Log.Debugf("%s Milter.Helo() called: helo = %s", sess.milterGetDisplayId(), helo)
 
 	sess.Helo = helo
@@ -201,11 +187,9 @@ func (milter *milter) EnvFrom(ctx uintptr, from []string) (sfsistat int8) {
 	d := milterGetSession(ctx, true, false)
 	msg := d.getNewMessage()
 
-	StatsCounters["MilterCallbackEnvFrom"].increase(1)
 	Log.Debugf("%s Milter.EnvFrom() called: from = %s", d.milterGetDisplayId(), from[0])
 
 	if len(from) == 0 {
-		StatsCounters["MilterProtocolErrors"].increase(1)
 		Log.Critical("%s Milter.EnvFrom() callback received %d elements", d.milterGetDisplayId(), len(from))
 		panic(fmt.Sprint("%s Milter.EnvFrom() callback received %d elements", d.milterGetDisplayId(), len(from)))
 	}
@@ -252,7 +236,6 @@ func (milter *milter) Header(ctx uintptr, headerf, headerv string) (sfsistat int
 		milterIdx: len(msg.GetHeader(headerf, false)) + 1},
 	)
 
-	StatsCounters["MilterCallbackHeader"].increase(1)
 	Log.Debugf("%s Milter.Header() called: header %s = %s", sess.milterGetDisplayId(), headerf, headerv)
 	return
 }
@@ -267,7 +250,6 @@ func (milter *milter) Eoh(ctx uintptr) (sfsistat int8) {
 	msg := sess.getLastMessage()
 	msg.QueueId = m.GetSymVal(ctx, "i")
 
-	StatsCounters["MilterCallbackEoh"].increase(1)
 	Log.Debugf("%s milter.Eoh() was called", sess.milterGetDisplayId())
 
 	milterSessionConfigureModule(sess)
@@ -281,7 +263,6 @@ func (milter *milter) Body(ctx uintptr, body []byte) (sfsistat int8) {
 	msg := s.getLastMessage()
 	msg.Body = append(msg.Body, body...)
 
-	StatsCounters["MilterCallbackBody"].increase(1)
 	Log.Debugf("%s milter.Body() was called. Length of body: %d", s.milterGetDisplayId(), len(body))
 	return
 }
@@ -290,7 +271,6 @@ func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
 	defer milterHandleError(ctx, &sfsistat)
 
 	s := milterGetSession(ctx, true, false)
-	StatsCounters["MilterCallbackEom"].increase(1)
 	Log.Debugf("%s milter.Eom() was called", s.milterGetDisplayId())
 
 	msg := s.getLastMessage()
@@ -347,7 +327,6 @@ func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
 func (milter *milter) Abort(ctx uintptr) (sfsistat int8) {
 	defer milterHandleError(ctx, &sfsistat)
 
-	StatsCounters["MilterCallbackAbort"].increase(1)
 	Log.Debugf("milter.Abort() was called")
 	milterGetSession(ctx, true, true)
 
@@ -357,7 +336,6 @@ func (milter *milter) Abort(ctx uintptr) (sfsistat int8) {
 func (milter *milter) Close(ctx uintptr) (sfsistat int8) {
 	defer milterHandleError(ctx, &sfsistat)
 
-	StatsCounters["MilterCallbackClose"].increase(1)
 	s := milterGetSession(ctx, false, true)
 	if s == nil {
 		Log.Debugf("%d milter.Close() was called. No context supplied")
@@ -379,7 +357,6 @@ func milterHandleError(ctx uintptr, sfsistat *int8) {
 	}
 
 	Log.Errorf("Panic ocurred while handling milter communication. Recovering. Error: %s", r)
-	StatsCounters["MessagePanics"].increase(1)
 	if Config.ClueGetter.Noop {
 		return
 	}

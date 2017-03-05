@@ -369,7 +369,6 @@ func milterSessionPersist(sess *Proto_Session) {
 		date_disconnect = time.Unix(int64(sess.TimeEnd), 0)
 	}
 
-	StatsCounters["RdbmsQueries"].increase(1)
 	_, err := milterSessionInsertStmt.Exec(
 		string(sess.Id[:]), sess.InstanceId, client.id, time.Unix(int64(sess.TimeStart), 0),
 		date_disconnect, sess.Ip, sess.ReverseDns, sess.Helo, sess.SaslUsername,

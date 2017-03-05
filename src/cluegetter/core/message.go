@@ -175,17 +175,6 @@ func messageStart() {
 		MessageInsertHeaders = append(MessageInsertHeaders, header)
 	}
 
-	statsInitCounter("MessagePanics")
-	statsInitCounter("MessageVerdictPermit")
-	statsInitCounter("MessageVerdictTempfail")
-	statsInitCounter("MessageVerdictReject")
-	statsInitCounter("MessageVerdictRejectQuotas")
-	statsInitCounter("MessageVerdictRejectSpamassassin")
-	statsInitCounter("MessageVerdictRejectGreylisting")
-	statsInitCounter("MessageVerdictTempfailQuotas")
-	statsInitCounter("MessageVerdictTempfailSpamassassin")
-	statsInitCounter("MessageVerdictTempfailGreylisting")
-
 	messageStartModuleGroups()
 	messagePersistStart()
 
@@ -254,7 +243,6 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 			return
 		}
 		Log.Errorf("Panic caught in messageGetVerdict(). Recovering. Error: %s", r)
-		StatsCounters["MessagePanics"].increase(1)
 		verdict = MessageTempFail
 		msgStr = "An internal error occurred."
 		return
@@ -329,14 +317,12 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 
 	sconf := msg.session.config
 	if totalScores[MessageReject] >= sconf.ClueGetter.Message_Reject_Score {
-		StatsCounters["MessageVerdictReject"].increase(1)
 		verdict = MessageReject
 		statusMsg = getDecidingResultWithMessage(results[MessageReject]).Message
 	} else if errorCount > 0 {
 		statusMsg = "An internal server error ocurred"
 		verdict = MessageTempFail
 	} else if (totalScores[MessageTempFail] + totalScores[MessageReject]) >= sconf.ClueGetter.Message_Tempfail_Score {
-		StatsCounters["MessageVerdictTempfail"].increase(1)
 		verdict = MessageTempFail
 		statusMsg = getDecidingResultWithMessage(results[MessageTempFail]).Message
 	}
@@ -426,7 +412,6 @@ func messageGetResults(msg *Message, done chan bool) chan *MessageCheckResult {
 					return
 				}
 				Log.Errorf("Panic caught in %s. Recovering. Error: %s", moduleName, r)
-				StatsCounters["MessagePanics"].increase(1)
 
 				determinants := make(map[string]interface{})
 				determinants["error"] = r

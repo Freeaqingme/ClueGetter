@@ -34,9 +34,6 @@ func rdbmsStart() {
 		Log.Fatalf(fmt.Sprintf(err_msg, display_dsn, err))
 	}
 
-	statsInitCounter("RdbmsQueries")
-	statsInitCounter("RdbmsErrors")
-
 	var version string
 	Rdbms.QueryRow("SELECT VERSION()").Scan(&version)
 	Log.Infof(fmt.Sprintf("Successfully connected to %s: %s", display_dsn, version))
