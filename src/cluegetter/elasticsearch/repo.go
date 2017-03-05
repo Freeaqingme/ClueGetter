@@ -265,37 +265,26 @@ func (f *Finder) query(service *elastic.SearchService) *elastic.SearchService {
 		q.Must(elastic.NewTermsQuery("InstanceId", stringSliceToIface(f.instances)...))
 	}
 
-	searchMessages := false
-	qMsg := elastic.NewBoolQuery()
 	if f.from.String() != "" {
-		qMsg.Must(addressQuery("Messages.From", f.from))
-		searchMessages = true
+		q.Must(addressQuery("Messages.From", f.from))
 	}
 	if f.FromSld() != "" {
-		qMsg.Must(elastic.NewMatchQuery("Messages.From.Sld", f.FromSld()))
-		searchMessages = true
+		q.Must(elastic.NewMatchQuery("Messages.From.Sld", f.FromSld()))
 	}
 	if f.to.String() != "" {
-		qMsg.Must(elastic.NewNestedQuery("Messages.Rcpt",
+		q.Must(elastic.NewNestedQuery("Messages.Rcpt",
 			addressQuery("Messages.Rcpt", f.to),
 		))
-		searchMessages = true
 	}
 	if f.queueId != "" {
-		qMsg.Must(elastic.NewMatchQuery("Messages.QueueId", f.queueId))
-		searchMessages = true
+		q.Must(elastic.NewMatchQuery("Messages.QueueId", f.queueId))
 	}
 	if len(f.verdicts) != 0 && len(f.verdicts) != 4 {
 		qVerdict := elastic.NewBoolQuery()
 		for _, verdict := range f.verdicts {
 			qVerdict.Should(elastic.NewTermQuery("Messages.Verdict", verdict))
 		}
-		qMsg.Must(qVerdict)
-		searchMessages = true
-	}
-
-	if searchMessages {
-		q.Must(elastic.NewNestedQuery("Messages", qMsg))
+		q.Must(qVerdict)
 	}
 
 	if f.saslUser != "" {
