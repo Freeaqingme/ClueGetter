@@ -8,13 +8,14 @@
 package elasticsearch
 
 import (
+	"context"
 	"encoding/json"
+	"time"
 
 	"cluegetter/address"
 	"cluegetter/core"
 
-	"gopkg.in/olivere/elastic.v3"
-	"time"
+	"gopkg.in/olivere/elastic.v5"
 )
 
 type Finder struct {
@@ -192,7 +193,7 @@ func (f *Finder) find(resp *FinderResponse, supplementSearch func(*elastic.Searc
 	f.query(search)
 	supplementSearch(search)
 
-	sr, err := search.Do()
+	sr, err := search.Do(context.TODO())
 	if err != nil {
 		return sr, err
 	}
@@ -225,7 +226,7 @@ func (f *Finder) FindWithDateHistogram() (*FinderResponse, error) {
 		aggParent, _ := sr.Aggregations.Nested(name)
 		agg, _ := aggParent.DateHistogram("sessions")
 		for _, bucket := range agg.Buckets {
-			store[bucket.Key] = bucket.DocCount
+			store[int64(bucket.Key)] = bucket.DocCount
 		}
 	}
 

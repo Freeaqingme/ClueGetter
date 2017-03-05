@@ -9,6 +9,7 @@ package core
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"fmt"
 	"net"
@@ -246,7 +247,7 @@ func (s *MilterSession) isWhitelisted() bool {
 	return false
 }
 
-func milterSessionStart() {
+func milterSessionStart(ctx *context.Context) {
 	milterSessionPrepStmt()
 
 	milterSessionWhitelist = make([]*milterSessionWhitelistRange, len(Config.ClueGetter.Whitelist))

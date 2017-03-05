@@ -8,17 +8,20 @@
 package core
 
 import (
-	"cluegetter/address"
+	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	m "github.com/Freeaqingme/gomilter"
-	"github.com/pborman/uuid"
 	"net"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"cluegetter/address"
+
+	m "github.com/Freeaqingme/gomilter"
+	"github.com/pborman/uuid"
 )
 
 type milter struct {
@@ -64,7 +67,7 @@ func (di *milterDataIndex) prune() {
 
 var MilterDataIndex milterDataIndex
 
-func milterStart() {
+func milterStart(ctx *context.Context) {
 	MilterDataIndex = milterDataIndex{sessions: make(map[[16]byte]*MilterSession)}
 
 	statsInitCounter("MilterCallbackConnect")

@@ -9,6 +9,7 @@ package core
 
 import (
 	"bufio"
+	"context"
 	"flag"
 	"fmt"
 	"github.com/Freeaqingme/GoDaemonSkeleton"
@@ -51,6 +52,7 @@ func daemonStart() {
 		log.LogRedirectStdOutToFile(logFile)
 	}
 	Log.Noticef("Starting ClueGetter...")
+	ctx, ctxCancel := context.WithCancel(context.Background())
 
 	ch := make(chan os.Signal)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
@@ -60,19 +62,20 @@ func daemonStart() {
 	instance = cg.Instance()
 	redisStart()
 
-	milterSessionStart()
+	milterSessionStart(&ctx)
 	httpStart(done)
 	messageStart()
 	for _, module := range cg.Modules() {
 		module.Init()
 		Log.Infof("Module '" + module.Name() + "' started successfully")
 	}
-	milterStart()
+	milterStart(&ctx)
 
 	go daemonIpc(done)
 	s := <-ch
 	Log.Noticef(fmt.Sprintf("Received '%s', exiting...", s.String()))
 
+	ctxCancel()
 	close(done)
 	milterStop()
 	for _, module := range cg.Modules() {

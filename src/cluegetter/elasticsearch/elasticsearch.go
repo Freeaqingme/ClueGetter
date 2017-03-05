@@ -8,6 +8,7 @@
 package elasticsearch
 
 import (
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -18,7 +19,7 @@ import (
 	"cluegetter/core"
 
 	"github.com/Freeaqingme/dmarcaggparser/dmarc"
-	"gopkg.in/olivere/elastic.v3"
+	"gopkg.in/olivere/elastic.v5"
 )
 
 const ModuleName = "elasticsearch"
@@ -61,7 +62,9 @@ func (m *Module) Init() {
 
 	template := strings.Replace(mappingTemplate, "%%MAPPING_VERSION%%", mappingVersion, -1)
 
-	_, err = m.esClient.IndexPutTemplate("cluegetter-session" + mappingVersion).BodyString(template).Do()
+	_, err = m.esClient.IndexPutTemplate("cluegetter-session" + mappingVersion).
+		BodyString(template).
+		Do(context.TODO())
 	if err != nil {
 		m.Log().Fatalf("Could not create ES session template: %s", err.Error())
 	}
@@ -69,7 +72,9 @@ func (m *Module) Init() {
 	if reportsModule := m.Module("reports", ""); reportsModule != nil {
 		template = strings.Replace(mappingTemplateDmarcReport, "%%MAPPING_VERSION%%", mappingVersionDmarcReport, -1)
 
-		_, err = m.esClient.IndexPutTemplate("cluegetter-session" + mappingVersionDmarcReport).BodyString(template).Do()
+		_, err = m.esClient.IndexPutTemplate("cluegetter-session" + mappingVersionDmarcReport).
+			BodyString(template).
+			Do(context.TODO())
 		if err != nil {
 			m.Log().Fatalf("Could not create ES dmarc report template: %s", err.Error())
 		}
@@ -103,7 +108,7 @@ func (m *Module) persistSession(coreSess *core.MilterSession) {
 			Type("session").
 			Id(sessId).
 			BodyString(string(str)).
-			Do()
+			Do(context.TODO())
 
 		if err != nil {
 			m.Log().Errorf("Could not index session '%s', error: %s", sessId, err.Error())
@@ -127,7 +132,7 @@ func (m *Module) DmarcReportPersist(report *dmarc.FeedbackReport) {
 		Type("dmarcReport").
 		Id(report.Metadata.ReportId + "@" + report.Metadata.OrgName).
 		BodyString(string(str)).
-		Do()
+		Do(context.TODO())
 
 	if err != nil {
 		m.Log().Errorf("Could not index DMARC Report, error: %s", err.Error())
