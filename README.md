@@ -29,7 +29,6 @@ Features:
   to (partially) blacklist messages from those addresses or domains.
 * SRS - Sender Rewriting Scheme
 * DKIM - Sign messages using DKIM
-* Volume Reputation - Detect anomalies in volume, and penalize sudden increases in volume.
 
 Planned modules:
 * GeoIP - Detect anomalies in the countries used to send mail from

@@ -29,7 +29,6 @@ import (
 	_ "cluegetter/lua"
 	_ "cluegetter/quotas"
 	_ "cluegetter/reports"
-	_ "cluegetter/reputation"
 	_ "cluegetter/rspamd"
 	_ "cluegetter/spamassassin"
 	_ "cluegetter/srs"
