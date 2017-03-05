@@ -175,12 +175,6 @@ func messageStart() {
 		MessageInsertHeaders = append(MessageInsertHeaders, header)
 	}
 
-	if Config.ClueGetter.Archive_Retention_Message < Config.ClueGetter.Archive_Retention_Body ||
-		Config.ClueGetter.Archive_Retention_Message < Config.ClueGetter.Archive_Retention_Header ||
-		Config.ClueGetter.Archive_Retention_Message < Config.ClueGetter.Archive_Retention_Message_Result {
-		Log.Fatalf("Config Error: Message retention time should be at least as long as body and header retention time")
-	}
-
 	statsInitCounter("MessagePanics")
 	statsInitCounter("MessageVerdictPermit")
 	statsInitCounter("MessageVerdictTempfail")
@@ -199,7 +193,6 @@ func messageStart() {
 }
 
 func messageStop() {
-	MessageStmtInsertMsg.Close()
 	Log.Infof("Message handler stopped successfully")
 }
 
@@ -518,9 +511,6 @@ func messageSave(msg *Message) {
 		panic("marshaling error: " + err.Error())
 	}
 
-	if Config.ClueGetter.Rdbms_Message_Persist {
-		messagePersistQueue <- protoMsg
-	}
 	go messagePersistInCache(msg.QueueId, messageGetMessageId(msg), protoMsg)
 }
 

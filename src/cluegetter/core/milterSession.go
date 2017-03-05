@@ -273,12 +273,6 @@ func milterSessionStart() {
 	}
 
 	messagePersistQueue = make(chan []byte)
-	if Config.ClueGetter.Rdbms_Message_Persist {
-		in := make(chan []byte)
-		redisListSubscribe("cluegetter-"+strconv.Itoa(int(instance))+"-session-persist", milterSessionPersistChan, in)
-		go milterSessionPersistHandleQueue(in)
-	}
-
 	milterSessionPersistQueue = ring.Ring{}
 	milterSessionPersistQueue.SetCapacity(256)
 
@@ -391,19 +385,6 @@ func (s *MilterSession) persist() {
 	// It's used for the SessionDisconnect() callback which could be used for other
 	// purposes than persisting as well.
 	milterSessionPersistQueue.Enqueue(s) // TODO: Log if ring buffer is (near) full
-
-	if s.ClientIsMonitorHost() && len(s.Messages) == 0 {
-		return
-	}
-
-	protoMsg, err := proto.Marshal(s.getProtoBufStruct())
-	if err != nil {
-		panic("marshaling error: " + err.Error())
-	}
-
-	if Config.ClueGetter.Rdbms_Message_Persist {
-		milterSessionPersistChan <- protoMsg
-	}
 }
 
 func (sess *MilterSession) getProtoBufStruct() *Proto_Session {

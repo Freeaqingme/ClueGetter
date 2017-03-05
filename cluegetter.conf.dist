@@ -45,9 +45,6 @@ rdbms-protocol         = tcp
 rdbms-address          = localhost:3306
 rdbms-database         = cluegetter
 
-# Persist messages in Mysql.
-rdbms-message-persist = true
-
 # Various modules determine whether an email should be rejected. E.g.
 # when an email is determined to be spam. Rejecting an email will
 # generally result in the delivering MTA sending a bounce to the
@@ -117,17 +114,6 @@ add-header = [U] X-Original-To: %{recipient}
 # Sometimes an email does not have a message-id header. Because it's a
 # convenient way to track messages across MTAs.
 insert-missing-message-id = true
-
-# Interval (in seconds) with which you want to prune items that
-# are beyond their retention period. Set to 0 to disable pruning.
-archive-prune-interval = 21600
-
-# The number of weeks to archive these items for before pruning them.
-# If you don't want to archive something, set the retention time to '0'.
-archive-retention-body = 2
-archive-retention-header = 26
-archive-retention-message-result = 2
-archive-retention-message = 52
 
 # Internal message cache size in MB
 message-cache-size = 256
@@ -239,7 +225,7 @@ recipient-header = X-Original-To
 [clamav]
 # Scan for viruses, malware, etc through ClamAV
 
-enabled = true
+enabled = false
 address = "/var/run/clamav/clamd.ctl"
 
 # Score that should be given when a message gives a hit with ClamAV
@@ -331,7 +317,7 @@ whitelist-spf = servers.mcsv.net  # MailChimp & Mandrill
 # You'll need to ensure that the MaxMind GeoLite2-city database is present.
 enabled = false
 
-geolite-db = "/var/lib/cluegetter/GeoLite2-City.mmdb"
+geolite-db = "/usr/lib/cluegetter/GeoLite2-City.mmdb"
 
 [quotas]
 # For more info about the quota module, see also;

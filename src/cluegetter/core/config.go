@@ -13,36 +13,29 @@ import (
 
 type config struct {
 	ClueGetter struct {
-		IPC_Socket                       string
-		Instance                         string
-		Noop                             bool
-		Exit_On_Panic                    bool
-		Policy_Listen_Port               string
-		Policy_Listen_Host               string
-		Rdbms_Driver                     string
-		Rdbms_User                       string
-		Rdbms_Address                    string
-		Rdbms_Password                   string
-		Rdbms_Protocol                   string
-		Rdbms_Database                   string
-		Rdbms_Message_Persist            bool
-		Message_Reject_Score             float64
-		Message_Tempfail_Score           float64
-		Message_Spamflag_Score           float64
-		Breaker_Score                    float64
-		Milter_Socket                    string
-		Whitelist                        []string
-		Add_Header                       []string
-		Add_Header_X_Spam_Score          bool
-		Insert_Missing_Message_Id        bool
-		Archive_Prune_Interval           int
-		Archive_Retention_Body           float64
-		Archive_Retention_Header         float64
-		Archive_Retention_Message_Result float64
-		Archive_Retention_Message        float64
-		Archive_Retention_Safeguard      float64
-		Message_Cache_Size               int
-		Monitor_Host                     []string
+		IPC_Socket                string
+		Instance                  string
+		Noop                      bool
+		Exit_On_Panic             bool
+		Policy_Listen_Port        string
+		Policy_Listen_Host        string
+		Rdbms_Driver              string
+		Rdbms_User                string
+		Rdbms_Address             string
+		Rdbms_Password            string
+		Rdbms_Protocol            string
+		Rdbms_Database            string
+		Message_Reject_Score      float64
+		Message_Tempfail_Score    float64
+		Message_Spamflag_Score    float64
+		Breaker_Score             float64
+		Milter_Socket             string
+		Whitelist                 []string
+		Add_Header                []string
+		Add_Header_X_Spam_Score   bool
+		Insert_Missing_Message_Id bool
+		Message_Cache_Size        int
+		Monitor_Host              []string
 	}
 	Redis struct {
 		Enabled  bool
@@ -287,7 +280,6 @@ func DefaultConfig(cfg *config) {
 	cfg.ClueGetter.Rdbms_Password = ""
 	cfg.ClueGetter.Rdbms_Protocol = "tcp"
 	cfg.ClueGetter.Rdbms_Database = "cluegetter"
-	cfg.ClueGetter.Rdbms_Message_Persist = true
 	cfg.ClueGetter.Message_Reject_Score = 5
 	cfg.ClueGetter.Message_Tempfail_Score = 8
 	cfg.ClueGetter.Message_Spamflag_Score = 4.5
@@ -296,12 +288,6 @@ func DefaultConfig(cfg *config) {
 	cfg.ClueGetter.Whitelist = []string{} // "127.0.0.0/8", "::1" }
 	cfg.ClueGetter.Add_Header = []string{}
 	cfg.ClueGetter.Insert_Missing_Message_Id = true
-	cfg.ClueGetter.Archive_Prune_Interval = 21600
-	cfg.ClueGetter.Archive_Retention_Safeguard = 1.01
-	cfg.ClueGetter.Archive_Retention_Body = 2
-	cfg.ClueGetter.Archive_Retention_Header = 26
-	cfg.ClueGetter.Archive_Retention_Message_Result = 2
-	cfg.ClueGetter.Archive_Retention_Message = 52
 	cfg.ClueGetter.Message_Cache_Size = 256
 	cfg.ClueGetter.Monitor_Host = []string{}
 
