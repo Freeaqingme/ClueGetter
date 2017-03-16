@@ -22,10 +22,10 @@ set -e
 case "$1" in
 
   configure)
-    adduser --system cluegetter
-    mkdir "/var/cache/cluegetter"
+    adduser --system cluegetter || true
+    mkdir -p "/var/cache/cluegetter"
     chown cluegetter /var/cache/cluegetter
-    mkdir "/var/lib/cluegetter"
+    mkdir -p "/var/lib/cluegetter"
     chown cluegetter /var/lib/cluegetter
 
     if command -v systemctl >/dev/null; then
