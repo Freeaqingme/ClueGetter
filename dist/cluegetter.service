@@ -9,7 +9,7 @@ EnvironmentFile=/etc/default/cluegetter
 ExecStartPre=-/bin/mkdir -p /var/run/cluegetter/
 ExecStartPre=-/bin/chown -R cluegetter /var/run/cluegetter/
 ExecStart=/usr/bin/cluegetter --config /etc/cluegetter/cluegetter.conf --loglevel $LOGLEVEL daemon
-User=cluegetter
+# User=cluegetter
 
 [Install]
 WantedBy=multi-user.target
