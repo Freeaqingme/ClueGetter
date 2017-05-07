@@ -37,6 +37,7 @@ const (
 	Proto_Message_TEMPFAIL Proto_Message_Verdict = 1
 	Proto_Message_REJECT   Proto_Message_Verdict = 2
 	Proto_Message_ERROR    Proto_Message_Verdict = 3
+	Proto_Message_DISCARD  Proto_Message_Verdict = 4
 )
 
 var Proto_Message_Verdict_name = map[int32]string{
@@ -44,12 +45,14 @@ var Proto_Message_Verdict_name = map[int32]string{
 	1: "TEMPFAIL",
 	2: "REJECT",
 	3: "ERROR",
+	4: "DISCARD",
 }
 var Proto_Message_Verdict_value = map[string]int32{
 	"PERMIT":   0,
 	"TEMPFAIL": 1,
 	"REJECT":   2,
 	"ERROR":    3,
+	"DISCARD":  4,
 }
 
 func (x Proto_Message_Verdict) String() string {

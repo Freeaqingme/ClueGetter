@@ -29,6 +29,9 @@
                 {{ if eq $msg.Verdict 3 }}
                     error
                 {{ end }}
+                {{ if eq $msg.Verdict 4 }}
+                    discard
+                {{ end }}
             </td>
             <td>{{ $msg.From.String }}</td>
             <td>{{ len $msg.Rcpt }}</td>
