@@ -9,10 +9,12 @@ package core
 
 import (
 	"github.com/scalingdata/gcfg"
+	"time"
 )
 
 type config struct {
 	ClueGetter struct {
+		Var_Dir	                  string
 		IPC_Socket                string
 		Instance                  string
 		Noop                      bool
@@ -104,6 +106,11 @@ type config struct {
 	Ipinfo struct {
 		Enabled    bool
 		Geolite_Db string
+	}
+	Quarantine struct {
+		Enabled bool
+		Ttl     time.Duration
+		TtlRaw  string `gcfg:"ttl"`
 	}
 	Quotas struct {
 		Enabled                  bool
@@ -199,6 +206,10 @@ type SessionConfig struct {
 		Initial_Period uint16
 		Whitelist_Spf  []string
 	}
+	Quarantine struct {
+		Enabled bool
+		Ttl int
+	}
 	Quotas struct {
 		Enabled bool
 	}
@@ -245,6 +256,9 @@ func (conf *config) sessionConfig() (sconf *SessionConfig) {
 	sconf.Greylisting.Initial_Score = conf.Greylisting.Initial_Score
 	sconf.Greylisting.Initial_Period = conf.Greylisting.Initial_Period
 	sconf.Greylisting.Whitelist_Spf = conf.Greylisting.Whitelist_Spf
+
+	sconf.Quarantine.Enabled = conf.Quarantine.Enabled
+	sconf.Quarantine.Ttl = conf.Quarantine.Ttl
 
 	sconf.Quotas.Enabled = conf.Quotas.Enabled
 

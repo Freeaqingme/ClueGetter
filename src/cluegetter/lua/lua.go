@@ -254,6 +254,10 @@ var sessionConfigSetters = map[string]func(*core.SessionConfig, *lua.LState){
 		c.Greylisting.Enabled = L.CheckBool(3)
 	},
 
+	"quarantine.enabled": func(c *core.SessionConfig, L *lua.LState) {
+		c.Quarantine.Enabled = L.CheckBool(3)
+	},
+
 	"spamassassin.enabled": func(c *core.SessionConfig, L *lua.LState) {
 		c.SpamAssassin.Enabled = L.CheckBool(3)
 	},
@@ -270,6 +274,10 @@ var sessionConfigGetters = map[string]func(*core.SessionConfig) lua.LValue{
 
 	"greylisting.enabled": func(c *core.SessionConfig) lua.LValue {
 		return lua.LBool(c.Greylisting.Enabled)
+	},
+
+	"quarantine.enabled": func(c *core.SessionConfig) lua.LValue {
+		return lua.LBool(c.Quarantine.Enabled)
 	},
 
 	"spamassassin.enabled": func(c *core.SessionConfig) lua.LValue {

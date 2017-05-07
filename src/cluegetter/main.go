@@ -27,6 +27,7 @@ import (
 	_ "cluegetter/greylisting"
 	_ "cluegetter/ipinfo"
 	_ "cluegetter/lua"
+	_ "cluegetter/quarantine"
 	_ "cluegetter/quotas"
 	_ "cluegetter/reports"
 	_ "cluegetter/rspamd"

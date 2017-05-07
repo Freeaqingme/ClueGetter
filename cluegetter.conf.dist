@@ -3,6 +3,9 @@
 # Socket to use for internal communication with the cluegetter daemon.
 ipc-socket = "/var/run/cluegetter/ipc.sock"
 
+# Directory to store variable data in
+var-dir = "/var/lib/cluegetter/"
+
 # Cluegetter allows to use multiple configurations of ClueGetter
 # alongside each other sharing the same database. This allows for
 # easy correlation (e.g. track a message by message id). The quota
@@ -318,6 +321,9 @@ whitelist-spf = servers.mcsv.net  # MailChimp & Mandrill
 enabled = false
 
 geolite-db = "/usr/lib/cluegetter/GeoLite2-City.mmdb"
+
+[quarantine]
+enabled = true
 
 [quotas]
 # For more info about the quota module, see also;
