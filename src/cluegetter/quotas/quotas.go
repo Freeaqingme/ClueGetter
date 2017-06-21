@@ -299,7 +299,15 @@ func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCh
 	determinants := map[string]interface{}{"quotas": results}
 
 	rejectMsg := ""
+	i := 0
 	for _, result := range results {
+		i++
+		if i > 1000 {
+			m.Log().Noticef("RACE CONDITION DETECTED - aborting quota check for %d messages per %d seconds for %s '%s'",
+                                result.Curb, result.Period, *result.Selector, *result.FactorValue)
+			break
+		}
+
 		if result.FutureTotalCount > result.Curb {
 			m.Log().Noticef("Quota Exceeding, max of %d messages per %d seconds for %s '%s'",
 				result.Curb, result.Period, *result.Selector, *result.FactorValue)
