@@ -305,7 +305,6 @@ func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCh
 		if i > 1000 {
 			m.Log().Noticef("RACE CONDITION DETECTED - aborting quota check for %d messages per %d seconds for %s '%s'",
                                 result.Curb, result.Period, *result.Selector, *result.FactorValue)
-			break
 		}
 
 		if result.FutureTotalCount > result.Curb {
