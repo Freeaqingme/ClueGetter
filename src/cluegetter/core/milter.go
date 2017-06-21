@@ -301,27 +301,31 @@ func (milter *milter) Eom(ctx uintptr) (sfsistat int8) {
 		msgOut = "Whitelisted"
 	}
 
+	var retval int8
 	switch {
 	case verdict == MessagePermit:
 		Log.Infof("Message Permit: sess=%s message=%s %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msgOut)
-		return
+		retval = m.Accept
 	case verdict == MessageTempFail:
 		m.SetReply(ctx, "421", "4.7.0", fmt.Sprintf("%s (%s)", msgOut, s.getLastMessage().QueueId))
 		Log.Infof("Message TempFail: sess=%s message=%s msg: %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msgOut)
-		if Config.ClueGetter.Noop {
-			return
-		}
-		return m.Tempfail
+		retval = m.Tempfail
+	case verdict == MessageDiscard:
+		Log.Infof("Message Discard: sess=%s message=%s msg: %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msgOut)
+		retval = m.Discard
 	case verdict == MessageReject:
 		m.SetReply(ctx, "550", "5.7.1", fmt.Sprintf("%s (%s)", msgOut, s.getLastMessage().QueueId))
 		Log.Infof("Message Reject: sess=%s message=%s msg: %s", s.milterGetDisplayId(), s.getLastMessage().QueueId, msgOut)
-		if Config.ClueGetter.Noop {
-			return
-		}
-		return m.Reject
+		retval = m.Reject
+	default:
+		panic("verdict was not recognized")
 	}
 
-	panic("verdict was not recognized")
+	if Config.ClueGetter.Noop {
+		retval = m.Continue
+	}
+
+	return retval
 }
 
 func (milter *milter) Abort(ctx uintptr) (sfsistat int8) {

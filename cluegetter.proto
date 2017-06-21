@@ -47,6 +47,7 @@ message Proto_Message {
         TEMPFAIL = 1;
         REJECT   = 2;
         ERROR    = 3;
+        DISCARD  = 4;
     }
 }
 

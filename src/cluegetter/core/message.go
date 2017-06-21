@@ -24,6 +24,7 @@ const (
 	MessageTempFail
 	MessageReject
 	MessageError
+	MessageDiscard
 )
 
 type Message struct {
@@ -233,7 +234,7 @@ func messageStartModuleGroups() {
 	}
 }
 
-func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*MessageCheckResult) {
+func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [5][]*MessageCheckResult) {
 	defer func() {
 		if Config.ClueGetter.Exit_On_Panic {
 			return
@@ -253,8 +254,9 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 	results[MessageTempFail] = make([]*MessageCheckResult, 0)
 	results[MessageReject] = make([]*MessageCheckResult, 0)
 	results[MessageError] = make([]*MessageCheckResult, 0)
+	results[MessageDiscard] = make([]*MessageCheckResult, 0)
 
-	var breakerScore [4]float64
+	var breakerScore [5]float64
 	done := make(chan bool)
 	errorCount := 0
 	resultsChan := messageGetResults(msg, done)
@@ -304,7 +306,7 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 		return out
 	}
 
-	var totalScores [4]float64
+	var totalScores [5]float64
 	for _, result := range flatResults {
 		totalScores[result.SuggestedAction] += result.WeightedScore
 		if result.Determinants == nil {
@@ -316,7 +318,10 @@ func messageGetVerdict(msg *Message) (verdict int, msgStr string, results [4][]*
 	statusMsg := ""
 
 	sconf := msg.session.config
-	if totalScores[MessageReject] >= sconf.ClueGetter.Message_Reject_Score {
+	if totalScores[MessageDiscard] >= sconf.ClueGetter.Breaker_Score {
+		verdict = MessageDiscard
+		statusMsg = getDecidingResultWithMessage(results[MessageDiscard]).Message
+	} else if totalScores[MessageReject] >= sconf.ClueGetter.Message_Reject_Score {
 		verdict = MessageReject
 		statusMsg = getDecidingResultWithMessage(results[MessageReject]).Message
 	} else if errorCount > 0 {
@@ -499,7 +504,7 @@ func messageSave(msg *Message) {
 	go messagePersistInCache(msg.QueueId, messageGetMessageId(msg), protoMsg)
 }
 
-func messageGetMutableHeaders(msg *Message, results [4][]*MessageCheckResult) (add, delete []MessageHeader) {
+func messageGetMutableHeaders(msg *Message, results [5][]*MessageCheckResult) (add, delete []MessageHeader) {
 	// Add the recipients, duplicate lines if there's >1 recipients
 	for k, v := range msg.addHeaders {
 		if strings.Index(v.Value, "%{recipient}") == -1 {

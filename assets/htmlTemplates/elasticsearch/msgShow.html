@@ -85,6 +85,9 @@
         {{ if eq $msg.Verdict 3 }}
         error
         {{ end }}
+        {{ if eq $msg.Verdict 4 }}
+        discard
+        {{ end }}
     </dd>
     <dt>Verdict Message</dt>
     <dd>{{printf "%s" $msg.VerdictMsg}}</dd>
@@ -127,6 +130,9 @@
             {{ end }}
             {{ if eq $value.SuggestedAction 3 }}
             error
+            {{ end }}
+            {{ if eq $value.SuggestedAction 4 }}
+            discard
             {{ end }}
         </td>
         <td>{{ printf "%.3f" $value.Duration.Seconds }} s</td>
