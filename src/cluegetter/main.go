@@ -33,6 +33,7 @@ import (
 	_ "cluegetter/spamassassin"
 	_ "cluegetter/srs"
 	//_ "cluegetter/demo"
+	"runtime"
 )
 
 var (
@@ -77,10 +78,13 @@ func init() {
 			"ClueGetter - Does things with mail - %s\n\n"+
 				"%s\nCopyright (c) 2015-2016, Dolf Schimmel\n"+
 				"License: Apache License, Version 2.0\n\n"+
-				"Time of Build: %s\n\n",
+				"Time of Build: %s\n"+
+				"Go Version: %s\n\n",
 			buildTag,
 			"https://github.com/Freeaqingme/ClueGetter",
-			buildTime)
+			buildTime,
+			runtime.Version(),
+		)
 		os.Exit(0)
 	}
 
