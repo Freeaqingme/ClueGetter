@@ -215,13 +215,18 @@ func (m *module) quotasRedisUpdateFromRdbms() {
 	}
 
 	for k, v := range groupedQuotas {
-		key := fmt.Sprintf("{cluegetter-%d-quotas-%s}-definitions", m.Instance(), k)
-		m.Redis().LPush(key+"-new", v...)
-		m.Redis().Rename(key+"-new", key) // Overwrite old list atomically
-		m.Redis().Expire(key, time.Duration(24)*time.Hour)
+		m.insertQuotaDefinitions(m.Instance(), k, v)
 	}
-
 	m.Log().Infof("Imported %d quota tuples into Redis in %.2f seconds", i, time.Now().Sub(t0).Seconds())
+}
+
+func (m *module) insertQuotaDefinitions(instance uint, quotaKey string, values []string) {
+	key := fmt.Sprintf("{cluegetter-%d-quotas-%s}-definitions", instance, quotaKey)
+	redis := m.Redis().Pipeline()
+	redis.Del(key)
+	redis.LPush(key, values...)
+	redis.Expire(key, time.Duration(24)*time.Hour)
+	redis.Exec()
 }
 
 func (m *module) quotasPrepStmt() {
@@ -304,7 +309,7 @@ func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCh
 		i++
 		if i > 1000 {
 			m.Log().Noticef("RACE CONDITION DETECTED - aborting quota check for %d messages per %d seconds for %s '%s'",
-                                result.Curb, result.Period, *result.Selector, *result.FactorValue)
+				result.Curb, result.Period, *result.Selector, *result.FactorValue)
 		}
 
 		if result.FutureTotalCount > result.Curb {
@@ -344,7 +349,15 @@ func (m *module) quotasRedisPollQuotasBySelector(c chan *quotasResult, selector,
 
 	var wg sync.WaitGroup
 	i := 0
+	detectDuplicates := make(map[string]struct{}, 0)
+	pruneDuplicates := false
 	for _, quota := range m.Redis().LRange(key, 0, -1).Val() {
+		if _, duplicate := detectDuplicates[quota]; duplicate {
+			pruneDuplicates = true
+			continue
+		}
+		detectDuplicates[quota] = struct{}{}
+
 		wg.Add(1)
 		i++
 		go func(quota string) {
@@ -355,6 +368,10 @@ func (m *module) quotasRedisPollQuotasBySelector(c chan *quotasResult, selector,
 
 	wg.Wait()
 
+	if pruneDuplicates {
+		m.pruneDuplicateDefinitions(findInstance, *selector, *selectorValue, detectDuplicates)
+	}
+
 	if i != 0 || findInstance != m.Instance() {
 		return
 	}
@@ -364,6 +381,12 @@ func (m *module) quotasRedisPollQuotasBySelector(c chan *quotasResult, selector,
 	}
 
 	for _, quota := range m.Redis().LRange(key, 0, -1).Val() {
+		if _, duplicate := detectDuplicates[quota]; duplicate {
+			pruneDuplicates = true
+			continue
+		}
+		detectDuplicates[quota] = struct{}{}
+
 		wg.Add(1)
 		lquota := quota
 		go func() {
@@ -373,6 +396,21 @@ func (m *module) quotasRedisPollQuotasBySelector(c chan *quotasResult, selector,
 	}
 
 	wg.Wait()
+
+	if pruneDuplicates {
+		m.pruneDuplicateDefinitions(m.Instance(), *selector, *selectorValue, detectDuplicates)
+	}
+}
+
+func (m *module) pruneDuplicateDefinitions(instance uint, selector, selectorValue string, definitions map[string]struct{}) {
+	m.Log().Noticef("Duplicate quota definitions detected, pruning for %s '%s'", selector, selectorValue)
+
+	definitionsSlice := make([]string, 0)
+	for definition := range definitions {
+		definitionsSlice = append(definitionsSlice, definition)
+	}
+
+	m.insertQuotaDefinitions(instance, fmt.Sprintf("%s_%s", selector, selectorValue), definitionsSlice)
 }
 
 func (m *module) quotasRedisInsertRegexesForSelector(selector, selectorValue *string) bool {
@@ -381,6 +419,7 @@ func (m *module) quotasRedisInsertRegexesForSelector(selector, selectorValue *st
 	m.regexesLock.RUnlock()
 
 	inserted := 0
+	groupedQuotas := make(map[string][]string, 0)
 	for _, regex := range regexes {
 		if *regex.selector != *selector {
 			continue
@@ -391,10 +430,17 @@ func (m *module) quotasRedisInsertRegexesForSelector(selector, selectorValue *st
 			continue
 		}
 
-		key := fmt.Sprintf("{cluegetter-%d-quotas-%s_%s}-definitions", m.Instance(), *selector, *selectorValue)
-		m.Redis().LPush(key, fmt.Sprintf("%d_%d", regex.period, regex.curb))
-		m.Redis().Expire(key, time.Duration(24)*time.Hour)
+		lval := fmt.Sprintf("%d_%d", regex.period, regex.curb)
+		if _, ok := groupedQuotas[*selector+"_"+*selectorValue]; ok {
+			groupedQuotas[*selector+"_"+*selectorValue] = append(groupedQuotas[*selector+"_"+*selectorValue], lval)
+		} else {
+			groupedQuotas[*selector+"_"+*selectorValue] = []string{lval}
+		}
 		inserted++
+	}
+
+	for k, v := range groupedQuotas {
+		m.insertQuotaDefinitions(m.Instance(), k, v)
 	}
 
 	return inserted != 0

@@ -51,6 +51,7 @@ type RedisClientBase interface {
 
 type RedisClient interface {
 	RedisClientBase
+	Pipeline() *redis.Pipeline
 
 	PSubscribe(patterns ...string) (*redis.PubSub, error)
 	Publish(channel, message string) *redis.IntCmd
