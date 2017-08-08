@@ -379,6 +379,13 @@ timeout = 10.0
 # The max message size (in bytes) to send to SpamAssassin.
 max-size = 500000
 
+# Spamassassin can cause some load quite quickly while other modules
+# may also trigger almost instantaneously a circuit breaker (like
+# the quotas module). Therefore it is advised to use a small offset
+# (time in seconds) before this module should initiate when a message
+# comes in.
+delay = 0.02
+
 # Use a specific verdict message for a specific SpamAssassin rule.
 # The same variables as with message-header can be used, except for
 # %{recipient}

@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	"cluegetter/core"
@@ -63,6 +64,14 @@ func (m *module) Init() {
 func (m *module) MessageCheck(msg *core.Message, abort chan bool) *core.MessageCheckResult {
 	if !msg.Session().Config().SpamAssassin.Enabled {
 		return nil
+	}
+
+	time.Sleep(time.Duration(m.Config().SpamAssassin.Delay*1000) * time.Millisecond)
+	select {
+	case <-abort:
+		return nil
+	default:
+		// continue
 	}
 
 	m.Log().Debugf("Getting SA report for %s", msg.QueueId)

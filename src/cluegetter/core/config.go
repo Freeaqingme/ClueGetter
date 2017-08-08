@@ -134,6 +134,7 @@ type config struct {
 		Connect_Timeout float64
 		Max_Size        int
 		Verdict_Msg     []string
+		Delay           float64
 	}
 }
 
@@ -348,6 +349,7 @@ func DefaultConfig(cfg *config) {
 	cfg.SpamAssassin.Connect_Timeout = 0.1
 	cfg.SpamAssassin.Max_Size = 500000 // Default SA max file size: 512 KB
 	cfg.SpamAssassin.Verdict_Msg = []string{}
+	cfg.SpamAssassin.Delay = 0.02
 
 	cfg.LuaModule = make(map[string]*ConfigLuaModule)
 }
