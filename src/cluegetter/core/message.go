@@ -586,6 +586,10 @@ func (msg *Message) GetHeader(key string, includeDeleted bool) []MessageHeader {
 }
 
 func (msg *Message) String() []byte {
+	if msg.session == nil {
+		return make([]byte,0)
+	}
+
 	sess := *msg.session
 	fqdn := hostname
 	revdns, err := net.LookupAddr(sess.getIp())
