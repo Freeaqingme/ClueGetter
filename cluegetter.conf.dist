@@ -340,6 +340,14 @@ account-recipient-domain = false
 account-recipient-sld = false
 account-sasl-username = false
 
+# Messages with this status should be included when determining if
+# a quota was hit. Repeat to specify multiple statuses.
+tally-status = permit
+# tally-status = tempfail
+# tally-status = reject
+# tally-status = error
+# tally-status = discard
+
 [reports]
 # Parses various types of reports (currently only DMARC. AFRF & ARF to
 # follow soon) and indexes them. Can be used for reputation tracking purposes.

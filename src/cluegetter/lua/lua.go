@@ -8,6 +8,7 @@
 package lua
 
 import (
+	"fmt"
 	"io/ioutil"
 	"strings"
 
@@ -42,15 +43,19 @@ func (m *module) Config() map[string]*core.ConfigLuaModule {
 	return m.BaseModule.Config().LuaModule
 }
 
-func (m *module) Init() {
+func (m *module) Init() error {
 	m.modules = make(map[string]*luaModule, 0)
 
 	for name, conf := range m.Config() {
-		m.startModule(name, conf)
+		if err := m.startModule(name, conf); err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
-func (m *module) startModule(name string, conf *core.ConfigLuaModule) {
+func (m *module) startModule(name string, conf *core.ConfigLuaModule) error {
 	if conf.Script != "" && conf.ScriptContents != "" {
 		panic("Cannot specify both Script as well as scriptContents in " + name)
 	} else if conf.Script == "" && conf.ScriptContents == "" {
@@ -61,7 +66,7 @@ func (m *module) startModule(name string, conf *core.ConfigLuaModule) {
 	if conf.Script != "" {
 		scriptContentsBytes, err := ioutil.ReadFile(conf.Script)
 		if err != nil {
-			panic("Could not load LUA script: " + err.Error())
+			return fmt.Errorf("could not load LUA script: %s", err.Error())
 		}
 		scriptContents = string(scriptContentsBytes)
 	} else {
@@ -69,7 +74,7 @@ func (m *module) startModule(name string, conf *core.ConfigLuaModule) {
 	}
 
 	if _, err := luaCanParse(string(scriptContents)); err != nil {
-		panic("Could not parse LUA module '" + name + "': " + err.Error())
+		return fmt.Errorf("could not parse LUA module '%s': %s", name, err.Error())
 	}
 
 	m.Log().Infof("Registered LUA module " + name)
@@ -82,6 +87,8 @@ func (m *module) startModule(name string, conf *core.ConfigLuaModule) {
 	}
 	core.ModuleRegister(module)
 	m.modules[name] = module
+
+	return nil
 }
 
 type luaModule struct {

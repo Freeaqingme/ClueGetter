@@ -41,7 +41,7 @@ func (m *module) Enable() bool {
 	return m.config().Enabled
 }
 
-func (m *module) Init() {
+func (m *module) Init() error {
 	// TODO: Redis is not a module, yet
 	//m.cg.Module("redis", "bayes") // throw error if not enabled
 
@@ -50,6 +50,8 @@ func (m *module) Init() {
 
 	go m.reportMessageIdQueue(m.reportMessageIdRpcChan)
 	go m.handleLearnQueue(m.learnMessageRpcChan)
+
+	return nil
 }
 
 func (m *module) Rpc() map[string]chan string {

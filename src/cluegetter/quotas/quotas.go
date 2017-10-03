@@ -32,6 +32,8 @@ type module struct {
 
 	regexes     []*quotasRegex
 	regexesLock *sync.RWMutex
+
+	tallyStatuses []int
 }
 
 func init() {
@@ -86,12 +88,30 @@ const (
 	QUOTA_FACTOR_SASL_USERNAME    = "sasl_username"
 )
 
-func (m *module) Init() {
+func (m *module) Init() error {
+	m.tallyStatuses = make([]int, 0)
+	for _, tallyStatus := range m.Config().Quotas.TallyStatus {
+		statusInt, ok := core.Proto_Message_Verdict_value[strings.ToUpper(tallyStatus)]
+		if !ok {
+			return fmt.Errorf("invalid tally-status specified: '%s'. "+
+				"Must be one of: permit, tempfail, reject, error, discard",
+				tallyStatus)
+		}
+
+		m.tallyStatuses = append(m.tallyStatuses, int(statusInt))
+	}
+
+	if len(m.tallyStatuses) == 0 {
+		m.tallyStatuses = []int{int(core.Proto_Message_PERMIT)}
+	}
+
 	m.quotasPrepStmt()
 	//m.Module("redis", "quotas") // TODO: redis is not a module, yet
 
 	m.quotasRedisStart()
 	m.quotasRegexesStart()
+
+	return nil
 }
 
 func (m *module) HttpHandlers() map[string]core.HttpCallback {
@@ -476,7 +496,14 @@ func (m *module) quotasRedisAddMsg(quotasKey *string, count int) func(*core.Mess
 	localCount := count
 
 	return func(msg *core.Message, verdict int) {
-		if verdict != int(core.Proto_Message_PERMIT) && verdict != int(core.Proto_Message_REJECT) {
+		doTally := false
+		for _, tallyStatus := range m.tallyStatuses {
+			if verdict == tallyStatus {
+				doTally = true
+			}
+		}
+
+		if !doTally {
 			return
 		}
 

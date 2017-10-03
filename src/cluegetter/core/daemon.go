@@ -66,7 +66,9 @@ func daemonStart() {
 	httpStart(done)
 	messageStart()
 	for _, module := range cg.Modules() {
-		module.Init()
+		if err := module.Init(); err != nil {
+			Log.Fatalf("Could not start module %s: %s", module.Name(), err.Error())
+		}
 		Log.Infof("Module '" + module.Name() + "' started successfully")
 	}
 	milterStart(&ctx)

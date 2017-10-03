@@ -11,11 +11,12 @@ package clamav
 
 import (
 	"bytes"
+	"fmt"
 	"time"
 
 	"cluegetter/core"
 
-	clamd "github.com/Freeaqingme/go-clamd"
+	"github.com/Freeaqingme/go-clamd"
 )
 
 const ModuleName = "clamav"
@@ -40,12 +41,12 @@ func (m *module) Enable() bool {
 	return m.Config().Clamav.Enabled
 }
 
-func (m *module) Init() {
+func (m *module) Init() error {
 	m.client = clamd.NewClamd(m.Config().Clamav.Address)
 
 	err := m.client.Ping()
 	if err != nil {
-		m.Log().Fatalf("Could not connect to Clamav: %s", err.Error())
+		return fmt.Errorf("Could not connect to Clamav: %s", err.Error())
 	}
 
 	go func() {
@@ -60,6 +61,8 @@ func (m *module) Init() {
 			}
 		}
 	}()
+
+	return nil
 }
 
 func (m *module) clamavDumpStats() {

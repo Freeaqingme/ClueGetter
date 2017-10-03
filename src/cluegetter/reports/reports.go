@@ -39,17 +39,17 @@ func (m *module) Enable() bool {
 	return m.Config().Reports.Enabled
 }
 
-func (m *module) Init() {
+func (m *module) Init() error {
 	m.Module("elasticsearch", "reports") // Ensure elasticsearch module is loaded
 
 	for name, config := range m.Config().Reports_Source {
 		if config.Type != "pop3" {
-			m.Log().Fatalf("Only supported values for '%s' type are: 'pop3'. Got: %s", name, config.Type)
+			return fmt.Errorf("Only supported values for '%s' type are: 'pop3'. Got: %s", name, config.Type)
 		}
 
 		client, err := m.getClient(config)
 		if err != nil {
-			m.Log().Fatalf("Could not connect to pop3 server: %s", err.Error())
+			return fmt.Errorf("Could not connect to pop3 server: %s", err.Error())
 		}
 
 		client.Quit()
@@ -67,6 +67,8 @@ func (m *module) Init() {
 		}(name)
 
 	}
+
+	return nil
 }
 
 func (m *module) fetchReportsFromSource(sourceName string) {

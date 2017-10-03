@@ -54,21 +54,25 @@ func (m *module) Enable() bool {
 	return m.Config().Dkim.Enabled
 }
 
-func (m *module) Init() {
+func (m *module) Init() error {
 	switch m.Config().Dkim.Backend {
 	case "file":
-		m.initFileBackend()
+		return m.initFileBackend()
 	default:
-		m.Log().Fatalf("Invalid backend specified: %s", m.Config().Dkim.Backend)
+		return fmt.Errorf("Invalid backend specified: %s", m.Config().Dkim.Backend)
 	}
+
+	panic("Inaccessible code reached")
 }
 
-func (m *module) initFileBackend() {
+func (m *module) initFileBackend() error {
 	var err error
 	m.backend, err = fileBackend.NewFileBackend(m.Config().Dkim_FileBackend.Key_Path)
 	if err != nil {
-		m.Log().Fatalf("Could not instantiate DKIM Key Store: %s", err.Error())
+		return fmt.Errorf("could not instantiate DKIM Key Store: %s", err.Error())
 	}
+
+	return nil
 }
 
 func (m *module) MessageCheck(msg *core.Message, done chan bool) *core.MessageCheckResult {

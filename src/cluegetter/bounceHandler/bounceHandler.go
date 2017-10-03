@@ -73,10 +73,12 @@ func (m *module) Enable() bool {
 	return m.config().Enabled
 }
 
-func (m *module) Init() {
+func (m *module) Init() error {
 	m.prepStmt()
 
 	go m.listen()
+
+	return nil
 }
 
 func (m *module) Ipc() map[string]func(string) {

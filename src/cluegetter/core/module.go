@@ -19,7 +19,7 @@ type Module interface {
 	SetCluegetter(*Cluegetter)
 	Name() string
 	Enable() bool
-	Init()
+	Init() error
 	Stop()
 	BayesLearn(msg *Message, isSpam bool)
 	MessageCheck(msg *Message, done chan bool) *MessageCheckResult
@@ -127,7 +127,9 @@ func NewBaseModuleForTesting(configuration *config) (*BaseModule, *config) {
 
 func (m *BaseModule) DmarcReportPersist(*dmarc.FeedbackReport) {}
 
-func (m *BaseModule) Init() {}
+func (m *BaseModule) Init() error {
+	return nil
+}
 
 func (m *BaseModule) Stop() {}
 
@@ -194,12 +196,14 @@ func (m *ModuleOld) Enable() bool {
 	return (*m.enable)()
 }
 
-func (m *ModuleOld) Init() {
+func (m *ModuleOld) Init() error {
 	if m.init == nil {
-		return
+		return nil
 	}
 
 	(*m.init)()
+
+	return nil
 }
 
 func (m *ModuleOld) Stop() {

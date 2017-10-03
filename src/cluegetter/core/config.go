@@ -8,6 +8,8 @@
 package core
 
 import (
+	"fmt"
+
 	"github.com/scalingdata/gcfg"
 )
 
@@ -115,6 +117,7 @@ type config struct {
 		Account_Recipient_Sld    bool
 		Account_Client_Address   bool
 		Account_Sasl_Username    bool
+		TallyStatus              []string `gcfg:"tally-status"`
 	}
 	Reports struct {
 		Enabled bool
@@ -260,12 +263,12 @@ func (conf *config) sessionConfig() (sconf *SessionConfig) {
 	return
 }
 
-func LoadConfig(cfgFile string, cfg *config) {
-	err := gcfg.ReadFileInto(cfg, cfgFile)
-
-	if err != nil {
-		Log.Fatalf("Couldnt read config file: " + err.Error())
+func LoadConfig(cfgFile string, cfg *config) error {
+	if err := gcfg.ReadFileInto(cfg, cfgFile); err != nil {
+		return fmt.Errorf("couldn't read config file: " + err.Error())
 	}
+
+	return cfg.Validate()
 }
 
 func DefaultConfig(cfg *config) {
@@ -338,6 +341,7 @@ func DefaultConfig(cfg *config) {
 	cfg.Quotas.Account_Recipient = false
 	cfg.Quotas.Account_Recipient_Domain = false
 	cfg.Quotas.Account_Sasl_Username = false
+	cfg.Quotas.TallyStatus = []string{}
 
 	cfg.Rspamd.Host = "127.0.0.1"
 	cfg.Rspamd.Port = 11333
@@ -363,4 +367,8 @@ func GetNewConfig() *config {
 
 func SetConfig(config *config) {
 	Config = *config
+}
+
+func (c *config) Validate() error {
+	return nil
 }

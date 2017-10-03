@@ -64,7 +64,9 @@ func main() {
 
 	core.DefaultConfig(&core.Config)
 	if *configFile != "" {
-		core.LoadConfig(*configFile, &core.Config)
+		if err := core.LoadConfig(*configFile, &core.Config); err != nil {
+			core.Log.Fatalf("Cannot load configuration: " + err.Error())
+		}
 	}
 	core.InitCg()
 

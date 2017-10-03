@@ -8,6 +8,7 @@
 package ipinfo
 
 import (
+	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -48,17 +49,19 @@ func (m *module) Enable() bool {
 	return m.Config().Ipinfo.Enabled
 }
 
-func (m *module) Init() {
+func (m *module) Init() error {
 	var err error
 	m.ipispClient, err = ipisp.NewDnsClient()
 	if err != nil {
-		m.Log().Fatal("Could not initiate ipisp client: " + err.Error())
+		return fmt.Errorf("Could not initiate ipisp client: %s", err.Error())
 	}
 
 	m.geoliteDb, err = geoip2.Open(m.Config().Ipinfo.Geolite_Db)
 	if err != nil {
-		m.Log().Fatal(err.Error())
+		return err
 	}
+
+	return nil
 }
 
 func (m *module) Stop() {

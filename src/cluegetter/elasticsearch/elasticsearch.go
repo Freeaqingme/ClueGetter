@@ -42,14 +42,14 @@ func (m *Module) Enable() bool {
 	return m.Config().Elasticsearch.Enabled
 }
 
-func (m *Module) Init() {
+func (m *Module) Init() error {
 	var err error
 	m.esClient, err = elastic.NewClient(
 		elastic.SetSniff(m.Config().Elasticsearch.Sniff),
 		elastic.SetURL(m.Config().Elasticsearch.Url...),
 	)
 	if err != nil {
-		m.Log().Fatalf("Could not connect to ElasticSearch: %s", err.Error())
+		return fmt.Errorf("Could not connect to ElasticSearch: %s", err.Error())
 	}
 
 	template := strings.Replace(mappingTemplate, "%%MAPPING_VERSION%%", mappingVersion, -1)
@@ -58,7 +58,7 @@ func (m *Module) Init() {
 		BodyString(template).
 		Do(context.TODO())
 	if err != nil {
-		m.Log().Fatalf("Could not create ES session template: %s", err.Error())
+		return fmt.Errorf("Could not create ES session template: %s", err.Error())
 	}
 
 	if reportsModule := m.Module("reports", ""); reportsModule != nil {
@@ -68,9 +68,11 @@ func (m *Module) Init() {
 			BodyString(template).
 			Do(context.TODO())
 		if err != nil {
-			m.Log().Fatalf("Could not create ES dmarc report template: %s", err.Error())
+			return fmt.Errorf("Could not create ES dmarc report template: %s", err.Error())
 		}
 	}
+
+	return nil
 }
 
 func (m *Module) SessionDisconnect(sess *core.MilterSession) {

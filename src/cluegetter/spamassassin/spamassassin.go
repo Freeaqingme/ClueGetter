@@ -9,6 +9,7 @@ package spamassassin
 
 import (
 	"errors"
+	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -17,7 +18,7 @@ import (
 
 	"cluegetter/core"
 
-	spamc "github.com/Freeaqingme/go-spamc"
+	"github.com/Freeaqingme/go-spamc"
 )
 
 const ModuleName = "spamassassin"
@@ -42,23 +43,24 @@ func (m *module) Enable() bool {
 	return m.Config().SpamAssassin.Enabled
 }
 
-func (m *module) Init() {
+func (m *module) Init() error {
 	m.verdictMsgs = make(map[string]string, 0)
 
 	for _, msg := range m.Config().SpamAssassin.Verdict_Msg {
 		split := strings.SplitN(msg, ":", 2)
 		if len(split) < 2 {
-			m.Log().Fatalf("%s: Verdict message does not fit format '<key>: <message>': %s", ModuleName, msg)
+			return fmt.Errorf("%s: Verdict message does not fit format '<key>: <message>': %s", ModuleName, msg)
 		}
 
 		key := strings.ToUpper(split[0])
 		if _, set := m.verdictMsgs[split[0]]; set {
-			m.Log().Fatalf("%s: A verdict message for key '%s' was configured more than once", ModuleName, key)
+			return fmt.Errorf("%s: A verdict message for key '%s' was configured more than once", ModuleName, key)
 		}
 
 		m.verdictMsgs[key] = strings.TrimSpace(trimAbundantSpace(split[1]))
 	}
 
+	return nil
 }
 
 func (m *module) MessageCheck(msg *core.Message, abort chan bool) *core.MessageCheckResult {
