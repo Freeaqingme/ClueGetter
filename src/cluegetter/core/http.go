@@ -21,7 +21,7 @@ import (
 
 	"cluegetter/assets"
 
-	proxyproto "github.com/Freeaqingme/go-proxyproto"
+	proxyproto "github.com/Freeaqingme/go-proxyproto-v1"
 )
 
 type HttpCallback func(w http.ResponseWriter, r *http.Request)
