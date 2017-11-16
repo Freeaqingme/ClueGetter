@@ -14,7 +14,7 @@ github.com/Freeaqingme/go-clamd 4ca7e7b82651009473ab23a8a24bf7f5700f61bd
 github.com/Freeaqingme/go-dkim 9892e025c8bae2b3bb57386c01992703cde60da9
 github.com/Freeaqingme/gomilter ec6c4f311354d82c74260255dbe8a0ab6705939a
 github.com/Freeaqingme/go-spamc baaefdc3478cdf09e5db128b45e7597f51a69ff3
-github.com/Freeaqingme/go-proxyproto 673e5fd897f42e9212ca2495bd0c43d9ab872619
+github.com/Freeaqingme/go-proxyproto-v1 673e5fd897f42e9212ca2495bd0c43d9ab872619
 github.com/Freeaqingme/golang-ring edcf891e47f5c80e802428956cbc88ab802758c6
 github.com/glenn-brown/golang-pkg-pcre 48bb82a8b8ceea98f4e97825b43870f6ba1970d6
 github.com/golang/protobuf 9e6977f30c91c78396e719e164e57f9287fff42c
