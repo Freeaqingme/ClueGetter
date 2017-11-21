@@ -7,7 +7,7 @@ github.com/golang/lint 32a87160691b3c96046c0c678fe57c5bef761456
 github.com/jteeuwen/go-bindata a0ff2567cfb70903282db057e799fd826784d41d
 
 github.com/dustin/go-humanize 8929fe90cee4b2cb9deb468b51fb34eba64d1bf0
-github.com/Freeaqingme/GoDaemonSkeleton 1d9daab4674d071d0fc07706e96993ee691e1a69
+github.com/Freeaqingme/GoDaemonSkeleton 034b51467965ef83f5fb8af5399f1e90a461e26a
 github.com/Freeaqingme/golang-sql-driver-mysql cc60643cc960cb640e30d95b87d61aa4ca6ef3fb
 github.com/Freeaqingme/go-libspf2 8f75d380f8784b7d8f831baa4e0958a9ea9d49e2
 github.com/Freeaqingme/go-clamd 4ca7e7b82651009473ab23a8a24bf7f5700f61bd

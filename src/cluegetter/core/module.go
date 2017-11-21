@@ -12,6 +12,7 @@ import (
 
 	logging "github.com/Freeaqingme/GoDaemonSkeleton/log"
 	"github.com/Freeaqingme/dmarcaggparser/dmarc"
+	"log/syslog"
 )
 
 type Module interface {
@@ -120,7 +121,7 @@ func NewBaseModuleForTesting(configuration *config) (*BaseModule, *config) {
 	return &BaseModule{
 		Cluegetter: &Cluegetter{
 			config: configuration,
-			log:    logging.Open("testing", "DEBUG"),
+			log:    logging.Open("testing", "DEBUG", syslog.LOG_DEBUG),
 		},
 	}, configuration
 }
