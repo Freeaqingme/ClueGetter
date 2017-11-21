@@ -11,7 +11,7 @@ default: all
 .PHONY: deps
 deps: assets
 	go get -tags '$(BUILDTAGS)' -d -v cluegetter/...
-	go get github.com/robfig/glock
+	GOOS="" GOARCH="" go get github.com/robfig/glock
 	git diff /dev/null GLOCKFILE | ./bin/glock apply .
 
 .PHONY: cluegetter
