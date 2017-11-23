@@ -34,6 +34,7 @@ import (
 	_ "cluegetter/srs"
 	//_ "cluegetter/demo"
 	"runtime"
+	"log/syslog"
 )
 
 var (
@@ -60,7 +61,7 @@ func main() {
 		"Log Level. One of: CRITICAL, ERROR, WARNING, NOTICE, INFO, DEBUG)")
 	flag.Parse()
 
-	core.Log = log.Open("ClueGetter", *logLevel)
+	core.Log = log.Open("ClueGetter", *logLevel, syslog.LOG_MAIL)
 
 	core.DefaultConfig(&core.Config)
 	if *configFile != "" {
